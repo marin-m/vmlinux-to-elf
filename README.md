@@ -20,7 +20,7 @@ System-wide installation:
 
 ```bash
 sudo apt install python3-pip
-sudo pip3 install --upgrade git+https://github.com/marin-m/vmlinuxto-elf
+sudo pip3 install --upgrade git+https://github.com/marin-m/vmlinux-to-elf
 ```
 
 ## Features

@@ -139,14 +139,6 @@ def pretty_print_table(rows):
         print('+-%s-+' % '---'.join('-' * max_len for max_len in column_to_max_length))
         
 
-"""
-    import timos_extract
-
-    field_name_to_structure = {
-        'hardware_type': timos_extract.HardwareTypes,
-        'cpu_type': timos_extract.CPUTypes
-    }
-"""
 
 from sys import path
 from os.path import dirname, realpath

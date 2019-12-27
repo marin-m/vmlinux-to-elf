@@ -276,8 +276,10 @@ class KallsymsFinder:
                     
                     raise ValueError('This structure is not a kallsyms_token_table')
         
+        position += 1
+        position += -position % 4
         
-        self.kallsyms_token_table__offset = position + 1
+        self.kallsyms_token_table__offset = position
         
         print('[+] Found kallsyms_token_table at file offset 0x%08x' % self.kallsyms_token_table__offset)
     
@@ -350,8 +352,8 @@ class KallsymsFinder:
     def find_kallsyms_markers(self):
         
         """
-            kallsyms_markers contains one offset in kallsyms_names for
-            each 256 entries of it. Offsets are stored as either ".long"
+            kallsyms_markers contains one offset in kallsyms_names for each
+            1 in 256 entries of it. Offsets are stored as either ".long"
             (a Gnu AS type that corresponds for example to 4 bytes in
             x86_64) since kernel v4.20, either as the maximum register
             byte of the system (the C "long" type) on older kernels.
@@ -437,73 +439,95 @@ class KallsymsFinder:
         position = self.kallsyms_markers__offset
         
         
-        # Find the first null long, consider that
-        # kallsyms_names (that should not contain
-        # two consecutive null bytes) starts at the next long boundary
+        # Approximate the position of kallsyms_names based on the
+        # last entry of "kallsyms_markers" - we'll determine the
+        # precise position in the next method
         
-        MAX_ALIGNMENT = 256
-        position -= MAX_ALIGNMENT
-        
-        position = self.kernel_img.rfind(b'\x00' * 2, 0, position)
-        
-        if position == -1:
+        endianness_marker = '>' if self.is_big_endian else '<'
             
-            raise ValueError('Could not find kallsyms_markers')
+        long_size_marker = {2: 'H', 4: 'I', 8: 'Q'}[self.offset_table_element_size]
         
-        position += 2
-        # position += -position % self.offset_table_element_size # Needed?
+        num_of_kallsyms_numbers_entries = (self.kallsyms_token_table__offset -  self.kallsyms_markers__offset)  // self.offset_table_element_size
+        
+        kallsyms_markers_entries = unpack_from(endianness_marker + str(num_of_kallsyms_numbers_entries) + long_size_marker, self.kernel_img, self.kallsyms_markers__offset)
+        
+        last_kallsyms_markers_entry = list(filter(None, kallsyms_markers_entries))[-1]
+        
+        position -= self.offset_table_element_size
+        position -= last_kallsyms_markers_entry
+        
+        position += -position % self.offset_table_element_size
+        
+        assert position > 0
         
         
         self.kallsyms_names__offset = position
         
-        print('[+] Found kallsyms_names at file offset 0x%08x' % position)
+        # Guessing continues in the function below (in order to handle the
+        # absence of padding)
         
     def find_kallsyms_num_syms(self):
         
-        position =  self.kallsyms_names__offset
+        needle = -1
         
-        # Count the number of symbols
-        
-        num_symbols = 0
-        
-        while True:
-        
-            symbol_size = self.kernel_img[position]
+        while needle == -1:
             
-            if not symbol_size:
-                break
+            position =  self.kallsyms_names__offset
             
-            position += symbol_size + 1
-            num_symbols += 1
-        
-        assert num_symbols > 0
-        
-        self.num_symbols = num_symbols
-        
-        # Find the long or PTR (it should be the same size as a kallsyms_marker
-        # entry) encoding the number of symbols right before kallsyms_names
-        
-        endianness_marker = '>' if self.is_big_endian else '<'
-        
-        long_size_marker = {2: 'H', 4: 'I', 8: 'Q'}[self.offset_table_element_size]
-        
-        encoded_num_symbols = pack(endianness_marker + long_size_marker, num_symbols)
-        
-        
-        MAX_ALIGNMENT = 256
-        
-        memory_to_search = bytes(self.kernel_img[self.kallsyms_names__offset - MAX_ALIGNMENT - 20:
-            self.kallsyms_names__offset])
-        
-        needle = memory_to_search.rfind(encoded_num_symbols)
-        
-        if needle == -1:
+            # Count the number of symbols
             
-            raise ValueError('Could not find kallsyms_num_syms')
+            num_symbols = 0
+            
+            symbol_counting_position = position
+            
+            while True:
+            
+                symbol_size = self.kernel_img[symbol_counting_position]
+                
+                if not symbol_size:
+                    break
+                
+                symbol_counting_position += symbol_size + 1
+                num_symbols += 1
+                
+                if not (0 <= symbol_counting_position < self.kallsyms_markers__offset):
+                    break
+            
+            if num_symbols < 256:
+                if 0 <= self.kallsyms_names__offset - 4 < self.kallsyms_markers__offset:
+                    self.kallsyms_names__offset -= 4
+                else:
+                    raise ValueError('Could not find kallsyms_names')
+                continue
+            
+            self.num_symbols = num_symbols
+            
+            # Find the long or PTR (it should be the same size as a kallsyms_marker
+            # entry) encoding the number of symbols right before kallsyms_names
+            
+            endianness_marker = '>' if self.is_big_endian else '<'
+            
+            long_size_marker = {2: 'H', 4: 'I', 8: 'Q'}[self.offset_table_element_size]
+            
+            
+            MAX_ALIGNMENT = 256
+            
+            encoded_num_symbols = pack(endianness_marker + long_size_marker, num_symbols)
+            
+            memory_to_search = bytes(self.kernel_img[self.kallsyms_names__offset - MAX_ALIGNMENT - 20:
+                self.kallsyms_names__offset])
+            
+            needle = memory_to_search.rfind(encoded_num_symbols)
+            
+            if needle == -1: # There may be no padding between kallsyms_names and kallsyms_num_syms, if the alignment is already correct: in this case: try other offsets for "kallsyms_names"
+                if 0 <= self.kallsyms_names__offset - 4 < self.kallsyms_markers__offset:
+                    self.kallsyms_names__offset -= 4
+                else:
+                    raise ValueError('Could not find kallsyms_names')
+        
+        print('[+] Found kallsyms_names at file offset 0x%08x' % self.kallsyms_names__offset)
         
         position = (self.kallsyms_names__offset - MAX_ALIGNMENT - 20) + needle
-        
-        # position -= position % self.offset_table_element_size # Needed?
         
         
         self.kallsyms_num_syms__offset = position

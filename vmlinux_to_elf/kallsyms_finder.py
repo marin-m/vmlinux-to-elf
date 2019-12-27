@@ -453,7 +453,6 @@ class KallsymsFinder:
         
         last_kallsyms_markers_entry = list(filter(None, kallsyms_markers_entries))[-1]
         
-        position -= self.offset_table_element_size
         position -= last_kallsyms_markers_entry
         
         position += -position % self.offset_table_element_size
@@ -493,7 +492,7 @@ class KallsymsFinder:
                 if not (0 <= symbol_counting_position < self.kallsyms_markers__offset):
                     break
             
-            if num_symbols < 256:
+            if num_symbols < 256 or symbol_counting_position > self.kallsyms_markers__offset:
                 if 0 <= self.kallsyms_names__offset - 4 < self.kallsyms_markers__offset:
                     self.kallsyms_names__offset -= 4
                 else:

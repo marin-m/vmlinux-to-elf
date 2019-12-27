@@ -91,8 +91,12 @@ def try_decompress_at(input_file : bytes, offset : int) -> bytes:
         if input_file[offset:offset + 3] == b'\x1f\x8b\x08': # GZIP Signature
             decoded = SingleGzipReader(BytesIO(input_file[offset:])).read(-1) # Will stop reading after the GZip footer thanks to our modification above.
         
-        elif input_file[offset:offset + 6] == b'\xfd7zXZ\x00' or input_file[offset:offset + 4] == b']\x00\x00\x00': # XZ/LZMA Signature
-            decoded = LZMADecompressor().decompress(input_file[offset:]) # Will discard the extra bytes and put it an attribute.
+        elif input_file[offset:offset + 6] == b'\xfd7zXZ\x00' or input_file[offset:offset + 3] == b']\x00\x00': # XZ/LZMA Signature
+            
+            try:
+                decoded = LZMADecompressor().decompress(input_file[offset:]) # Will discard the extra bytes and put it an attribute.
+            except Exception:
+                decoded = LZMADecompressor().decompress(input_file[offset:offset + 5] + b'\xff' * 8 + input_file[offset + 5:]) # pylzma format compatibility
         
         elif input_file[offset:offset + 3] == b'BZh': # BZ2 Signature
             decoded = BZ2Decompressor().decompress(input_file[offset:]) # Will discard the extra bytes and put it an attribute.
@@ -131,7 +135,7 @@ def obtain_raw_kernel_from_file(input_file: bytes) -> bytes:
         
         # If not successful, scan for compression signatures
         
-        for possible_signature in (b'\x1f\x8b\x08', b'\xfd7zXZ\x00', b'BZh', b']\x00\x00\x00'):
+        for possible_signature in (b'\x1f\x8b\x08', b'\xfd7zXZ\x00', b'BZh', b']\x00\x00'):
             
             possible_offset = input_file.find(possible_signature)
             

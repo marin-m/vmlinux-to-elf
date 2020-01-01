@@ -29,6 +29,15 @@ class ElfSymbolizer():
         elf_machine : int = None, bit_size : int = None,
         base_address : int = None, file_offset : int = None):
         
+        if file_contents.startswith(b'\x27\x05\x19\x56'): # uImage header magic (always big-endian)
+            
+            if file_offset is None:
+                file_offset = 64 # uImage header size (image_header_t from u-boot/image.h)
+            
+            if base_address is None:
+                base_address = int.from_bytes(file_contents[4 * 4:4 * 5], 'big')
+            
+            
         if file_offset:
             file_contents = file_contents[file_offset:]
         

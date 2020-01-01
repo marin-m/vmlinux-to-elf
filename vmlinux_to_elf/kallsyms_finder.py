@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #-*- encoding: Utf-8 -*-
 
-from re import search, findall, IGNORECASE
+from re import search, findall, IGNORECASE, match
 from struct import pack, unpack_from
 from argparse import ArgumentParser
 from typing import List, Dict
@@ -77,9 +77,6 @@ except ImportError:
     
 """
 
-ARCH_ALIGNMENT = 4 # kallsyms_* symbols are prefixed
-                   # with "ALGN" in the linker script
-
 
 # Symbol types are the same as exposed by "man nm"
 
@@ -120,6 +117,9 @@ class KallsymsSymbol:
     symbol_type : KallsymsSymbolType = None
     is_global : bool = False
     
+
+class KallsymsNotFoundException(ValueError):
+    pass
 
 class KallsymsFinder:
 
@@ -182,11 +182,24 @@ class KallsymsFinder:
         
         # -
         
-        self.find_kallsyms_token_table()
-        self.find_kallsyms_token_index()
+        try:
+            self.find_kallsyms_token_table()
+            self.find_kallsyms_token_index()
+            self.uncompressed_kallsyms = False
         
-        self.find_kallsyms_markers()
-        self.find_kallsyms_names()
+        except KallsymsNotFoundException as first_error: # Maybe an OpenWRT kernel with an uncompressed kallsyms
+            
+            try:
+                self.find_kallsyms_names_uncompressed()
+                self.find_kallsyms_markers_uncompressed()
+                self.uncompressed_kallsyms =  True
+            
+            except KallsymsNotFoundException:
+                raise first_error
+        
+        else:
+            self.find_kallsyms_markers()
+            self.find_kallsyms_names()
         
         self.find_kallsyms_num_syms()
         self.find_kallsyms_addresses_or_symbols()
@@ -201,7 +214,7 @@ class KallsymsFinder:
         
         if not regex_match:
             
-            raise ValueError('No version string found in this kernels')
+            raise ValueError('No version string found in this kernel')
         
         self.version_string = regex_match.group(0).decode('ascii')
         self.version_number = regex_match.group(1).decode('ascii')
@@ -254,7 +267,10 @@ class KallsymsFinder:
         
         if len(candidates_offsets) != 1:
             
-            raise ValueError('%d candidates for kallsyms_token_table in kernel image' % len(candidates_offsets))
+            if len(candidates_offsets) == 0:
+                raise KallsymsNotFoundException('%d candidates for kallsyms_token_table in kernel image' % len(candidates_offsets))
+            else:
+                raise ValueError('%d candidates for kallsyms_token_table in kernel image' % len(candidates_offsets))
         
         position = candidates_offsets[0]
         
@@ -356,6 +372,143 @@ class KallsymsFinder:
         print('[+] Found kallsyms_token_index at file offset 0x%08x' % self.kallsyms_token_index__offset)
     
 
+    def find_kallsyms_names_uncompressed(self):
+        
+        """
+            OpenWRT versions since 2013 may have an
+            uncompressed kallsyms table built-in.
+        """
+
+        # Find the length byte-separated symbol names
+        
+        ksymtab_match = search(b'(?:[\x05-\x23][TWtbBrRAdD][a-z0-9_.]{4,34}){14}', self.kernel_img)
+        
+        if not ksymtab_match:
+            
+            raise KallsymsNotFoundException('No embedded symbol table found in this kernel')
+        
+        self.kallsyms_names__offset = ksymtab_match.start(0)
+        
+        # Count the number of symbol names
+        
+        position = self.kallsyms_names__offset
+        self.number_of_symbols = 0
+        
+        self.symbol_names : List[str] = []
+        
+        while position + 1 < len(self.kernel_img):
+            
+            if self.kernel_img[position] < 2 or chr(self.kernel_img[position + 1]).lower() not in 'abdrtvwginpcsu-?':
+                break
+            
+            symbol_name_and_type : bytes = self.kernel_img[
+                position + 1:
+                position + 1 + self.kernel_img[position]
+            ]
+            
+            if not match(b'^[\x21-\x7e]+$', symbol_name_and_type):
+                break
+                        
+            position += 1 + self.kernel_img[position]
+            self.number_of_symbols += 1
+        
+        if self.number_of_symbols < 100:
+            
+            raise KallsymsNotFoundException('No embedded symbol table found in this kernel')
+        
+        print('[+] Kernel symbol names found at file offset', hex(ksymtab_match.start(0)))
+        
+        print('[+] Found %d uncompressed kernel symbols (end at 0x%08x)' % (self.number_of_symbols, position))
+        
+        self.end_of_kallsyms_names_uncompressed = position
+
+    def find_kallsyms_markers_uncompressed(self):
+        
+        """
+            This is the OpenWRT-specific version of the
+            "find_kallsyms_markers" method below. It works
+            the same except that is tries to guess the integer
+            size forward rather than backard.
+        """
+        
+        position =  self.end_of_kallsyms_names_uncompressed
+        position += -position % 4
+        
+        max_number_of_space_between_two_nulls = 0
+        
+        # Go just after the first chunk of non-null bytes
+        
+        while position + 1 < len(self.kernel_img) and self.kernel_img[position + 1] == 0:
+            
+            position += 1
+        
+        
+        for null_separated_bytes_chunks in range(20):
+            
+            num_non_null_bytes = 1 # we always start at a non-null byte in this loop
+            num_null_bytes = 0
+            
+            while True:
+                position += 1
+                assert position >= 0
+                
+                if self.kernel_img[position] == 0:
+                    break
+                num_non_null_bytes += 1
+            
+            while True:
+                position += 1
+                assert position >= 0
+                
+                if self.kernel_img[position] != 0:
+                    break
+                num_null_bytes += 1
+            
+            max_number_of_space_between_two_nulls = max(
+                max_number_of_space_between_two_nulls,
+                num_non_null_bytes + num_null_bytes)
+        
+        if max_number_of_space_between_two_nulls not in (2, 4, 8):
+            
+            raise ValueError('Could not guess the architecture register ' +
+                'size for kernel')
+        
+
+        self.offset_table_element_size = max_number_of_space_between_two_nulls
+
+        # Once the size of a long has been guessed, use it to find
+        # the first offset (0)
+        
+        position =  self.end_of_kallsyms_names_uncompressed
+        position += -position % 4
+
+        # Go just at the first non-null byte
+        
+        while position < len(self.kernel_img) and self.kernel_img[position] == 0:
+            
+            position += 1
+        
+        
+        likely_is_big_endian = (position % self.offset_table_element_size > 1)
+        if self.is_big_endian is None: # Manual architecture specification
+            self.is_big_endian = likely_is_big_endian
+        
+        if position % self.offset_table_element_size == 0:
+            position += self.offset_table_element_size
+        else:
+            position += -position + self.offset_table_element_size
+        
+        position -= self.offset_table_element_size
+        position -= self.offset_table_element_size
+        
+        position -= position % self.offset_table_element_size
+        
+        
+        self.kallsyms_markers__offset = position
+        
+        print('[+] Found kallsyms_markers at file offset 0x%08x' % position)
+        
+    
     def find_kallsyms_markers(self):
         
         """
@@ -371,7 +524,7 @@ class KallsymsFinder:
         
         position = self.kallsyms_token_table__offset
         
-        # Go just before the first non-null byte
+        # Go just before the first chunk of non-null bytes
         
         while position > 0 and self.kernel_img[position - 1] == 0:
             
@@ -685,24 +838,29 @@ class KallsymsFinder:
         
     def parse_symbol_table(self):
         
-        # Parse symbol name tokens
-        
-        tokens = []
-        
-        position = self.kallsyms_token_table__offset
-        
-        for num_token in range(256):
+        if not self.uncompressed_kallsyms:
             
-            token = ''
+            # Parse symbol name tokens
             
-            while self.kernel_img[position]:
+            tokens = []
+            
+            position = self.kallsyms_token_table__offset
+            
+            for num_token in range(256):
                 
-                token += chr(self.kernel_img[position])
+                token = ''
+                
+                while self.kernel_img[position]:
+                    
+                    token += chr(self.kernel_img[position])
+                    position += 1
+                
                 position += 1
-            
-            position += 1
-            
-            tokens.append(token)
+                
+                tokens.append(token)
+        
+        else:
+            tokens = [chr(i) for i in range(256)]
         
         # Parse symbol names
         

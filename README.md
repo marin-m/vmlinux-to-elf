@@ -52,6 +52,10 @@ The schema below displays how this information is serialized into the kernel, th
 
 These fields have variable alignment and field size. The field sizes may vary over architecture and kernel version too. For this reason, `vmlinux-to-elf` has been tested over a variety of cases.
 
+OpenWRT [since 2013](https://git.openwrt.org/?p=openwrt/svn-archive/archive.git;a=commit;h=5317e9cb69bb42dee167e0552a5e1f01147ba072) has a [patch](https://github.com/openwrt-mirror/openwrt/blob/9b4650b/target/linux/generic/patches-4.4/203-kallsyms_uncompressed.patch) that removes compression over the `kallsyms` table by default (when building `kallsyms` has been enabled by the user). They do this in order to save space when re-compressing over the kernel using LZMA.
+
+This means that the `kallsyms_token_table` and `kallsyms_token_address` entries disappear, and that the symbol names use plain text ASCII instead. This case is supported too.
+
 ## Kernels support
 It supports kernels from version 2.6.10 (December 2004) until now. Only kernels explicitly configured without `CONFIG_KALLSYMS` should not be supported.
 

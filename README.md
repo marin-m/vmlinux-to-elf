@@ -59,6 +59,61 @@ For raw kernels, the following architectures can be detected (using magics from 
 
 The following kernel compression formats can be automatically detected: XZ, LZMA, GZip, BZ2. Support for LZO, LZ4, Zstd may be added upon request.
 
+## Advanced usage
+
+You can also obtain a text-only output of the kernel's symbol names, addresses and types through using the `kallsyms-finder` utility, also bundled with this tool.
+
+Some parameters that should be automatically inferred by the tool (such as the instruction set or base address) may be overriden in case of issue. The full specification of the arguments allowing to do that is presented below:
+
+```
+$ vmlinux-to-elf -h
+usage: vmlinux-to-elf [-h] [--e-machine E_MACHINE] [--bit-size BIT_SIZE]
+                      [--file-offset FILE_OFFSET]
+                      [--base-address BASE_ADDRESS]
+                      input_file output_file
+
+Turn a raw or compressed kernel binary, or a kernel ELF without symbols, into
+a fully analyzable ELF whose symbols were extracted from the kernel symbol
+table
+
+positional arguments:
+  input_file            Path to the
+                        vmlinux/vmlinuz/zImage/bzImage/kernel.bin/kernel.elf
+                        file to make into an analyzable .ELF
+  output_file           Path to the analyzable .ELF to output
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --e-machine E_MACHINE
+                        Force overriding the output ELF "e_machine" field with
+                        this integer value (rather than auto-detect)
+  --bit-size BIT_SIZE   Force overriding the input kernel bit size, providing
+                        32 or 64 bit (rather than auto-detect)
+  --file-offset FILE_OFFSET
+                        Consider that the raw kernel starts at this offset of
+                        the provided raw file or compressed stream (rather
+                        than 0, or the beginning of the ELF sections if an ELF
+                        header was present in the input)
+  --base-address BASE_ADDRESS
+                        Force overriding the output ELF base address field
+                        with this integer value (rather than auto-detect)
+
+$ kallsyms-finder -h
+usage: kallsyms-finder [-h] [--bit-size BIT_SIZE] input_file
+
+Find the kernel's embedded symbol table from a raw or stripped ELF kernel
+file, and print these to the standard output with their addresses
+
+positional arguments:
+  input_file           Path to the kernel file to extract symbols from
+
+optional arguments:
+  -h, --help           show this help message and exit
+  --bit-size BIT_SIZE  Force overriding the input kernel bit size, providing
+                       32 or 64 bit (rather than auto-detect)
+
+```
+
 Don't hesitate to [open an issue](https://github.com/marin-m/vmlinux-to-elf/issues/new) for any suggestion of improvement.
 
 

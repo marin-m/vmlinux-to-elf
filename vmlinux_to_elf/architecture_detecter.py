@@ -22,6 +22,9 @@ from time import time
     0 of the binary can be guessed.
 """
 
+class ArchitectureGuessError(Exception):
+    pass
+
 class ArchitectureName(IntEnum):
     mipsle = 1
     mipsbe = 2
@@ -154,7 +157,7 @@ def guess_architecture(binary : bytes) -> ArchitectureName:
     best_architecture_guess, number_of_prologues = architecture_to_number_of_prologues.most_common(1)[0]
 
     if number_of_prologues < 100:
-        raise ValueError('The architecture could not be guessed successfully')
+        raise ArchitectureGuessError('The architecture could not be guessed successfully')
 
     print('[+] Guessed architecture: %s successfully in %s seconds' % (best_architecture_guess.name, time() - begin_time))
 

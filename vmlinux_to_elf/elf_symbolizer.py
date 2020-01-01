@@ -25,12 +25,14 @@ except ImportError:
 
 class ElfSymbolizer():
     
-    def __init__(self, file_contents : bytes, output_file : str):
+    def __init__(self, file_contents : bytes, output_file : str,
+        elf_machine : int = None, bit_size : int = None,
+        base_address : int = None, file_offset : int = None):
         
-        # Todo: we could match vmlinuz/bzImage right here
-        # The "file" command uses this: https://github.com/file/file/blob/master/magic/Magdir/linux
+        if file_offset:
+            file_contents = file_contents[file_offset:]
         
-        kallsyms_finder = KallsymsFinder(file_contents)
+        kallsyms_finder = KallsymsFinder(file_contents, bit_size)
         
         if file_contents.startswith(b'\x7fELF'):
             
@@ -42,8 +44,10 @@ class ElfSymbolizer():
             
             #  Previsouly the register size was based on the kernel version string:       bool(kallsyms_finder.offset_table_element_size >= 8 or search('itanium|(?:amd|aarch|ia|arm|x86_|\D-)64', kallsyms_finder.version_string, flags = IGNORECASE))
             
-            # Should be defined dynamically later
-            kernel.file_header.e_machine = kallsyms_finder.elf_machine
+            if elf_machine is not None:
+                kernel.file_header.e_machine = elf_machine
+            else:
+                kernel.file_header.e_machine = kallsyms_finder.elf_machine
             
             ET_EXEC = 2
             kernel.file_header.e_type = ET_EXEC
@@ -58,7 +62,10 @@ class ElfSymbolizer():
             
             first_symbol_virtual_address = next((symbol.virtual_address for symbol in kallsyms_finder.symbols if symbol.symbol_type == KallsymsSymbolType.TEXT), None)
             
-            progbits.section_header.sh_addr = first_symbol_virtual_address & 0xfffffffffffff000
+            if base_address is not None:
+                progbits.section_header.sh_addr = base_address
+            else:
+                progbits.section_header.sh_addr = first_symbol_virtual_address & 0xfffffffffffff000
             progbits.section_contents = file_contents
             
             

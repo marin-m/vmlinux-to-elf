@@ -11,11 +11,11 @@ from sys import argv
 
 
 try:
-    from architecture_detecter import guess_architecture, ArchitectureName, architecture_name_to_elf_machine_and_is64bits_and_isbigendian
+    from architecture_detecter import guess_architecture, ArchitectureName, architecture_name_to_elf_machine_and_is64bits_and_isbigendian, ArchitectureGuessError
     from vmlinuz_decompressor import obtain_raw_kernel_from_file
     
 except ImportError:
-    from vmlinux_to_elf.architecture_detecter import guess_architecture, ArchitectureName, architecture_name_to_elf_machine_and_is64bits_and_isbigendian
+    from vmlinux_to_elf.architecture_detecter import guess_architecture, ArchitectureName, architecture_name_to_elf_machine_and_is64bits_and_isbigendian, ArchitectureGuessError
     from vmlinux_to_elf.vmlinuz_decompressor import obtain_raw_kernel_from_file
 
 """
@@ -164,14 +164,21 @@ class KallsymsFinder:
         We'll find kallsyms_token_table and infer the rest
     """
     
-    def __init__(self, kernel_img : bytes):
+    def __init__(self, kernel_img : bytes, bit_size : int = None):
         
         self.kernel_img = kernel_img
         
         # -
         
         self.find_linux_kernel_version()
-        self.guess_architecture()
+        
+        if not bit_size:
+            self.guess_architecture()
+        elif bit_size not in (64, 32):
+            exit('[!] Please specify a register bit size of either 32 or 64 ' +
+                'bits')
+        else:
+            self.is_64_bits = (bit_size == 64)
         
         # -
         
@@ -778,13 +785,21 @@ if __name__ == '__main__':
         "addresses")
     
     args.add_argument('input_file', help = "Path to the kernel file to extract symbols from")
+    args.add_argument('--bit-size', help = 'Force overriding the input kernel ' +
+        'bit size, providing 32 or 64 bit (rather than auto-detect)', type = int)
     
     args = args.parse_args()
 
 
     with open(args.input_file, 'rb') as kernel_bin:
         
-        kallsyms = KallsymsFinder(obtain_raw_kernel_from_file(kernel_bin.read()))
+        try:
+            kallsyms = KallsymsFinder(obtain_raw_kernel_from_file(kernel_bin.read()), args.bit_size)
+        
+        except ArchitectureGuessError:
+           exit('[!] The architecture of your kernel could not be guessed ' +
+                'successfully. Please specify the --bit-size argument manually ' +
+                '(use --help for its precise specification).')
         
         kallsyms.print_symbols_debug()
         

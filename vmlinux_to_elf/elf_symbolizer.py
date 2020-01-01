@@ -62,6 +62,9 @@ class ElfSymbolizer():
             
             first_symbol_virtual_address = next((symbol.virtual_address for symbol in kallsyms_finder.symbols if symbol.symbol_type == KallsymsSymbolType.TEXT), None)
             
+            if kallsyms_finder.has_base_relative:
+                first_symbol_virtual_address = min(first_symbol_virtual_address, kallsyms_finder.relative_base_address)
+            
             if base_address is not None:
                 progbits.section_header.sh_addr = base_address
             else:

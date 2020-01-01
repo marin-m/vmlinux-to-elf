@@ -59,7 +59,7 @@ This means that the `kallsyms_token_table` and `kallsyms_token_address` entries 
 ## Kernels support
 It supports kernels from version 2.6.10 (December 2004) until now. Only kernels explicitly configured without `CONFIG_KALLSYMS` should not be supported.
 
-For raw kernels, the following architectures can be detected (using magics from [binwalk](https://github.com/ReFirmLabs/binwalk/blob/master/src/binwalk/magic/binarch)): MIPSEL, MIPSEB, ARMEL, ARMEB, PowerPC, SPARC, x86, x86-64, ARM64, MIPS64, SuperH, ..
+For raw kernels, the following architectures can be detected (using magics from [binwalk](https://github.com/ReFirmLabs/binwalk/blob/master/src/binwalk/magic/binarch)): MIPSEL, MIPSEB, ARMEL, ARMEB, PowerPC, SPARC, x86, x86-64, ARM64, MIPS64, SuperH, ARC.
 
 The following kernel compression formats can be automatically detected: XZ, LZMA, GZip, BZ2. Support for LZO, LZ4, Zstd may be added upon request.
 
@@ -71,9 +71,8 @@ Some parameters that should be automatically inferred by the tool (such as the i
 
 ```
 $ vmlinux-to-elf -h
-usage: vmlinux-to-elf [-h] [--e-machine E_MACHINE] [--bit-size BIT_SIZE]
-                      [--file-offset FILE_OFFSET]
-                      [--base-address BASE_ADDRESS]
+usage: vmlinux-to-elf [-h] [--e-machine DECIMAL_NUMBER] [--bit-size BIT_SIZE]
+                      [--file-offset HEX_NUMBER] [--base-address HEX_NUMBER]
                       input_file output_file
 
 Turn a raw or compressed kernel binary, or a kernel ELF without symbols, into
@@ -88,17 +87,17 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
-  --e-machine E_MACHINE
+  --e-machine DECIMAL_NUMBER
                         Force overriding the output ELF "e_machine" field with
                         this integer value (rather than auto-detect)
   --bit-size BIT_SIZE   Force overriding the input kernel bit size, providing
                         32 or 64 bit (rather than auto-detect)
-  --file-offset FILE_OFFSET
+  --file-offset HEX_NUMBER
                         Consider that the raw kernel starts at this offset of
                         the provided raw file or compressed stream (rather
                         than 0, or the beginning of the ELF sections if an ELF
                         header was present in the input)
-  --base-address BASE_ADDRESS
+  --base-address HEX_NUMBER
                         Force overriding the output ELF base address field
                         with this integer value (rather than auto-detect)
 

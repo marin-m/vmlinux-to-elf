@@ -771,11 +771,16 @@ class KallsymsFinder:
         print()
         
         
-        # Print symbols
+        # Print symbols, in a fashion similar to /proc/kallsyms
         
         for symbol_address, symbol_name in zip(self.kernel_addresses, self.symbol_names):
             
-            print(repr(symbol_name).ljust(128), '0x%08x' % symbol_address)
+            print(
+                '%016x' % symbol_address if self.is_64_bits
+                else '%08x' % symbol_address,
+                symbol_name[0], # The symbol type
+                symbol_name[1:] # The symbol name itself
+            )
         
         
 if __name__ == '__main__':

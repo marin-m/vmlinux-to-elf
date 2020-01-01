@@ -41,6 +41,7 @@ class ArchitectureName(IntEnum):
     superhle = 13
     superhbe = 14
     sparc = 15
+    arcompact = 16
 
 # Prologues taken from the binwalk file linked above
 architecture_to_prologue_regex : Dict[ArchitectureName, bytes] = {
@@ -59,6 +60,7 @@ architecture_to_prologue_regex : Dict[ArchitectureName, bytes] = {
     ArchitectureName.superhbe: br'\x69\xF6\x00\x0B\x68\xF6', # This is an epilogue
     ArchitectureName.aarch64: br'\xc0\x03\x5f\xd6', # This is an epilogue
     ArchitectureName.sparc: br'\x81\xC7\xE0\x08\x81\xE8', # This is an epilogue
+    ArchitectureName.arcompact: b'\xF1\xC0.\x1C\x48[\xB0-\xBF]' # push_s blink; st.a r??, [sp, -??]
 }
 
 
@@ -142,6 +144,7 @@ architecture_name_to_elf_machine_and_is64bits_and_isbigendian : Dict[Architectur
     ArchitectureName.superhbe: (EM_SH, False, True),
     ArchitectureName.aarch64: (EM_AARCH64, True, False),
     ArchitectureName.sparc: (EM_SPARC, False, True),
+    ArchitectureName.arcompact: (EM_ARCOMPACT, False, False),
 }
 
 def guess_architecture(binary : bytes) -> ArchitectureName:

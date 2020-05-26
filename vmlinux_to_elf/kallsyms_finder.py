@@ -953,7 +953,7 @@ if __name__ == '__main__':
         "or stripped ELF kernel file, and print these to the standard output with their " +
         "addresses")
 
-    args.add_argument('--verbose', '-v', action = 'store_true', help = "Include meta information in output", type = bool)
+    args.add_argument('--verbose', '-v', action = 'store_true', help = "Include meta information in output")
     args.add_argument('input_file', help = "Path to the kernel file to extract symbols from")
     args.add_argument('--bit-size', help = 'Force overriding the input kernel ' +
         'bit size, providing 32 or 64 bit (rather than auto-detect)', type = int)

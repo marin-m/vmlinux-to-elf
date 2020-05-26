@@ -229,6 +229,8 @@ class KallsymsFinder:
         
         self.architecture : ArchitectureName = guess_architecture(self.kernel_img)
         # self.architecture  =  ArchitectureName.mipsle # DEBUG
+        if self.verbose:
+            print('[+] Guessed architecture: %s successfully' % (self.architecture.name))
 
         self.elf_machine,  self.is_64_bits,  self.is_big_endian = architecture_name_to_elf_machine_and_is64bits_and_isbigendian[self.architecture]
 

@@ -283,7 +283,7 @@ class KallsymsFinder:
 
         for tokens_backwards in range(current_index_in_array):
                         
-            for chars_in_token_backwards in range(20):
+            for chars_in_token_backwards in range(50):
                 
                 position -= 1
                 assert position >= 0
@@ -295,7 +295,7 @@ class KallsymsFinder:
                     self.kernel_img[position] > ord('z')):
                     break
                 
-                if chars_in_token_backwards >= 20 - 1:
+                if chars_in_token_backwards >= 50 - 1:
                     
                     raise ValueError('This structure is not a kallsyms_token_table')
         

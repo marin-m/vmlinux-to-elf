@@ -164,8 +164,8 @@ class KallsymsFinder:
         We'll find kallsyms_token_table and infer the rest
     """
     
-    def __init__(self, kernel_img : bytes, bit_size : int = None, verbose : bool = False):
-        self.verbose = verbose
+    def __init__(self, kernel_img : bytes, bit_size : int = None, silent : bool = True):
+        self.verbose = not silent
         
         self.kernel_img = kernel_img
         
@@ -955,7 +955,7 @@ if __name__ == '__main__':
         "or stripped ELF kernel file, and print these to the standard output with their " +
         "addresses")
 
-    args.add_argument('--verbose', '-v', action = 'store_true', help = "Include meta information in output")
+    args.add_argument('--silent', '-s', action = 'store_true', help = "Hide meta information in output")
     args.add_argument('input_file', help = "Path to the kernel file to extract symbols from")
     args.add_argument('--bit-size', help = 'Force overriding the input kernel ' +
         'bit size, providing 32 or 64 bit (rather than auto-detect)', type = int)
@@ -966,7 +966,7 @@ if __name__ == '__main__':
     with open(args.input_file, 'rb') as kernel_bin:
         
         try:
-            kallsyms = KallsymsFinder(obtain_raw_kernel_from_file(kernel_bin.read()), args.bit_size, args.verbose)
+            kallsyms = KallsymsFinder(obtain_raw_kernel_from_file(kernel_bin.read(), args.silent), args.bit_size, args.silent)
         
         except ArchitectureGuessError:
            exit('[!] The architecture of your kernel could not be guessed ' +

@@ -9,6 +9,7 @@ from io import BytesIO
 from enum import Enum
 from sys import argv
 
+
 try:
     from architecture_detecter import guess_architecture, ArchitectureName, architecture_name_to_elf_machine_and_is64bits_and_isbigendian, ArchitectureGuessError
     from vmlinuz_decompressor import obtain_raw_kernel_from_file
@@ -252,8 +253,8 @@ class KallsymsFinder:
         sequence_to_find = b''.join(b'%c\0' % i for i in range(ord('0'), ord('9') + 1))
         
         sequences_to_avoid = [
-            b'\x3a\x00',
-            b'\x00\x00',
+            b':\0',
+            b'\0\0',
         ]
 
         while True:

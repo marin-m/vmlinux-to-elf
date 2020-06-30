@@ -151,8 +151,6 @@ def guess_architecture(binary : bytes) -> ArchitectureName:
     
     architecture_to_number_of_prologues :  Dict[ArchitectureName, int] = Counter()
     
-    begin_time = time()
-    
     for architecture, prologue in architecture_to_prologue_regex.items():
         
         architecture_to_number_of_prologues[architecture] = len(findall(prologue, binary,  flags = DOTALL))
@@ -161,7 +159,5 @@ def guess_architecture(binary : bytes) -> ArchitectureName:
 
     if number_of_prologues < 100:
         raise ArchitectureGuessError('The architecture could not be guessed successfully')
-
-    print('[+] Guessed architecture: %s successfully in %s seconds' % (best_architecture_guess.name, time() - begin_time))
 
     return best_architecture_guess

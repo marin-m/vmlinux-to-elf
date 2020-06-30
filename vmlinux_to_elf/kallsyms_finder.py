@@ -164,7 +164,8 @@ class KallsymsFinder:
         We'll find kallsyms_token_table and infer the rest
     """
     
-    def __init__(self, kernel_img : bytes, bit_size : int = None):
+    def __init__(self, kernel_img : bytes, bit_size : int = None, silent : bool = True):
+        self.verbose = not silent
         
         self.kernel_img = kernel_img
         
@@ -218,8 +219,9 @@ class KallsymsFinder:
         
         self.version_string = regex_match.group(0).decode('ascii')
         self.version_number = regex_match.group(1).decode('ascii')
-        
-        print('[+] Version string:', self.version_string)
+
+        if self.verbose:
+            print('[+] Version string:', self.version_string)
         #print('[+] Other related strings containing the version number:', findall(b'[ -~]*%s[ -~]*' % regex_match.group(1), self.kernel_img))
         #print('[+] Architecture string:', search(b'mod_unload[ -~]+', self.kernel_img).group(0))
     
@@ -227,6 +229,8 @@ class KallsymsFinder:
         
         self.architecture : ArchitectureName = guess_architecture(self.kernel_img)
         # self.architecture  =  ArchitectureName.mipsle # DEBUG
+        if self.verbose:
+            print('[+] Guessed architecture: %s successfully' % (self.architecture.name))
 
         self.elf_machine,  self.is_64_bits,  self.is_big_endian = architecture_name_to_elf_machine_and_is64bits_and_isbigendian[self.architecture]
 
@@ -308,8 +312,9 @@ class KallsymsFinder:
         position += -position % 4
         
         self.kallsyms_token_table__offset = position
-        
-        print('[+] Found kallsyms_token_table at file offset 0x%08x' % self.kallsyms_token_table__offset)
+
+        if self.verbose:
+            print('[+] Found kallsyms_token_table at file offset 0x%08x' % self.kallsyms_token_table__offset)
     
     
     def find_kallsyms_token_index(self):
@@ -373,8 +378,9 @@ class KallsymsFinder:
             self.is_big_endian = True
         
             self.kallsyms_token_index__offset = position + found_position_for_be_value
-        
-        print('[+] Found kallsyms_token_index at file offset 0x%08x' % self.kallsyms_token_index__offset)
+
+        if self.verbose:
+            print('[+] Found kallsyms_token_index at file offset 0x%08x' % self.kallsyms_token_index__offset)
     
 
     def find_kallsyms_names_uncompressed(self):
@@ -420,10 +426,10 @@ class KallsymsFinder:
         if self.number_of_symbols < 100:
             
             raise KallsymsNotFoundException('No embedded symbol table found in this kernel')
-        
-        print('[+] Kernel symbol names found at file offset', hex(ksymtab_match.start(0)))
-        
-        print('[+] Found %d uncompressed kernel symbols (end at 0x%08x)' % (self.number_of_symbols, position))
+
+        if self.verbose:
+            print('[+] Kernel symbol names found at file offset', hex(ksymtab_match.start(0)))
+            print('[+] Found %d uncompressed kernel symbols (end at 0x%08x)' % (self.number_of_symbols, position))
         
         self.end_of_kallsyms_names_uncompressed = position
 
@@ -510,8 +516,9 @@ class KallsymsFinder:
         
         
         self.kallsyms_markers__offset = position
-        
-        print('[+] Found kallsyms_markers at file offset 0x%08x' % position)
+
+        if self.verbose:
+            print('[+] Found kallsyms_markers at file offset 0x%08x' % position)
         
     
     def find_kallsyms_markers(self):
@@ -596,8 +603,9 @@ class KallsymsFinder:
         
         
         self.kallsyms_markers__offset = position
-        
-        print('[+] Found kallsyms_markers at file offset 0x%08x' % position)
+
+        if self.verbose:
+            print('[+] Found kallsyms_markers at file offset 0x%08x' % position)
     
     def find_kallsyms_names(self):
         
@@ -688,15 +696,13 @@ class KallsymsFinder:
                     self.kallsyms_names__offset -= 4
                 else:
                     raise ValueError('Could not find kallsyms_names')
-        
-        print('[+] Found kallsyms_names at file offset 0x%08x' % self.kallsyms_names__offset)
-        
+
         position = (self.kallsyms_names__offset - MAX_ALIGNMENT - 20) + needle
-        
-        
         self.kallsyms_num_syms__offset = position
-        
-        print('[+] Found kallsyms_num_syms at file offset 0x%08x' % position)
+
+        if self.verbose:
+            print('[+] Found kallsyms_names at file offset 0x%08x' % self.kallsyms_names__offset)
+            print('[+] Found kallsyms_num_syms at file offset 0x%08x' % position)
     
     """
         This method defines self.kallsyms_addresses_or_offsets__offset,
@@ -811,8 +817,9 @@ class KallsymsFinder:
 
             if self.has_base_relative:
                 number_of_negative_items = len([offset for offset in tentative_addresses_or_offsets if offset < 0])
-                
-                print('[i] Negative offsets overall: %g %%' % (number_of_negative_items / len(tentative_addresses_or_offsets) * 100))
+
+                if self.verbose:
+                    print('[i] Negative offsets overall: %g %%' % (number_of_negative_items / len(tentative_addresses_or_offsets) * 100))
             
                 if number_of_negative_items / len(tentative_addresses_or_offsets) >= 0.5: # Non-absolute symbols are negative with CONFIG_KALLSYMS_ABSOLUTE_PERCPU
                     self.has_absolute_percpu = True
@@ -826,16 +833,17 @@ class KallsymsFinder:
                 self.has_absolute_percpu = False
 
             number_of_null_items = len([address for address in tentative_addresses_or_offsets if address == 0])
-            
-            print('[i] Null addresses overall: %g %%' % (number_of_null_items / len(tentative_addresses_or_offsets) * 100))
+
+            if self.verbose:
+                print('[i] Null addresses overall: %g %%' % (number_of_null_items / len(tentative_addresses_or_offsets) * 100))
         
             if number_of_null_items / len(tentative_addresses_or_offsets) >= 0.2: # If there are too much null symbols we have likely tried to parse the wrong integer size
                 
                 if can_skip:
                     continue
                 
-            
-            print('[+] Found %s at file offset 0x%08x' % ('kallsyms_offsets' if self.has_base_relative else 'kallsyms_addresses', position))
+            if self.verbose:
+                print('[+] Found %s at file offset 0x%08x' % ('kallsyms_offsets' if self.has_base_relative else 'kallsyms_addresses', position))
             
             self.kernel_addresses = tentative_addresses_or_offsets
             
@@ -929,11 +937,11 @@ class KallsymsFinder:
         for symbol_name in self.symbol_names:
             
             symbol_types.add(symbol_name[0])
-        
-        print('Symbol types', '=>', sorted(symbol_types))
-        print()
-        
-        
+
+        if self.verbose:
+            print('Symbol types', '=>', sorted(symbol_types))
+            print()
+
         # Print symbols, in a fashion similar to /proc/kallsyms
         
         for symbol_address, symbol_name in zip(self.kernel_addresses, self.symbol_names):
@@ -951,7 +959,8 @@ if __name__ == '__main__':
     args = ArgumentParser(description = "Find the kernel's embedded symbol table from a raw " +
         "or stripped ELF kernel file, and print these to the standard output with their " +
         "addresses")
-    
+
+    args.add_argument('--silent', '-s', action = 'store_true', help = "Hide meta information in output", default=False)
     args.add_argument('input_file', help = "Path to the kernel file to extract symbols from")
     args.add_argument('--bit-size', help = 'Force overriding the input kernel ' +
         'bit size, providing 32 or 64 bit (rather than auto-detect)', type = int)
@@ -962,7 +971,7 @@ if __name__ == '__main__':
     with open(args.input_file, 'rb') as kernel_bin:
         
         try:
-            kallsyms = KallsymsFinder(obtain_raw_kernel_from_file(kernel_bin.read()), args.bit_size)
+            kallsyms = KallsymsFinder(obtain_raw_kernel_from_file(kernel_bin.read()), args.bit_size, args.silent)
         
         except ArchitectureGuessError:
            exit('[!] The architecture of your kernel could not be guessed ' +

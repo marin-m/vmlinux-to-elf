@@ -66,6 +66,7 @@ The following kernel compression formats can be automatically detected: XZ, LZMA
 ## Advanced usage
 
 You can also obtain a text-only output of the kernel's symbol names, addresses and types through using the `kallsyms-finder` utility, also bundled with this tool. The format of its output will be similar to the `/proc/kallsyms` procfs file.
+The optional _verbose_ mode displays additional information about the ELF.
 
 Some parameters that should be automatically inferred by the tool (such as the instruction set or base address) may be overriden in case of issue. The full specification of the arguments allowing to do that is presented below:
 
@@ -112,6 +113,7 @@ positional arguments:
 
 optional arguments:
   -h, --help           show this help message and exit
+  --verbose, -v        Include meta information in output
   --bit-size BIT_SIZE  Force overriding the input kernel bit size, providing
                        32 or 64 bit (rather than auto-detect)
 

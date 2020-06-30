@@ -4,6 +4,7 @@ from lzma import LZMADecompressor
 from io import BytesIO, SEEK_END
 from bz2 import BZ2Decompressor
 from gzip import _GzipReader
+from lz4 import frame as LZ4Decompressor
 from struct import unpack
 from typing import Union
 from re import search
@@ -45,8 +46,34 @@ from re import search
     ==> https://github.com/threatstack/libmagic/blob/master/magic/Magdir/linux#L194
 """
 
+"""
+    This class contains well-known vmlinux signatures
+"""
+class Signature:
+    Compressed_GZIP = b'\x1f\x8b\x08'
+    Compressed_XZ   = b'\xfd7zXZ\x00'
+    Compressed_LZMA = b']\x00\x00'
+    Compressed_BZ2  = b'BZh'
+    Compressed_LZ4  = b'\x04"M\x18'     # https://github.com/lz4/lz4/blob/dev/doc/lz4_Frame_format.md
 
+    Compressed = [
+        Compressed_GZIP,
+        Compressed_XZ,
+        Compressed_LZMA,
+        Compressed_BZ2,
+        Compressed_LZ4,
+    ]
 
+    @staticmethod
+    def check(data, offset, sign):
+        return sign == data[offset:offset + len(sign)]
+
+    @staticmethod
+    def is_compressed(data, offset):
+        for sign in Signature.Compressed:
+            if Signature.check(data, offset, sign):
+                return True
+        return False    
 
 """
     This class will try to read a single GZip file
@@ -81,25 +108,27 @@ class SingleGzipReader(_GzipReader):
 """
 
 
-
 def try_decompress_at(input_file : bytes, offset : int) -> bytes:
     
     decoded = None
-    
+
     try:
         
-        if input_file[offset:offset + 3] == b'\x1f\x8b\x08': # GZIP Signature
+        if Signature.check(input_file, offset, Signature.Compressed_GZIP):
             decoded = SingleGzipReader(BytesIO(input_file[offset:])).read(-1) # Will stop reading after the GZip footer thanks to our modification above.
         
-        elif input_file[offset:offset + 6] == b'\xfd7zXZ\x00' or input_file[offset:offset + 3] == b']\x00\x00': # XZ/LZMA Signature
-            
+        elif Signature.check(input_file, offset, Signature.Compressed_XZ) or Signature.check(input_file, offset, Signature.Compressed_LZMA):            
             try:
                 decoded = LZMADecompressor().decompress(input_file[offset:]) # Will discard the extra bytes and put it an attribute.
             except Exception:
                 decoded = LZMADecompressor().decompress(input_file[offset:offset + 5] + b'\xff' * 8 + input_file[offset + 5:]) # pylzma format compatibility
         
-        elif input_file[offset:offset + 3] == b'BZh': # BZ2 Signature
+        elif Signature.check(input_file, offset, Signature.Compressed_BZ2):
             decoded = BZ2Decompressor().decompress(input_file[offset:]) # Will discard the extra bytes and put it an attribute.
+
+        elif Signature.check(input_file, offset, Signature.Compressed_LZ4):
+            context = LZ4Decompressor.create_decompression_context()
+            decoded, bytes_read, end_of_frame = LZ4Decompressor.decompress_chunk(context, input_file[offset:])
     
     except Exception:
         
@@ -112,6 +141,15 @@ def try_decompress_at(input_file : bytes, offset : int) -> bytes:
         return decoded
 
 def obtain_raw_kernel_from_file(input_file: bytes) -> bytes:
+
+    if Signature.is_compressed(input_file, 0):
+
+        # Firstly check explicit compression signature at the begin of file
+
+        decompressed_data = try_decompress_at(input_file, 0)
+        if decompressed_data:
+            return decompressed_data
+
     
     if not search(b'Linux version (\d+\.[\d.]*\d)[ -~]+', input_file):  # No kernel version string found
         
@@ -129,18 +167,17 @@ def obtain_raw_kernel_from_file(input_file: bytes) -> bytes:
             possible_offsets |=       set(unpack(possible_endianness + '20I',  input_file[file_size - 4 * 20:]))
         
         for possible_offset in sorted(possible_offsets):
-            decompressed_data = try_decompress_at(input_file,        possible_offset)
+            decompressed_data = try_decompress_at(input_file, possible_offset)
             if decompressed_data:
                 return decompressed_data
         
         # If not successful, scan for compression signatures
-        
-        for possible_signature in (b'\x1f\x8b\x08', b'\xfd7zXZ\x00', b'BZh', b']\x00\x00'):
+        for possible_signature in Signature.Compressed:
             
             possible_offset = input_file.find(possible_signature)
             
             while possible_offset > -1:
-                decompressed_data = try_decompress_at(input_file,        possible_offset)
+                decompressed_data = try_decompress_at(input_file, possible_offset)
                 if decompressed_data:
                     return decompressed_data
                 possible_offset = input_file.find(possible_signature, possible_offset + 1)

@@ -4,10 +4,10 @@ from lzma import LZMADecompressor
 from io import BytesIO, SEEK_END
 from bz2 import BZ2Decompressor
 from gzip import _GzipReader
-from lz4 import frame as LZ4Decompressor
 from struct import unpack
 from typing import Union
 from re import search
+import importlib
 
 """
     How to detect a vmlinuz file?
@@ -127,11 +127,19 @@ def try_decompress_at(input_file : bytes, offset : int) -> bytes:
             decoded = BZ2Decompressor().decompress(input_file[offset:]) # Will discard the extra bytes and put it an attribute.
 
         elif Signature.check(input_file, offset, Signature.Compressed_LZ4):
+            try:
+                LZ4Decompressor = importlib.import_module('lz4.frame')
+            except ModuleNotFoundError:
+                print('ERROR: This kernel requres LZ4 decompression.')
+                print('       But "lz4" python package does not found.')
+                print('       Example installation command: "pip install lz4"')
+                print()
+                return
+
             context = LZ4Decompressor.create_decompression_context()
             decoded, bytes_read, end_of_frame = LZ4Decompressor.decompress_chunk(context, input_file[offset:])
     
     except Exception:
-        
         pass
     
     if decoded and len(decoded) > 0x1000:

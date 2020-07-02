@@ -133,6 +133,9 @@ class KallsymsFinder:
     
     kallsyms_token_table__offset : int = None
     kallsyms_token_index__offset : int = None
+
+    elf64_rela : list = None
+    kernel_text_candidate : int = None
     
     # Inferred information
     
@@ -179,6 +182,10 @@ class KallsymsFinder:
                 'bits')
         else:
             self.is_64_bits = (bit_size == 64)
+
+        if self.is_64_bits:
+            self.find_elf64_rela()
+            self.apply_elf64_rela()
         
         # -
         
@@ -229,6 +236,85 @@ class KallsymsFinder:
         # self.architecture  =  ArchitectureName.mipsle # DEBUG
 
         self.elf_machine,  self.is_64_bits,  self.is_big_endian = architecture_name_to_elf_machine_and_is64bits_and_isbigendian[self.architecture]
+
+    def find_elf64_rela(self):
+        """
+            Find relocations table
+        """
+        if ArchitectureName.aarch64 != self.architecture:
+
+            # I've tested this only for ARM64
+            return False
+
+        rela64_size = 24
+        offset = len(self.kernel_img)
+        offset -= (offset & 3) # align to pointer size
+        R_AARCH64_RELATIVE = 0x403
+        elf64_rela = []
+        minimal_heuristic_count = 1000
+        minimal_kernel_va = 0xFFFFFF8008080000
+        maximal_kernel_va = 0xFFFFFFFFFFFFFFFF
+        kernel_text_candidate = maximal_kernel_va
+
+        # Relocations table located at 'init' part of kernel image
+        # Thus reverse-search is more efficient
+
+        while offset >= rela64_size:
+            rela = unpack_from('<QQQ', self.kernel_img, offset - rela64_size)
+            r_offset, r_info, r_addend = rela
+            if (0 == r_offset) and (0 == r_info) and (0 == r_addend):
+
+                # possible empty entry ?
+
+                if elf64_rela:
+
+                    # just skip empty entries inside relocation table
+
+                    offset -= rela64_size   # move to one rela64 struct backward
+                    continue
+
+            if R_AARCH64_RELATIVE != r_info:
+
+                # Relocations must be the same type
+
+                if len(elf64_rela) >= minimal_heuristic_count:
+                    break
+
+                # reset current state
+
+                elf64_rela = []
+                kernel_text_candidate = maximal_kernel_va
+                offset -= 8 # move to one ptr backward
+                continue
+
+            elf64_rela.append(rela)
+            if (0 == (r_addend & 0xFFF)) and (minimal_kernel_va <= r_addend < kernel_text_candidate):
+                kernel_text_candidate = r_addend
+            offset -= rela64_size   # move to one rela64 struct backward
+
+        count = len(elf64_rela)
+        print(count)
+        if count < minimal_heuristic_count:
+            return False
+
+        self.kernel_text_candidate = kernel_text_candidate
+        self.elf64_rela = elf64_rela
+        print('[+] Found relocations table at file offset 0x%04x (count=%d)' % (offset, count))
+        print('[+] Found kernel text candifate: 0x%08x' % (kernel_text_candidate))
+        return True
+
+    def apply_elf64_rela(self):
+        """
+            Apply relocations table
+        """
+        if self.elf64_rela is None or self.kernel_text_candidate is None:
+            return False
+
+        # There is no guarantee that relocation addresses are monotonous
+
+        return True
+
+        
 
     def find_kallsyms_token_table(self):
         

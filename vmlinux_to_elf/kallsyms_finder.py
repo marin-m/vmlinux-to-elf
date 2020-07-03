@@ -3,8 +3,8 @@
 
 from re import search, findall, IGNORECASE, match
 from struct import pack, unpack_from
+from typing import List, Dict, Tuple
 from argparse import ArgumentParser
-from typing import List, Dict
 from io import BytesIO
 from enum import Enum
 from sys import argv
@@ -134,7 +134,7 @@ class KallsymsFinder:
     kallsyms_token_table__offset : int = None
     kallsyms_token_index__offset : int = None
 
-    elf64_rela : list = None
+    elf64_rela : List[Tuple[int, int, int]] = None
     kernel_text_candidate : int = None
     
     # Inferred information
@@ -237,9 +237,10 @@ class KallsymsFinder:
 
         self.elf_machine,  self.is_64_bits,  self.is_big_endian = architecture_name_to_elf_machine_and_is64bits_and_isbigendian[self.architecture]
 
-    def find_elf64_rela(self):
+    def find_elf64_rela(self) -> bool:
         """
-            Find relocations table
+            Find relocations table, return True if success, False
+            otherwise
         """
         if ArchitectureName.aarch64 != self.architecture:
 
@@ -284,7 +285,20 @@ class KallsymsFinder:
 
                 elf64_rela = []
                 kernel_text_candidate = maximal_kernel_va
-                offset -= 8 # move to one ptr backward
+                
+                # move to the next candidate
+                
+                possible_offset = offset - 1
+
+                while possible_offset % 8 != 0: # Find a pointer-aligned r_info entry
+                    possible_offset = self.kernel_img.rfind(R_AARCH64_RELATIVE.to_bytes(8, 'little'), 8, possible_offset - rela64_size)
+                    if possible_offset == -1:
+                        offset = 0
+                        break
+
+                if possible_offset != -1:
+                    offset = possible_offset + 8
+
                 continue
 
             elf64_rela.append(rela)
@@ -293,19 +307,20 @@ class KallsymsFinder:
             offset -= rela64_size   # move to one rela64 struct backward
 
         count = len(elf64_rela)
-        print(count)
+        
         if count < minimal_heuristic_count:
             return False
 
         self.kernel_text_candidate = kernel_text_candidate
         self.elf64_rela = elf64_rela
         print('[+] Found relocations table at file offset 0x%04x (count=%d)' % (offset, count))
-        print('[+] Found kernel text candifate: 0x%08x' % (kernel_text_candidate))
+        print('[+] Found kernel text candidate: 0x%08x' % (kernel_text_candidate))
         return True
 
-    def apply_elf64_rela(self):
+    def apply_elf64_rela(self) -> bool:
         """
-            Apply relocations table
+            Apply relocations table, return True if success, False
+            otherwise
         """
         if self.elf64_rela is None or self.kernel_text_candidate is None:
             return False

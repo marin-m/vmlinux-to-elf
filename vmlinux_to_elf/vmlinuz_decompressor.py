@@ -118,7 +118,7 @@ def try_decompress_at(input_file : bytes, offset : int) -> bytes:
             decoded = SingleGzipReader(BytesIO(input_file[offset:])).read(-1) # Will stop reading after the GZip footer thanks to our modification above.
         
         elif (Signature.check(input_file, offset, Signature.Compressed_XZ) or
-              Signature.check(input_file, offset, Signature.Compressed_LZMA):
+              Signature.check(input_file, offset, Signature.Compressed_LZMA)):
             try:
                 decoded = LZMADecompressor().decompress(input_file[offset:]) # Will discard the extra bytes and put it an attribute.
                 

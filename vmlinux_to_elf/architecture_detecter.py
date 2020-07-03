@@ -150,7 +150,6 @@ architecture_name_to_elf_machine_and_is64bits_and_isbigendian : Dict[Architectur
 """
     Guess the architecture based on special knowledge, like custom signatures or binary format
 """
-import binascii
 def guess_architecture_special(binary : bytes) -> ArchitectureName:
 
     if binary[:2] == b'MZ':

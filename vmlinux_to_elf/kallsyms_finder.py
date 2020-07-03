@@ -310,10 +310,40 @@ class KallsymsFinder:
         if self.elf64_rela is None or self.kernel_text_candidate is None:
             return False
 
+        img = bytearray(self.kernel_img)
+        offset_max = len(img) - 8 # size of ptr
+        kernel_base = self.kernel_text_candidate
+
         # There is no guarantee that relocation addresses are monotonous
 
-        return True
+        count = 0
+        for rela in self.elf64_rela:
 
+            r_offset, r_info, r_addend = rela
+            offset = (r_offset - kernel_base)
+
+            if offset < 0 or offset > offset_max:
+                print('WARNING! bad rela offset %08x' % (r_offset))
+                continue
+
+            value, = unpack_from('<Q', self.kernel_img, offset)
+            if value == r_addend:
+
+                # don't know why, but some relocations already initialized
+
+                continue
+
+            # BUG: Sometimes 'r_addend' has pretty small value, and applied to 0.
+            # BUG: Result much smaller that valid kernel address.
+            # BUG: Probably 'r_addend' can represent offset from kernel_base. Need further investigation.
+
+            value += r_addend
+            img[offset:offset+8] = pack('<Q', value)
+            count += 1
+
+        self.kernel_img = bytes(img)
+        print('[+] Successfully applied %d relocations.' % count)
+        return True
         
 
     def find_kallsyms_token_table(self):

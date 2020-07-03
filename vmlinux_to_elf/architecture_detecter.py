@@ -147,21 +147,48 @@ architecture_name_to_elf_machine_and_is64bits_and_isbigendian : Dict[Architectur
     ArchitectureName.arcompact: (EM_ARCOMPACT, False, False),
 }
 
-def guess_architecture(binary : bytes) -> ArchitectureName:
-    
+"""
+    Guess the architecture based on special knowledge, like custom signatures or binary format
+"""
+def guess_architecture_special(binary : bytes) -> ArchitectureName:
+
+    if binary[:2] == b'MZ':
+
+        # Maybe UEFI boot stub ?
+        if binary[0x38:0x3C] == b'ARMd':
+            return ArchitectureName.aarch64
+
+    return None
+
+"""
+    Guess the architecture based on common patterns
+"""
+def guess_architecture_common(binary : bytes) -> ArchitectureName:
+
     architecture_to_number_of_prologues :  Dict[ArchitectureName, int] = Counter()
-    
-    begin_time = time()
-    
+
     for architecture, prologue in architecture_to_prologue_regex.items():
         
         architecture_to_number_of_prologues[architecture] = len(findall(prologue, binary,  flags = DOTALL))
     
     best_architecture_guess, number_of_prologues = architecture_to_number_of_prologues.most_common(1)[0]
 
-    if number_of_prologues < 100:
+    return None if number_of_prologues < 100 else best_architecture_guess
+
+"""
+    Main architecture guess function
+"""
+def guess_architecture(binary : bytes) -> ArchitectureName:
+        
+    begin_time = time()
+
+    architecture_guess = guess_architecture_special(binary)
+    if not architecture_guess:
+        architecture_guess = guess_architecture_common(binary)
+
+    if not architecture_guess:
         raise ArchitectureGuessError('The architecture could not be guessed successfully')
 
-    print('[+] Guessed architecture: %s successfully in %s seconds' % (best_architecture_guess.name, time() - begin_time))
+    print('[+] Guessed architecture: %s successfully in %.2f seconds' % (architecture_guess.name, time() - begin_time))
 
-    return best_architecture_guess
+    return architecture_guess

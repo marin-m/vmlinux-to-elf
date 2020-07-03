@@ -117,9 +117,11 @@ def try_decompress_at(input_file : bytes, offset : int) -> bytes:
         if Signature.check(input_file, offset, Signature.Compressed_GZIP):
             decoded = SingleGzipReader(BytesIO(input_file[offset:])).read(-1) # Will stop reading after the GZip footer thanks to our modification above.
         
-        elif Signature.check(input_file, offset, Signature.Compressed_XZ) or Signature.check(input_file, offset, Signature.Compressed_LZMA):            
+        elif (Signature.check(input_file, offset, Signature.Compressed_XZ) or
+              Signature.check(input_file, offset, Signature.Compressed_LZMA):
             try:
                 decoded = LZMADecompressor().decompress(input_file[offset:]) # Will discard the extra bytes and put it an attribute.
+                
             except Exception:
                 decoded = LZMADecompressor().decompress(input_file[offset:offset + 5] + b'\xff' * 8 + input_file[offset + 5:]) # pylzma format compatibility
         
@@ -129,6 +131,7 @@ def try_decompress_at(input_file : bytes, offset : int) -> bytes:
         elif Signature.check(input_file, offset, Signature.Compressed_LZ4):
             try:
                 LZ4Decompressor = importlib.import_module('lz4.frame')
+                
             except ModuleNotFoundError:
                 print('ERROR: This kernel requres LZ4 decompression.')
                 print('       But "lz4" python package does not found.')

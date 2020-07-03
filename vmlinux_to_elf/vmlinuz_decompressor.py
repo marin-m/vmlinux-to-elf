@@ -132,7 +132,7 @@ def try_decompress_at(input_file : bytes, offset : int) -> bytes:
             except ModuleNotFoundError:
                 print('ERROR: This kernel requres LZ4 decompression.')
                 print('       But "lz4" python package does not found.')
-                print('       Example installation command: "pip install lz4"')
+                print('       Example installation command: "sudo pip3 install lz4"')
                 print()
                 return
 

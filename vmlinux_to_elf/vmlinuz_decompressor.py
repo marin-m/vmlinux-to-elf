@@ -152,15 +152,6 @@ def try_decompress_at(input_file : bytes, offset : int) -> bytes:
         return decoded
 
 def obtain_raw_kernel_from_file(input_file: bytes) -> bytes:
-
-    if Signature.is_compressed(input_file, 0):
-
-        # Firstly check explicit compression signature at the begin of file
-
-        decompressed_data = try_decompress_at(input_file, 0)
-        if decompressed_data:
-            return decompressed_data
-
     
     if not search(b'Linux version (\d+\.[\d.]*\d)[ -~]+', input_file):  # No kernel version string found
         

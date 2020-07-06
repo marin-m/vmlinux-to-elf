@@ -153,27 +153,31 @@ def try_decompress_at(input_file : bytes, offset : int) -> bytes:
 
 def obtain_raw_kernel_from_file(input_file: bytes) -> bytes:
     
+    # Check for known signatures at fixed offsets.
+    # 
+    # Note that mangled semi-correct kernel version strings may be present
+    # in the compressed output at this point, so don't check for a kernel
+    # version string for now.
+    
+    file_size = len(input_file)
+
+    # Try offsets that may be stored in the
+    # last words of the file, as well for
+    # the start of the file
+    
+    possible_offsets :     Set[int] =         set([0])
+
+    for possible_endianness in '<>':
+        possible_offsets |=       set(unpack(possible_endianness + '20I',  input_file[file_size - 4 * 20:]))
+    
+    for possible_offset in sorted(possible_offsets):
+        decompressed_data = try_decompress_at(input_file, possible_offset)
+        if decompressed_data:
+            return decompressed_data
+    
     if not search(b'Linux version (\d+\.[\d.]*\d)[ -~]+', input_file):  # No kernel version string found
-        
-        # Scan for known signatures
-        
-        file_size = len(input_file)
-    
-        # Try offsets that may be stored in the
-        # last words of the file, as well for
-        # the start of the file
-        
-        possible_offsets :     Set[int] =         set([0])
-    
-        for possible_endianness in '<>':
-            possible_offsets |=       set(unpack(possible_endianness + '20I',  input_file[file_size - 4 * 20:]))
-        
-        for possible_offset in sorted(possible_offsets):
-            decompressed_data = try_decompress_at(input_file, possible_offset)
-            if decompressed_data:
-                return decompressed_data
-        
-        # If not successful, scan for compression signatures
+
+        # If not successful, scan for compression signatures in the whole document
         for possible_signature in Signature.Compressed:
             
             possible_offset = input_file.find(possible_signature)

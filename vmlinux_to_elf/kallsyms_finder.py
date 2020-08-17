@@ -582,7 +582,7 @@ class KallsymsFinder:
         for null_separated_bytes_chunks in range(20):
             
             num_non_null_bytes = 1 # we always start at a non-null byte in this loop
-            num_null_bytes = 0
+            num_null_bytes = 1 # we will at least encounter one null byte before the end of this loop
             
             while True:
                 position += 1
@@ -603,6 +603,9 @@ class KallsymsFinder:
             max_number_of_space_between_two_nulls = max(
                 max_number_of_space_between_two_nulls,
                 num_non_null_bytes + num_null_bytes)
+        
+        if max_number_of_space_between_two_nulls % 2 == 1: # There may be a leap to a shorter offset in the latest processed entries
+            max_number_of_space_between_two_nulls -= 1
         
         if max_number_of_space_between_two_nulls not in (2, 4, 8):
             
@@ -670,7 +673,7 @@ class KallsymsFinder:
         for null_separated_bytes_chunks in range(20):
             
             num_non_null_bytes = 1 # we always start at a non-null byte in this loop
-            num_null_bytes = 0
+            num_null_bytes = 1 # we will at least encounter one null byte before the end of this loop
             
             while True:
                 position -= 1
@@ -691,6 +694,9 @@ class KallsymsFinder:
             max_number_of_space_between_two_nulls = max(
                 max_number_of_space_between_two_nulls,
                 num_non_null_bytes + num_null_bytes)
+        
+        if max_number_of_space_between_two_nulls % 2 == 1: # There may be a leap to a shorter offset in the latest processed entries
+            max_number_of_space_between_two_nulls -= 1
         
         if max_number_of_space_between_two_nulls not in (2, 4, 8):
             

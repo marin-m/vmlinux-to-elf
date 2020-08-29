@@ -297,7 +297,7 @@ class KallsymsFinder:
                         break
 
                 if possible_offset != -1:
-                    offset = possible_offset + 8
+                    offset = possible_offset - 8
 
                 continue
 

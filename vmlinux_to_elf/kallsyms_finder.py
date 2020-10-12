@@ -291,7 +291,7 @@ class KallsymsFinder:
                 possible_offset = offset - 1
 
                 while possible_offset % 8 != 0: # Find a pointer-aligned r_info entry
-                    possible_offset = self.kernel_img.rfind(R_AARCH64_RELATIVE.to_bytes(8, 'little'), 8, possible_offset - rela64_size)
+                    possible_offset = self.kernel_img.rfind(R_AARCH64_RELATIVE.to_bytes(8, 'little'), 8, possible_offset - rela64_size + 1)
                     if possible_offset == -1:
                         offset = 0
                         break
@@ -337,7 +337,7 @@ class KallsymsFinder:
             r_offset, r_info, r_addend = rela
             offset = (r_offset - kernel_base)
 
-            if offset < 0 or offset > offset_max:
+            if offset < 0 or offset >= offset_max:
                 print('WARNING! bad rela offset %08x' % (r_offset))
                 continue
 
@@ -353,6 +353,8 @@ class KallsymsFinder:
             # BUG: Probably 'r_addend' can represent offset from kernel_base. Need further investigation.
 
             value += r_addend
+            value &= (1 << 64) - 1
+
             img[offset:offset+8] = pack('<Q', value)
             count += 1
 

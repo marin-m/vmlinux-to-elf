@@ -8,7 +8,7 @@ from argparse import ArgumentParser
 from io import BytesIO
 from enum import Enum
 from sys import argv
-
+import logging
 
 try:
     from architecture_detecter import guess_architecture, ArchitectureName, architecture_name_to_elf_machine_and_is64bits_and_isbigendian, ArchitectureGuessError
@@ -226,9 +226,9 @@ class KallsymsFinder:
         self.version_string = regex_match.group(0).decode('ascii')
         self.version_number = regex_match.group(1).decode('ascii')
         
-        print('[+] Version string:', self.version_string)
-        #print('[+] Other related strings containing the version number:', findall(b'[ -~]*%s[ -~]*' % regex_match.group(1), self.kernel_img))
-        #print('[+] Architecture string:', search(b'mod_unload[ -~]+', self.kernel_img).group(0))
+        logging.info('[+] Version string: {0:s}'.format(self.version_string))
+        #logging.info('[+] Other related strings containing the version number: {0:s}'.format(findall(b'[ -~]*%s[ -~]*' % regex_match.group(1), self.kernel_img)))
+        #logging.info('[+] Architecture string: {0:s}'.format(search(b'mod_unload[ -~]+', self.kernel_img).group(0)))
     
     def guess_architecture(self):
         
@@ -313,8 +313,8 @@ class KallsymsFinder:
 
         self.kernel_text_candidate = kernel_text_candidate
         self.elf64_rela = elf64_rela
-        print('[+] Found relocations table at file offset 0x%04x (count=%d)' % (offset, count))
-        print('[+] Found kernel text candidate: 0x%08x' % (kernel_text_candidate))
+        logging.info('[+] Found relocations table at file offset 0x%04x (count=%d)' % (offset, count))
+        logging.info('[+] Found kernel text candidate: 0x%08x' % (kernel_text_candidate))
         return True
 
     def apply_elf64_rela(self) -> bool:
@@ -338,7 +338,7 @@ class KallsymsFinder:
             offset = (r_offset - kernel_base)
 
             if offset < 0 or offset >= offset_max:
-                print('WARNING! bad rela offset %08x' % (r_offset))
+                logging.warn('WARNING! bad rela offset %08x' % (r_offset))
                 continue
 
             value, = unpack_from('<Q', self.kernel_img, offset)
@@ -359,7 +359,7 @@ class KallsymsFinder:
             count += 1
 
         self.kernel_img = bytes(img)
-        print('[+] Successfully applied %d relocations.' % count)
+        logging.info('[+] Successfully applied %d relocations.' % count)
         return True
         
 
@@ -442,7 +442,7 @@ class KallsymsFinder:
         
         self.kallsyms_token_table__offset = position
         
-        print('[+] Found kallsyms_token_table at file offset 0x%08x' % self.kallsyms_token_table__offset)
+        logging.info('[+] Found kallsyms_token_table at file offset 0x%08x' % self.kallsyms_token_table__offset)
     
     
     def find_kallsyms_token_index(self):
@@ -507,7 +507,7 @@ class KallsymsFinder:
         
             self.kallsyms_token_index__offset = position + found_position_for_be_value
         
-        print('[+] Found kallsyms_token_index at file offset 0x%08x' % self.kallsyms_token_index__offset)
+        logging.info('[+] Found kallsyms_token_index at file offset 0x%08x' % self.kallsyms_token_index__offset)
     
 
     def find_kallsyms_names_uncompressed(self):
@@ -554,9 +554,9 @@ class KallsymsFinder:
             
             raise KallsymsNotFoundException('No embedded symbol table found in this kernel')
         
-        print('[+] Kernel symbol names found at file offset', hex(ksymtab_match.start(0)))
+        logging.info('[+] Kernel symbol names found at file offset', hex(ksymtab_match.start(0)))
         
-        print('[+] Found %d uncompressed kernel symbols (end at 0x%08x)' % (self.number_of_symbols, position))
+        logging.info('[+] Found %d uncompressed kernel symbols (end at 0x%08x)' % (self.number_of_symbols, position))
         
         self.end_of_kallsyms_names_uncompressed = position
 
@@ -647,7 +647,7 @@ class KallsymsFinder:
         
         self.kallsyms_markers__offset = position
         
-        print('[+] Found kallsyms_markers at file offset 0x%08x' % position)
+        logging.info('[+] Found kallsyms_markers at file offset 0x%08x' % position)
         
     
     def find_kallsyms_markers(self):
@@ -736,7 +736,7 @@ class KallsymsFinder:
         
         self.kallsyms_markers__offset = position
         
-        print('[+] Found kallsyms_markers at file offset 0x%08x' % position)
+        logging.info('[+] Found kallsyms_markers at file offset 0x%08x' % position)
     
     def find_kallsyms_names(self):
         
@@ -828,14 +828,14 @@ class KallsymsFinder:
                 else:
                     raise ValueError('Could not find kallsyms_names')
         
-        print('[+] Found kallsyms_names at file offset 0x%08x' % self.kallsyms_names__offset)
+        logging.info('[+] Found kallsyms_names at file offset 0x%08x' % self.kallsyms_names__offset)
         
         position = (self.kallsyms_names__offset - MAX_ALIGNMENT - 20) + needle
         
         
         self.kallsyms_num_syms__offset = position
         
-        print('[+] Found kallsyms_num_syms at file offset 0x%08x' % position)
+        logging.info('[+] Found kallsyms_num_syms at file offset 0x%08x' % position)
     
     """
         This method defines self.kallsyms_addresses_or_offsets__offset,
@@ -951,7 +951,7 @@ class KallsymsFinder:
             if self.has_base_relative:
                 number_of_negative_items = len([offset for offset in tentative_addresses_or_offsets if offset < 0])
                 
-                print('[i] Negative offsets overall: %g %%' % (number_of_negative_items / len(tentative_addresses_or_offsets) * 100))
+                logging.info('[i] Negative offsets overall: %g %%' % (number_of_negative_items / len(tentative_addresses_or_offsets) * 100))
             
                 if number_of_negative_items / len(tentative_addresses_or_offsets) >= 0.5: # Non-absolute symbols are negative with CONFIG_KALLSYMS_ABSOLUTE_PERCPU
                     self.has_absolute_percpu = True
@@ -966,7 +966,7 @@ class KallsymsFinder:
 
             number_of_null_items = len([address for address in tentative_addresses_or_offsets if address == 0])
             
-            print('[i] Null addresses overall: %g %%' % (number_of_null_items / len(tentative_addresses_or_offsets) * 100))
+            logging.info('[i] Null addresses overall: %g %%' % (number_of_null_items / len(tentative_addresses_or_offsets) * 100))
         
             if number_of_null_items / len(tentative_addresses_or_offsets) >= 0.2: # If there are too much null symbols we have likely tried to parse the wrong integer size
                 
@@ -974,7 +974,7 @@ class KallsymsFinder:
                     continue
                 
             
-            print('[+] Found %s at file offset 0x%08x' % ('kallsyms_offsets' if self.has_base_relative else 'kallsyms_addresses', position))
+            logging.info('[+] Found %s at file offset 0x%08x' % ('kallsyms_offsets' if self.has_base_relative else 'kallsyms_addresses', position))
             
             self.kernel_addresses = tentative_addresses_or_offsets
             
@@ -1069,15 +1069,15 @@ class KallsymsFinder:
             
             symbol_types.add(symbol_name[0])
         
-        print('Symbol types', '=>', sorted(symbol_types))
-        print()
+        logging.info('Symbol types => {0:s}'.format(sorted(symbol_types)))
+        logging.info('')
         
         
         # Print symbols, in a fashion similar to /proc/kallsyms
         
         for symbol_address, symbol_name in zip(self.kernel_addresses, self.symbol_names):
             
-            print(
+            logging.info(
                 '%016x' % symbol_address if self.is_64_bits
                 else '%08x' % symbol_address,
                 symbol_name[0], # The symbol type

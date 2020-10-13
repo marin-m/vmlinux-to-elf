@@ -8,6 +8,7 @@ from struct import unpack
 from typing import Union
 from re import search
 import importlib
+import logging
 
 """
     How to detect a vmlinuz file?
@@ -133,10 +134,10 @@ def try_decompress_at(input_file : bytes, offset : int) -> bytes:
                 LZ4Decompressor = importlib.import_module('lz4.frame')
                 
             except ModuleNotFoundError:
-                print('ERROR: This kernel requres LZ4 decompression.')
-                print('       But "lz4" python package does not found.')
-                print('       Example installation command: "sudo pip3 install lz4"')
-                print()
+                logging.error('ERROR: This kernel requres LZ4 decompression.')
+                logging.error('       But "lz4" python package does not found.')
+                logging.error('       Example installation command: "sudo pip3 install lz4"')
+                logging.error()
                 return
 
             context = LZ4Decompressor.create_decompression_context()
@@ -146,7 +147,7 @@ def try_decompress_at(input_file : bytes, offset : int) -> bytes:
         pass
     
     if decoded and len(decoded) > 0x1000:
-        print(('[+] Kernel successfully decompressed in-memory (the offsets that ' +
+        logging.info(('[+] Kernel successfully decompressed in-memory (the offsets that ' +
             'follow will be given relative to the decompressed binary)'))
     
         return decoded

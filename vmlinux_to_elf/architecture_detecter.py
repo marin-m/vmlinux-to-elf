@@ -7,7 +7,7 @@ from argparse import Namespace
 from enum import IntEnum
 from io import BytesIO
 from time import time
-
+import logging
 
 """
     Guess the architecture of a given binary.
@@ -189,6 +189,6 @@ def guess_architecture(binary : bytes) -> ArchitectureName:
     if not architecture_guess:
         raise ArchitectureGuessError('The architecture could not be guessed successfully')
 
-    print('[+] Guessed architecture: %s successfully in %.2f seconds' % (architecture_guess.name, time() - begin_time))
+    logging.info('[+] Guessed architecture: %s successfully in %.2f seconds' % (architecture_guess.name, time() - begin_time))
 
     return architecture_guess

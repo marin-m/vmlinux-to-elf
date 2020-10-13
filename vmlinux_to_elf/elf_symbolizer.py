@@ -3,7 +3,7 @@
 from re import search, IGNORECASE
 from argparse import Namespace
 from io import BytesIO
-
+import logging
 
 """
     The ElfSymbolizer class, defined in this file, gathers information from
@@ -198,7 +198,7 @@ class ElfSymbolizer():
             
             kernel.serialize(fd)
         
-        print('[+] Successfully wrote the new ELF kernel to %s' % output_file)
+        logging.info('[+] Successfully wrote the new ELF kernel to %s' % output_file)
     
     
 

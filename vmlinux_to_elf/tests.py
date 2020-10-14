@@ -40,6 +40,8 @@ def slugify(file_path):
 
 if __name__ == '__main__':
 
+    logging.basicConfig(level=logging.INFO, format='%(message)s')
+
     if not exists(TEST_KERNELS_PATH):
         
         exit(('[!] In order to use this script, please ' +

@@ -1069,7 +1069,7 @@ class KallsymsFinder:
             
             symbol_types.add(symbol_name[0])
         
-        logging.info('Symbol types => {0:s}'.format(sorted(symbol_types)))
+        logging.info('Symbol types => %r' % sorted(symbol_types))
         logging.info('')
         
         
@@ -1077,15 +1077,16 @@ class KallsymsFinder:
         
         for symbol_address, symbol_name in zip(self.kernel_addresses, self.symbol_names):
             
-            logging.info(
-                '%016x' % symbol_address if self.is_64_bits
-                else '%08x' % symbol_address,
+            logging.info( "{0:s} {1:s} {2:s}".format(
+                '%016x' % symbol_address if self.is_64_bits else '%08x' % symbol_address,
                 symbol_name[0], # The symbol type
                 symbol_name[1:] # The symbol name itself
-            )
+            ))
         
         
 if __name__ == '__main__':
+
+    logging.basicConfig(level=logging.INFO, format='%(message)s')
 
     args = ArgumentParser(description = "Find the kernel's embedded symbol table from a raw " +
         "or stripped ELF kernel file, and print these to the standard output with their " +

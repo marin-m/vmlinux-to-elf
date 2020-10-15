@@ -28,6 +28,8 @@ from os.path import dirname, realpath, exists
 from traceback import print_exc
 from os import makedirs
 from re import sub
+from sys import stdout
+import logging
 
 SCRIPT_DIR = dirname(realpath(__file__))
 TEST_KERNELS_PATH = realpath(SCRIPT_DIR + '/test_kernels.txt')
@@ -38,6 +40,8 @@ def slugify(file_path):
     return sub('[^a-z0-9]+', '-', file_path.lower()).strip('-')
 
 if __name__ == '__main__':
+
+    logging.basicConfig(stream=stdout, level=logging.INFO, format='%(message)s')
 
     if not exists(TEST_KERNELS_PATH):
         
@@ -50,7 +54,7 @@ if __name__ == '__main__':
 
     for file_name in filter(None, map(str.strip, open(TEST_KERNELS_PATH, 'r'))):
         
-        print('Testing ' + file_name)
+        logging.info('Testing ' + file_name)
         
         with open(file_name, 'rb') as fd:
             contents = fd.read()
@@ -59,7 +63,7 @@ if __name__ == '__main__':
         try:
             ElfSymbolizer(raw_data, ELF_KERNELS_OUTPUT_PATH + '/' + slugify(file_name) + '.elf')
         except Exception:
-            print('=> No symbols!')
+            logging.error('=> No symbols!')
             print_exc()
         
         

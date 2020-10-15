@@ -2,8 +2,8 @@
 #-*- encoding: Utf-8 -*-
 from argparse import ArgumentParser
 from io import BytesIO
-from sys import argv
-
+from sys import argv, stdout
+import logging
 
 try:
     from vmlinuz_decompressor import obtain_raw_kernel_from_file
@@ -16,6 +16,8 @@ except ImportError:
     from vmlinux_to_elf.architecture_detecter import ArchitectureGuessError
 
 if __name__ == '__main__':
+
+    logging.basicConfig(stream=stdout, level=logging.INFO, format='%(message)s')
     
     args = ArgumentParser(description = 'Turn a raw or compressed kernel binary, ' +
         'or a kernel ELF without symbols, into a fully analyzable ELF whose ' +
@@ -47,7 +49,7 @@ if __name__ == '__main__':
     if ((args.e_machine is not None and args.bit_size is None) or
         (args.e_machine is None and args.bit_size is not None)):
         
-        print('[!] Please specify both an addressing bit size ' +
+        logging.error('[!] Please specify both an addressing bit size ' +
             'and the ELF "e_machine" field, or neither for ' +
             'auto-detection')
         

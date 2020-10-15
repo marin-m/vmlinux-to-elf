@@ -28,6 +28,7 @@ from os.path import dirname, realpath, exists
 from traceback import print_exc
 from os import makedirs
 from re import sub
+from sys import stdout
 import logging
 
 SCRIPT_DIR = dirname(realpath(__file__))
@@ -40,7 +41,7 @@ def slugify(file_path):
 
 if __name__ == '__main__':
 
-    logging.basicConfig(level=logging.INFO, format='%(message)s')
+    logging.basicConfig(stream=stdout, level=logging.INFO, format='%(message)s')
 
     if not exists(TEST_KERNELS_PATH):
         

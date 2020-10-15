@@ -7,7 +7,7 @@ from typing import List, Dict, Tuple
 from argparse import ArgumentParser
 from io import BytesIO
 from enum import Enum
-from sys import argv
+from sys import argv, stdout
 import logging
 
 try:
@@ -1086,7 +1086,7 @@ class KallsymsFinder:
         
 if __name__ == '__main__':
 
-    logging.basicConfig(level=logging.INFO, format='%(message)s')
+    logging.basicConfig(stream=stdout, level=logging.INFO, format='%(message)s')
 
     args = ArgumentParser(description = "Find the kernel's embedded symbol table from a raw " +
         "or stripped ELF kernel file, and print these to the standard output with their " +

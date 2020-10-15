@@ -2,7 +2,7 @@
 #-*- encoding: Utf-8 -*-
 from argparse import ArgumentParser
 from io import BytesIO
-from sys import argv
+from sys import argv, stdout
 import logging
 
 try:
@@ -17,7 +17,7 @@ except ImportError:
 
 if __name__ == '__main__':
 
-    logging.basicConfig(level=logging.INFO, format='%(message)s')
+    logging.basicConfig(stream=stdout, level=logging.INFO, format='%(message)s')
     
     args = ArgumentParser(description = 'Turn a raw or compressed kernel binary, ' +
         'or a kernel ELF without symbols, into a fully analyzable ELF whose ' +

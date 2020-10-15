@@ -554,7 +554,7 @@ class KallsymsFinder:
             
             raise KallsymsNotFoundException('No embedded symbol table found in this kernel')
         
-        logging.info('[+] Kernel symbol names found at file offset', hex(ksymtab_match.start(0)))
+        logging.info('[+] Kernel symbol names found at file offset 0x%08x' % ksymtab_match.start(0))
         
         logging.info('[+] Found %d uncompressed kernel symbols (end at 0x%08x)' % (self.number_of_symbols, position))
         

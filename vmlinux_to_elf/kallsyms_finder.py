@@ -382,6 +382,7 @@ class KallsymsFinder:
         position = 0
         
         candidates_offsets = [] # offsets at which sequence_to_find was found
+        candidates_offsets_followed_with_ascii = [] # variant with an higher certainty
         
         sequence_to_find = b''.join(b'%c\0' % i for i in range(ord('0'), ord('9') + 1))
         
@@ -402,10 +403,15 @@ class KallsymsFinder:
                     break
             else:
                 candidates_offsets.append(position)
+                
+                if self.kernel_img[pos:pos + 1].isalnum():
+                    candidates_offsets_followed_with_ascii.append(position)
         
         if len(candidates_offsets) != 1:
             
-            if len(candidates_offsets) == 0:
+            if len(candidates_offsets_followed_with_ascii) == 1:
+                candidates_offsets = candidates_offsets_followed_with_ascii
+            elif len(candidates_offsets) == 0:
                 raise KallsymsNotFoundException('%d candidates for kallsyms_token_table in kernel image' % len(candidates_offsets))
             else:
                 raise ValueError('%d candidates for kallsyms_token_table in kernel image' % len(candidates_offsets))

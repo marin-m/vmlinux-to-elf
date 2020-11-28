@@ -389,6 +389,7 @@ class KallsymsFinder:
         sequences_to_avoid = [
             b':\0',
             b'\0\0',
+            b'ASCII\0'
         ]
 
         while True:

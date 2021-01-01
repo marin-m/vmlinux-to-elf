@@ -56,6 +56,7 @@ class Signature:
     Compressed_LZMA = b']\x00\x00'
     Compressed_BZ2  = b'BZh'
     Compressed_LZ4  = b'\x04"M\x18'     # https://github.com/lz4/lz4/blob/dev/doc/lz4_Frame_format.md
+    DTB_Appended_Qualcomm = b'UNCOMPRESSED_IMG' # https://www.google.com/search?q="PATCHED_KERNEL_MAGIC"
 
     Compressed = [
         Compressed_GZIP,
@@ -115,21 +116,28 @@ def try_decompress_at(input_file : bytes, offset : int) -> bytes:
 
     try:
         
-        if Signature.check(input_file, offset, Signature.Compressed_GZIP):
-            decoded = SingleGzipReader(BytesIO(input_file[offset:])).read(-1) # Will stop reading after the GZip footer thanks to our modification above.
+        if Signature.check(input_file, offset, Signature.DTB_Appended_Qualcomm): # Merely unpack a Qualcomm kernel file containing a magic and DTB offset at the start (so that offsets aren't wrong)
+            
+            dtb_offset_le = int.from_bytes(input_file[offset + 16:offset + 20], 'little')
+            dtb_offset_be = int.from_bytes(input_file[offset + 16:offset + 20], 'big')
+            
+            decoded = input_file[offset + 20:offset + 20 + min(dtb_offset_le, dtb_offset_be)]
+        
+        elif Signature.check(input_file, offset, Signature.Compressed_GZIP):
+            decoded = SingleGzipReader(BytesIO(input_file[offset:])).read(-1) # GZIP - Will stop reading after the GZip footer thanks to our modification above.
         
         elif (Signature.check(input_file, offset, Signature.Compressed_XZ) or
               Signature.check(input_file, offset, Signature.Compressed_LZMA)):
             try:
-                decoded = LZMADecompressor().decompress(input_file[offset:]) # Will discard the extra bytes and put it an attribute.
+                decoded = LZMADecompressor().decompress(input_file[offset:]) # LZMA - Will discard the extra bytes and put it an attribute.
                 
             except Exception:
                 decoded = LZMADecompressor().decompress(input_file[offset:offset + 5] + b'\xff' * 8 + input_file[offset + 5:]) # pylzma format compatibility
         
         elif Signature.check(input_file, offset, Signature.Compressed_BZ2):
-            decoded = BZ2Decompressor().decompress(input_file[offset:]) # Will discard the extra bytes and put it an attribute.
+            decoded = BZ2Decompressor().decompress(input_file[offset:]) # BZ2 - Will discard the extra bytes and put it an attribute.
 
-        elif Signature.check(input_file, offset, Signature.Compressed_LZ4):
+        elif Signature.check(input_file, offset, Signature.Compressed_LZ4): # LZ4 support
             try:
                 LZ4Decompressor = importlib.import_module('lz4.frame')
                 

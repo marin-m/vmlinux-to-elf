@@ -30,6 +30,7 @@ sudo pip3 install --upgrade lz4 git+https://github.com/marin-m/vmlinux-to-elf
 * Infer the instruction set architecture, endianness, bit size, relying upon other things on common function prologue signatures [OK]
 * Infer the entry point of the kernel from the symbols contained in the kallsyms table  [OK]
 * Provide basic inference for the kernel base address  [OK] (for now, consider that it is the first "TEXT" symbol address of the binary with the lower 0xfff bits clear - seems to work well enough)
+* Unpack certain types of Android `boot.img` files, starting with an `ANDROID!` or `UNCOMPRESSED_IMG` magic [OK]
 * Produce an .ELF file fully analyzable with IDA Pro or Ghidra as an output  [OK]
 
 

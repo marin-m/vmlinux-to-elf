@@ -50,6 +50,7 @@ import logging
 """
     This class contains well-known vmlinux signatures
 """
+
 class Signature:
     Compressed_GZIP = b'\x1f\x8b\x08'
     Compressed_XZ   = b'\xfd7zXZ\x00'
@@ -57,6 +58,7 @@ class Signature:
     Compressed_BZ2  = b'BZh'
     Compressed_LZ4  = b'\x04"M\x18'     # https://github.com/lz4/lz4/blob/dev/doc/lz4_Frame_format.md
     DTB_Appended_Qualcomm = b'UNCOMPRESSED_IMG' # https://www.google.com/search?q="PATCHED_KERNEL_MAGIC"
+    Android_Bootimg = b'ANDROID!' # https://source.android.com/devices/bootloader/boot-image-header
 
     Compressed = [
         Compressed_GZIP,
@@ -122,6 +124,49 @@ def try_decompress_at(input_file : bytes, offset : int) -> bytes:
             dtb_offset_be = int.from_bytes(input_file[offset + 16:offset + 20], 'big')
             
             decoded = input_file[offset + 20:offset + 20 + min(dtb_offset_le, dtb_offset_be)]
+        
+        elif Signature.check(input_file, offset, Signature.Android_Bootimg): # Unpack an uncompressed Android Bootimg file, version 0, 1, 2 or 3
+            
+            # See, for reference:
+            # - https://github.com/osm0sis/mkbootimg/blob/master/unpackbootimg.c
+            # - https://github.com/osm0sis/mkbootimg/blob/master/bootimg.h
+            
+            assert len(input_file) > 4096
+            
+            header_version_raw = input_file[offset + 10 * 4: offset + 11 * 4]
+            
+            endianness = 'little'
+
+            if header_version_raw in (b'\0\0\0\3', b'\3\0\0\0'):
+                page_size = 4096
+                
+                if header_version_raw == b'\0\0\0\3':
+                    endianness = 'big'
+                
+            else:
+                page_size_raw = input_file[offset + 9 * 4:offset + 10 * 4]
+                
+                page_size_le = int.from_bytes(page_size_raw, 'little')
+                page_size_be = int.from_bytes(page_size_raw, 'big')
+                
+                if page_size_le < page_size_be:
+                    page_size = page_size_le
+                else:
+                    endianness = 'big'
+                    page_size = page_size_be
+            
+            kernel_size = int.from_bytes(input_file[offset + 2 * 4:offset + 3 * 4], endianness)
+            
+            assert len(input_file) > kernel_size > 0x1000
+            assert len(input_file) > page_size > 0x200
+            
+            decoded = input_file[offset + page_size:offset + page_size + kernel_size]
+            
+            # Also try to re-unpack the output image in the case where the nested
+            # kernel would start with a "UNCOMPRESSED_IMG" Qualcomm magic, for example
+            
+            decoded = try_decompress_at(decoded, 0) or decoded
+        
         
         elif Signature.check(input_file, offset, Signature.Compressed_GZIP):
             decoded = SingleGzipReader(BytesIO(input_file[offset:])).read(-1) # GZIP - Will stop reading after the GZip footer thanks to our modification above.

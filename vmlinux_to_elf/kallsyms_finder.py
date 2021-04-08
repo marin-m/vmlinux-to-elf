@@ -470,14 +470,14 @@ class KallsymsFinder:
             
             all_token_offsets.append(position - self.kallsyms_token_table__offset)
                         
-            for chars_in_token_forward in range(24):
+            for chars_in_token_forward in range(50):
                 
                 position += 1
                 
                 if self.kernel_img[position] == 0:
                     break
                 
-                if chars_in_token_forward >= 24 - 1:
+                if chars_in_token_forward >= 50 - 1:
                     
                     raise ValueError('This structure is not a kallsyms_token_table')
         

@@ -57,6 +57,7 @@ class Signature:
     Compressed_LZMA = b']\x00\x00'
     Compressed_BZ2  = b'BZh'
     Compressed_LZ4  = b'\x04"M\x18'     # https://github.com/lz4/lz4/blob/dev/doc/lz4_Frame_format.md
+    Compressed_LZ4_Legacy = b'\x02!L\x18'
     DTB_Appended_Qualcomm = b'UNCOMPRESSED_IMG' # https://www.google.com/search?q="PATCHED_KERNEL_MAGIC"
     Android_Bootimg = b'ANDROID!' # https://source.android.com/devices/bootloader/boot-image-header
 
@@ -66,6 +67,7 @@ class Signature:
         Compressed_LZMA,
         Compressed_BZ2,
         Compressed_LZ4,
+        Compressed_LZ4_Legacy,
     ]
 
     @staticmethod
@@ -195,6 +197,22 @@ def try_decompress_at(input_file : bytes, offset : int) -> bytes:
 
             context = LZ4Decompressor.create_decompression_context()
             decoded, bytes_read, end_of_frame = LZ4Decompressor.decompress_chunk(context, input_file[offset:])
+        
+        elif Signature.check(input_file, offset, Signature.Compressed_LZ4_Legacy): # LZ4 support (legacy format)
+            
+            try:
+                from utils.lz4_legacy import decompress_lz4_buffer
+            except ImportError:
+                try:
+                    from vmlinux_to_elf.utils.lz4_legacy import decompress_lz4_buffer
+                except ModuleNotFoundError:
+                    logging.error('ERROR: This kernel requres LZ4 decompression.')
+                    logging.error('       But "lz4" python package does not found.')
+                    logging.error('       Example installation command: "sudo pip3 install lz4"')
+                    logging.error()
+                    return
+                
+            decoded = decompress_lz4_buffer(BytesIO(input_file[offset:]))
     
     except Exception:
         pass

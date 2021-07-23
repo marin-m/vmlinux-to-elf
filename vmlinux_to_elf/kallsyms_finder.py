@@ -238,10 +238,12 @@ class KallsymsFinder:
         self.elf_machine,  self.is_64_bits,  self.is_big_endian = architecture_name_to_elf_machine_and_is64bits_and_isbigendian[self.architecture]
 
     def find_elf64_rela(self) -> bool:
+
         """
             Find relocations table, return True if success, False
             otherwise
         """
+
         if ArchitectureName.aarch64 != self.architecture:
 
             # I've tested this only for ARM64
@@ -338,8 +340,8 @@ class KallsymsFinder:
             offset = (r_offset - kernel_base)
 
             if offset < 0 or offset >= offset_max:
-                logging.warn('WARNING! bad rela offset %08x' % (r_offset))
-                continue
+                logging.warning('WARNING! bad rela offset %08x' % (r_offset))
+                return False # Don't try more to apply relocations
 
             value, = unpack_from('<Q', self.kernel_img, offset)
             if value == r_addend:

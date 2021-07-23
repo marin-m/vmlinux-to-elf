@@ -341,6 +341,9 @@ class KallsymsFinder:
 
             if offset < 0 or offset >= offset_max:
                 logging.warning('WARNING! bad rela offset %08x' % (r_offset))
+
+                self.kernel_text_candidate = None
+                self.elf64_rela = None
                 return False # Don't try more to apply relocations
 
             value, = unpack_from('<Q', self.kernel_img, offset)

@@ -394,6 +394,8 @@ class KallsymsFinder:
         sequences_to_avoid = [
             b':\0',
             b'\0\0',
+            b'\0\1',
+            b'\0\2',
             b'ASCII\0'
         ]
 
@@ -971,6 +973,7 @@ class KallsymsFinder:
                     tentative_addresses_or_offsets = [((self.relative_base_address - 1 - offset) if offset < 0 else offset) for offset in tentative_addresses_or_offsets] # https://github.com/torvalds/linux/blob/v5.4/kernel/kallsyms.c#L159
                 else:
                     self.has_absolute_percpu = False
+
                     tentative_addresses_or_offsets = [offset + self.relative_base_address for offset in tentative_addresses_or_offsets]
             
             else:

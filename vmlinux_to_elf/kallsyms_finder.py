@@ -992,8 +992,6 @@ class KallsymsFinder:
             logging.info('[+] Found %s at file offset 0x%08x' % ('kallsyms_offsets' if self.has_base_relative else 'kallsyms_addresses', position))
             
             self.kernel_addresses = tentative_addresses_or_offsets
-            
-            break # DEBUG
         
     def parse_symbol_table(self):
         

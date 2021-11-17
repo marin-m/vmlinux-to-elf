@@ -765,9 +765,9 @@ class KallsymsFinder:
             
         long_size_marker = {2: 'H', 4: 'I', 8: 'Q'}[self.offset_table_element_size]
         
-        num_of_kallsyms_numbers_entries = (self.kallsyms_token_table__offset -  self.kallsyms_markers__offset)  // self.offset_table_element_size
+        num_of_kallsyms_markers_entries = (self.kallsyms_token_table__offset -  self.kallsyms_markers__offset)  // self.offset_table_element_size
         
-        kallsyms_markers_entries = unpack_from(endianness_marker + str(num_of_kallsyms_numbers_entries) + long_size_marker, self.kernel_img, self.kallsyms_markers__offset)
+        kallsyms_markers_entries = unpack_from(endianness_marker + str(num_of_kallsyms_markers_entries) + long_size_marker, self.kernel_img, self.kallsyms_markers__offset)
         
         last_kallsyms_markers_entry = list(filter(None, kallsyms_markers_entries))[-1]
         
@@ -796,6 +796,30 @@ class KallsymsFinder:
             num_symbols = 0
             
             symbol_counting_position = position
+            
+            # Check whether this looks like the correct symbol
+            # table, first depending on the beginning of the
+            # first symbol (as this is where an uncertain gap
+            # of 4 padding bytes may be present depending on
+            # versions or builds), then thorough the whole
+            # table. Raise an issue further in the code (in
+            # another function) if an exotic kind of symbol is
+            # found somewhere else than in the first entry.
+
+            token_table = self.get_token_table()
+            first_token_index_of_first_name = self.kernel_img[symbol_counting_position + 1]
+            first_token_of_first_name = token_table[first_token_index_of_first_name]
+            possible_symbol_types = [i.value for i in KallsymsSymbolType]
+            
+            if (not (first_token_of_first_name[0].lower() in 'uvw' and
+                first_token_of_first_name[0] in possible_symbol_types) and
+                first_token_of_first_name[0].upper() not in possible_symbol_types):
+                    
+                if 0 <= self.kallsyms_names__offset - 4 < self.kallsyms_markers__offset:
+                    self.kallsyms_names__offset -= 4
+                else:
+                    raise ValueError('Could not find kallsyms_names')
+                continue
             
             while True:
             
@@ -943,7 +967,6 @@ class KallsymsFinder:
             
                 position -= self.num_symbols * address_byte_size
             
-            
             self.kallsyms_addresses_or_offsets__offset = position
             
             # Check the obtained values
@@ -994,8 +1017,8 @@ class KallsymsFinder:
             self.kernel_addresses = tentative_addresses_or_offsets
             
             break # DEBUG
-        
-    def parse_symbol_table(self):
+    
+    def get_token_table(self) -> list:
         
         if not self.uncompressed_kallsyms:
             
@@ -1020,6 +1043,12 @@ class KallsymsFinder:
         
         else:
             tokens = [chr(i) for i in range(256)]
+        
+        return tokens
+    
+    def parse_symbol_table(self):
+        
+        tokens = self.get_token_table()
         
         # Parse symbol names
         

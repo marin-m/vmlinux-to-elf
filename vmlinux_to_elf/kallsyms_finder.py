@@ -795,6 +795,8 @@ class KallsymsFinder:
             
             num_symbols = 0
             
+            tried_to_offset = False
+            
             symbol_counting_position = position
             
             # Check whether this looks like the correct symbol
@@ -815,8 +817,9 @@ class KallsymsFinder:
                 first_token_of_first_name[0] in possible_symbol_types) and
                 first_token_of_first_name[0].upper() not in possible_symbol_types):
                     
-                if 0 <= self.kallsyms_names__offset - 4 < self.kallsyms_markers__offset:
+                if 0 <= self.kallsyms_names__offset - 4 < self.kallsyms_markers__offset and not tried_to_offset:
                     self.kallsyms_names__offset -= 4
+                    tried_to_offset = True
                 else:
                     raise ValueError('Could not find kallsyms_names')
                 continue
@@ -835,8 +838,9 @@ class KallsymsFinder:
                     break
             
             if num_symbols < 256 or symbol_counting_position > self.kallsyms_markers__offset:
-                if 0 <= self.kallsyms_names__offset - 4 < self.kallsyms_markers__offset:
+                if 0 <= self.kallsyms_names__offset - 4 < self.kallsyms_markers__offset and not tried_to_offset:
                     self.kallsyms_names__offset -= 4
+                    tried_to_offset = True
                 else:
                     raise ValueError('Could not find kallsyms_names')
                 continue

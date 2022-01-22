@@ -116,6 +116,18 @@ optional arguments:
   --bit-size BIT_SIZE  Force overriding the input kernel bit size, providing
                        32 or 64 bit (rather than auto-detect)
 
+$ vmlinuz-raw-decompressor -h
+usage: vmlinuz-raw-decompressor [-h] input_file output_file
+
+Utility to turn a compressed or packed kernel binary (with or without a symbols table) into an raw uncompressed kernel binary
+
+positional arguments:
+  input_file   Path to the vmlinux/vmlinuz/zImage/bzImage/kernel.bin/kernel.elf file to decompress
+  output_file  Path to the decompressed file to output
+
+optional arguments:
+  -h, --help   show this help message and exit
+
 ```
 
 Don't hesitate to [open an issue](https://github.com/marin-m/vmlinux-to-elf/issues/new) for any suggestion of improvement.

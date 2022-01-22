@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 #-*- encoding: Utf-8 -*-
+from argparse import ArgumentParser
 from lzma import LZMADecompressor
 from io import BytesIO, SEEK_END
 from bz2 import BZ2Decompressor
 from gzip import _GzipReader
 from struct import unpack
 from typing import Union
+from sys import stdout
 from re import search
 import importlib
 import logging
@@ -218,8 +220,14 @@ def try_decompress_at(input_file : bytes, offset : int) -> bytes:
         pass
     
     if decoded and len(decoded) > 0x1000:
-        logging.info(('[+] Kernel successfully decompressed in-memory (the offsets that ' +
-            'follow will be given relative to the decompressed binary)'))
+        
+        if __name__ != '__main__':
+            logging.info(('[+] Kernel successfully decompressed in-memory (the offsets ' +
+                'that follow will be given relative to the decompressed binary)'))
+                
+        else:
+            logging.info(('[+] The kernel has successfully been compressed or ' +
+                'unpacked'))
     
         return decoded
 
@@ -263,6 +271,33 @@ def obtain_raw_kernel_from_file(input_file: bytes) -> bytes:
     
     return input_file
     
+if __name__ == '__main__':
+
+    logging.basicConfig(stream=stdout, level=logging.INFO, format='%(message)s')
     
+    args = ArgumentParser(description = 'Utility to turn a compressed or packed kernel ' +
+        'binary (with or without a symbols table) into an raw uncompressed kernel binary')
+    
+    args.add_argument('input_file', help = 'Path to the vmlinux/vmlinuz/zImage/' +
+        'bzImage/kernel.bin/kernel.elf file to decompress')
+    
+    args.add_argument('output_file', help = 'Path to the decompressed file to output')
+
+    args = args.parse_args()
+
+    with open(args.input_file, 'rb') as kernel_bin:
+        
+        compressed_data = kernel_bin.read()
+        uncompressed_data = obtain_raw_kernel_from_file(compressed_data)
+    
+    if compressed_data == uncompressed_data:
+        
+        logging.error('[!] No compressed or packed data was recognized ' +
+            'within the given input kernel file')
+        exit()
+    
+    with open(args.output_file, 'wb') as output_bin:
+    
+        output_bin.write(uncompressed_data)
 
 

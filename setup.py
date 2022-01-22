@@ -9,5 +9,5 @@ setup(name='vmlinux-to-elf',
       author_email='',
       url='https://github.com/marin-m/vmlinux-to-elf',
       packages=['vmlinux_to_elf', 'vmlinux_to_elf.utils'],
-      scripts=['vmlinux-to-elf', 'kallsyms-finder']
+      scripts=['vmlinux-to-elf', 'kallsyms-finder', 'vmlinuz-raw-decompressor']
      )

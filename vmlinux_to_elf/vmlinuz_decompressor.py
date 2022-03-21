@@ -58,6 +58,7 @@ class Signature:
     Compressed_BZ2  = b'BZh'
     Compressed_LZ4  = b'\x04"M\x18'     # https://github.com/lz4/lz4/blob/dev/doc/lz4_Frame_format.md
     Compressed_LZ4_Legacy = b'\x02!L\x18'
+    Compressed_ZSTD = b'(\xb5/\xfd'
     DTB_Appended_Qualcomm = b'UNCOMPRESSED_IMG' # https://www.google.com/search?q="PATCHED_KERNEL_MAGIC"
     Android_Bootimg = b'ANDROID!' # https://source.android.com/devices/bootloader/boot-image-header
 
@@ -68,6 +69,7 @@ class Signature:
         Compressed_BZ2,
         Compressed_LZ4,
         Compressed_LZ4_Legacy,
+        Compressed_ZSTD,
     ]
 
     @staticmethod
@@ -117,7 +119,6 @@ class SingleGzipReader(_GzipReader):
 def try_decompress_at(input_file : bytes, offset : int) -> bytes:
     
     decoded = None
-
     try:
         
         if Signature.check(input_file, offset, Signature.DTB_Appended_Qualcomm): # Merely unpack a Qualcomm kernel file containing a magic and DTB offset at the start (so that offsets aren't wrong)
@@ -190,7 +191,7 @@ def try_decompress_at(input_file : bytes, offset : int) -> bytes:
                 
             except ModuleNotFoundError:
                 logging.error('ERROR: This kernel requres LZ4 decompression.')
-                logging.error('       But "lz4" python package does not found.')
+                logging.error('       But "lz4" python package was not found.')
                 logging.error('       Example installation command: "sudo pip3 install lz4"')
                 logging.error()
                 return
@@ -207,13 +208,29 @@ def try_decompress_at(input_file : bytes, offset : int) -> bytes:
                     from vmlinux_to_elf.utils.lz4_legacy import decompress_lz4_buffer
                 except ModuleNotFoundError:
                     logging.error('ERROR: This kernel requres LZ4 decompression.')
-                    logging.error('       But "lz4" python package does not found.')
+                    logging.error('       But "lz4" python package was not found.')
                     logging.error('       Example installation command: "sudo pip3 install lz4"')
                     logging.error()
                     return
                 
             decoded = decompress_lz4_buffer(BytesIO(input_file[offset:]))
-    
+
+        elif Signature.check(input_file, offset, Signature.Compressed_ZSTD):
+            try:
+                import zstandard as zstd
+            except ModuleNotFoundError:
+                logging.error('ERROR: This kernel requres ZSTD decompression.')
+                logging.error('       But "zstandard" python package was not found.')
+                logging.error('       Example installation command: "sudo pip3 install zstandard"')
+                logging.error()
+                return
+            buf = BytesIO()
+            context = zstd.ZstdDecompressor()
+            for chunk in context.read_to_iter(BytesIO(input_file[offset:])):
+                buf.write(chunk)
+            buf.seek(0)
+            decoded = buf.read()
+
     except Exception:
         pass
     

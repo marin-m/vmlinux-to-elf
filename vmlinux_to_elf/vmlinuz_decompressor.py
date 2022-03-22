@@ -59,6 +59,7 @@ class Signature:
     Compressed_LZ4  = b'\x04"M\x18'     # https://github.com/lz4/lz4/blob/dev/doc/lz4_Frame_format.md
     Compressed_LZ4_Legacy = b'\x02!L\x18'
     Compressed_ZSTD = b'(\xb5/\xfd'
+    Compressed_LZO  = b'\x89LZ'
     DTB_Appended_Qualcomm = b'UNCOMPRESSED_IMG' # https://www.google.com/search?q="PATCHED_KERNEL_MAGIC"
     Android_Bootimg = b'ANDROID!' # https://source.android.com/devices/bootloader/boot-image-header
 
@@ -70,6 +71,7 @@ class Signature:
         Compressed_LZ4,
         Compressed_LZ4_Legacy,
         Compressed_ZSTD,
+        Compressed_LZO,
     ]
 
     @staticmethod
@@ -231,6 +233,17 @@ def try_decompress_at(input_file : bytes, offset : int) -> bytes:
             buf.seek(0)
             decoded = buf.read()
 
+        elif Signature.check(input_file, offset, Signature.Compressed_LZO):
+            try:
+                import lzo
+            except ModuleNotFoundError:
+                logging.error('ERROR: This kernel requres LZO decompression.')
+                logging.error('       But "python-lzo" python package was not found.')
+                logging.error('       Example installation command: "sudo pip3 install git+https://github.com/clubby789/python-lzo"')
+                logging.error()
+                return
+            buf = BytesIO(input_file[offset:])
+            decoded = lzo.LzoFile(fileobj=buf, mode='rb').read()
     except Exception:
         pass
     

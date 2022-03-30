@@ -239,7 +239,7 @@ def try_decompress_at(input_file : bytes, offset : int) -> bytes:
             except ModuleNotFoundError:
                 logging.error('ERROR: This kernel requres LZO decompression.')
                 logging.error('       But "python-lzo" python package was not found.')
-                logging.error('       Example installation command: "sudo pip3 install git+https://github.com/clubby789/python-lzo"')
+                logging.error('       Example installation command: "sudo pip3 install git+https://github.com/clubby789/python-lzo@b4e39df"')
                 logging.error()
                 return
             buf = BytesIO(input_file[offset:])

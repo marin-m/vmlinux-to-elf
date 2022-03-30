@@ -16,11 +16,12 @@ Usage:
 ./vmlinux-to-elf <input_kernel.bin> <output_kernel.elf>
 ```
 
-System-wide installation:
+System-wide installation (the second command may not be needed as PIP should find the dependencies within the `setup.py` file):
 
 ```bash
 sudo apt install python3-pip
-sudo pip3 install --upgrade lz4 zstandard git+https://github.com/marin-m/vmlinux-to-elf
+sudo pip3 install --upgrade lz4 zstandard git+https://github.com/clubby789/python-lzo@b4e39df
+sudo pip3 install --upgrade git+https://github.com/marin-m/vmlinux-to-elf
 ```
 
 ## Features
@@ -62,7 +63,7 @@ It supports kernels from version 2.6.10 (December 2004) until now. Only kernels 
 
 For raw kernels, the following architectures can be detected (using magics from [binwalk](https://github.com/ReFirmLabs/binwalk/blob/master/src/binwalk/magic/binarch)): MIPSEL, MIPSEB, ARMEL, ARMEB, PowerPC, SPARC, x86, x86-64, ARM64, MIPS64, SuperH, ARC.
 
-The following kernel compression formats can be automatically detected: XZ, LZMA, GZip, BZ2, LZ4, Zstd. Support for LZO may be added upon request.
+The following kernel compression formats can be automatically detected: XZ, LZMA, GZip, BZ2, LZ4, LZO and Zstd.
 
 ## Advanced usage
 

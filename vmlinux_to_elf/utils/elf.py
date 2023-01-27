@@ -222,16 +222,7 @@ class ElfFile:
         
         self.file_header.e_shentsize = memoryview(self.sections[0].section_header).nbytes
         
-        # Update the string tables
 
-        for section in self.sections:
-            
-            if isinstance(section, ElfStrtab):
-                
-                section.raw_string_table = b''
-                
-                section.add_string_and_return_offset('')
-        
         for section in self.sections:
             
             section.pre_serialize()
@@ -755,37 +746,44 @@ class ElfSymtab(ElfSection):
 class ElfDynsym(ElfSymtab):
     
     pass
-    
+
 class ElfStrtab(ElfSection):
 
-    is_shstrtab : bool = None
-    
-    raw_string_table : bytes = None
-    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._cache = {}
+        self._raw_string_table = b''
+        self.add_string_and_return_offset('')
+
     def _unserialize_contents(self, data : BytesIO):
+
+        self._raw_string_table = data.read(self.section_header.sh_size)
         
-        self.raw_string_table = data.read(self.section_header.sh_size)
+        # Generate cache
+        self._cache = {}
+        i = 0
+        while i < len(self._raw_string_table):
+            string = self.return_string_from_offset(i)
+            self._cache[string] = i
+            i += len(string) + 1
     
     def _serialize_contents(self, data : BytesIO):
-        
-        data.write(self.raw_string_table)
+
+        data.write(self._raw_string_table)
     
     def return_string_from_offset(self, offset):
         
-        return self.raw_string_table.decode('ascii')[offset:].split('\x00', 1)[0]
+        return self._raw_string_table[offset:self._raw_string_table.find(b'\x00', offset)].decode('ascii')
     
     def add_string_and_return_offset(self, string):
+
+        if string in self._cache:
+            return self._cache[string]
         
-        string_offset = self.raw_string_table.find(string.encode('ascii') + b'\x00')
-        
-        if string_offset != -1:
-            return string_offset
-        
-        string_offset = len(self.raw_string_table)
-        
-        self.raw_string_table += string.encode('ascii') + b'\x00'
-        
+        self._cache[string] = string_offset = len(self._raw_string_table)
+        self._raw_string_table += string.encode('ascii') + b'\x00'        
         return string_offset
+
 
 
 

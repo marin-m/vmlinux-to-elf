@@ -815,13 +815,20 @@ class KallsymsFinder:
                     raise ValueError('Could not find kallsyms_names')
                 continue
 
-            # Bottom-up DP approach to calculate number of symbols given starting position
+
+            # Each entry in the symbol table starts with a u8 size followed by the contents.
+            # The table ends with an entry of size 0, and must lie before kallsyms_markers.
+            # This for loop uses a bottom-up DP approach to calculate the numbers of symbols without recalculations.
+            # dp[i] is the length of the symbol table given a starting position of "kallsyms_markers - i"
+            # If the table position is invalid, i.e. it reaches out of bounds, the length is marked as -1.
+            # The loop ends with the number of symbols for the current position in the last entry of dp.
+
             for i in range(len(dp), self.kallsyms_markers__offset - position + 1):
                 symbol_size = self.kernel_img[self.kallsyms_markers__offset - i]
                 next_i = i - symbol_size - 1
-                if symbol_size == 0:  # End of chain
+                if symbol_size == 0:  # Last entry of the symbol table
                     dp.append(0)
-                elif next_i < 0 or dp[next_i] == -1:  # If chain would exceed kallsyms_markers, mark as invalid
+                elif next_i < 0 or dp[next_i] == -1:  # If table would exceed kallsyms_markers, mark as invalid
                     dp.append(-1)
                 else:
                     dp.append(dp[next_i] + 1)

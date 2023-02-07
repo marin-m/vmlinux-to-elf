@@ -255,7 +255,8 @@ class KallsymsFinder:
         R_AARCH64_RELATIVE = 0x403
         elf64_rela = []
         minimal_heuristic_count = 1000
-        minimal_kernel_va = 0xFFFFFF8008080000
+        # minimal_kernel_va = 0xFFFFFF8008080000
+        minimal_kernel_va = 0xFFFF800000000000
         maximal_kernel_va = 0xFFFFFFFFFFFFFFFF
         kernel_text_candidate = maximal_kernel_va
 

@@ -4,6 +4,7 @@ from re import search, IGNORECASE
 from argparse import Namespace
 from io import BytesIO
 import logging
+import tqdm
 
 """
     The ElfSymbolizer class, defined in this file, gathers information from
@@ -154,7 +155,7 @@ class ElfSymbolizer():
                 
         # symtab.symbol_table = [symtab.symbol_table[0]]
         
-        for symbol in kallsyms_finder.symbols:
+        for symbol in tqdm.tqdm(kallsyms_finder.symbols):
             
             elf_symbol_class = {
                 (False, False): Elf32LittleEndianSymbolTableEntry,

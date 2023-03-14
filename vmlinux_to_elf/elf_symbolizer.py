@@ -157,17 +157,23 @@ class ElfSymbolizer():
             """
             Uses binary search to quickly find the section which the address belongs to
             """
+            # Set baseline and roofline hypotheses, expressed in
+            # section table indexes:
             lower_range, upper_range = 0, len(sections) - 1
+            # Wait for the hypotheses to converge
             while lower_range < upper_range:
+                # Mean operation to pick a new tentative hypothesis
+                # (add one to ensure to ceil-round the upper
+                # hypothesis in case of a difference of 1)
                 middle = (lower_range + upper_range + 1) // 2
-                if sections[middle].section_header.sh_addr <= address:
-                    lower_range = middle
+                if sections[middle].section_header.sh_addr <= address: # Test the hypothesis
+                    lower_range = middle # Use the hypothesis as a baseline
                 else:
-                    upper_range = middle - 1
+                    upper_range = middle - 1 # Disqualify the hypothesis
             if (sections[lower_range].section_header.sh_addr <= address <=
                 sections[lower_range].section_header.sh_addr +
                 sections[lower_range].section_header.sh_size):
-                return sections[lower_range]
+                return sections[lower_range] # Select the best hypothesis if it qualifies
             return None
 
         elf_symbol_class = {

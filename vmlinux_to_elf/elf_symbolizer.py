@@ -153,19 +153,21 @@ class ElfSymbolizer():
             kernel.sections += [symtab, strtab, shstrtab]
 
         sections = sorted([i for i in kernel.sections if i.section_header.sh_addr > 0], key=lambda x: x.section_header.sh_addr)
-        def _find_section(addr):
+        def _find_section(address):
             """
             Uses binary search to quickly find the section which the address belongs to
             """
-            mi, ma = 0, len(sections)-1
-            while mi < ma:
-                mid = (mi+ma+1)//2
-                if addr >= sections[mid].section_header.sh_addr:
-                    mi = mid
+            lower_range, upper_range = 0, len(sections) - 1
+            while lower_range < upper_range:
+                middle = (lower_range + upper_range + 1) // 2
+                if sections[middle].section_header.sh_addr <= address:
+                    lower_range = middle
                 else:
-                    ma = mid-1
-            if sections[mi].section_header.sh_addr <= addr <= sections[mi].section_header.sh_addr + sections[mi].section_header.sh_size:
-                return sections[mi]
+                    upper_range = middle - 1
+            if (sections[lower_range].section_header.sh_addr <= address <=
+                sections[lower_range].section_header.sh_addr +
+                sections[lower_range].section_header.sh_size):
+                return sections[lower_range]
             return None
 
         elf_symbol_class = {

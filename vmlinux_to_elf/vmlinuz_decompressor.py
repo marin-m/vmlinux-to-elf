@@ -192,7 +192,7 @@ def try_decompress_at(input_file : bytes, offset : int) -> bytes:
                 LZ4Decompressor = importlib.import_module('lz4.frame')
                 
             except ModuleNotFoundError:
-                logging.error('ERROR: This kernel requres LZ4 decompression.')
+                logging.error('Error: This kernel may require LZ4 decompression.')
                 logging.error('       But "lz4" python package was not found.')
                 logging.error('       Example installation command: "sudo pip3 install lz4"')
                 logging.error()
@@ -209,7 +209,7 @@ def try_decompress_at(input_file : bytes, offset : int) -> bytes:
                 try:
                     from vmlinux_to_elf.utils.lz4_legacy import decompress_lz4_buffer
                 except ModuleNotFoundError:
-                    logging.error('ERROR: This kernel requres LZ4 decompression.')
+                    logging.error('Error: This kernel may require LZ4 decompression.')
                     logging.error('       But "lz4" python package was not found.')
                     logging.error('       Example installation command: "sudo pip3 install lz4"')
                     logging.error()
@@ -221,7 +221,7 @@ def try_decompress_at(input_file : bytes, offset : int) -> bytes:
             try:
                 import zstandard as zstd
             except ModuleNotFoundError:
-                logging.error('ERROR: This kernel requres ZSTD decompression.')
+                logging.error('Error: This kernel may require ZSTD decompression.')
                 logging.error('       But "zstandard" python package was not found.')
                 logging.error('       Example installation command: "sudo pip3 install zstandard"')
                 logging.error()
@@ -237,7 +237,7 @@ def try_decompress_at(input_file : bytes, offset : int) -> bytes:
             try:
                 import lzo
             except ModuleNotFoundError:
-                logging.error('ERROR: This kernel requres LZO decompression.')
+                logging.error('Error: This kernel may require LZO decompression.')
                 logging.error('       But "python-lzo" python package was not found.')
                 logging.error('       Example installation command: "sudo pip3 install git+https://github.com/clubby789/python-lzo@b4e39df"')
                 logging.error()

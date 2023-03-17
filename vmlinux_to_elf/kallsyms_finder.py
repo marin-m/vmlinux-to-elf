@@ -255,7 +255,8 @@ class KallsymsFinder:
         R_AARCH64_RELATIVE = 0x403
         elf64_rela = []
         minimal_heuristic_count = 1000
-        minimal_kernel_va = 0xFFFFFF8008080000
+        # minimal_kernel_va = 0xFFFFFF8008080000
+        minimal_kernel_va = 0xFFFF800000000000
         maximal_kernel_va = 0xFFFFFFFFFFFFFFFF
         kernel_text_candidate = maximal_kernel_va
 
@@ -734,16 +735,14 @@ class KallsymsFinder:
         while position > 0 and self.kernel_img[position] == 0:
             position -= 1
         
-        memory_to_search = bytes(self.kernel_img[position - MAX_ARRAY_SIZE:
-            position])
-        
-        needle = memory_to_search.rfind(b'\x00' * self.offset_table_element_size)
+
+        needle = self.kernel_img.rfind(b'\x00' * self.offset_table_element_size, position - MAX_ARRAY_SIZE, position)
         
         if needle == -1:
             
             raise ValueError('Could not find kallsyms_markers')
         
-        position = (position - MAX_ARRAY_SIZE) + needle
+        position = needle
         
         position -= position % self.offset_table_element_size
         
@@ -786,17 +785,16 @@ class KallsymsFinder:
     def find_kallsyms_num_syms(self):
         
         needle = -1
-        
+
+        token_table = self.get_token_table()
+        possible_symbol_types = [i.value for i in KallsymsSymbolType]
+
+        dp = []
+
         while needle == -1:
             
             position =  self.kallsyms_names__offset
-            
-            # Count the number of symbols
-            
-            num_symbols = 0
-            
-            symbol_counting_position = position
-            
+
             # Check whether this looks like the correct symbol
             # table, first depending on the beginning of the
             # first symbol (as this is where an uncertain gap
@@ -806,38 +804,40 @@ class KallsymsFinder:
             # another function) if an exotic kind of symbol is
             # found somewhere else than in the first entry.
 
-            token_table = self.get_token_table()
-            first_token_index_of_first_name = self.kernel_img[symbol_counting_position + 1]
+            first_token_index_of_first_name = self.kernel_img[position + 1]
             first_token_of_first_name = token_table[first_token_index_of_first_name]
-            possible_symbol_types = [i.value for i in KallsymsSymbolType]
-            
+
             if (not (first_token_of_first_name[0].lower() in 'uvw' and
                 first_token_of_first_name[0] in possible_symbol_types) and
                 first_token_of_first_name[0].upper() not in possible_symbol_types):
-                    
-                if 0 <= self.kallsyms_names__offset - 4 < self.kallsyms_markers__offset:
-                    self.kallsyms_names__offset -= 4
-                else:
+
+                self.kallsyms_names__offset -= 4
+                if self.kallsyms_names__offset < 0:
                     raise ValueError('Could not find kallsyms_names')
                 continue
-            
-            while True:
-            
-                symbol_size = self.kernel_img[symbol_counting_position]
-                
-                if not symbol_size:
-                    break
-                
-                symbol_counting_position += symbol_size + 1
-                num_symbols += 1
-                
-                if not (0 <= symbol_counting_position < self.kallsyms_markers__offset):
-                    break
-            
-            if num_symbols < 256 or symbol_counting_position > self.kallsyms_markers__offset:
-                if 0 <= self.kallsyms_names__offset - 4 < self.kallsyms_markers__offset:
-                    self.kallsyms_names__offset -= 4
+
+
+            # Each entry in the symbol table starts with a u8 size followed by the contents.
+            # The table ends with an entry of size 0, and must lie before kallsyms_markers.
+            # This for loop uses a bottom-up DP approach to calculate the numbers of symbols without recalculations.
+            # dp[i] is the length of the symbol table given a starting position of "kallsyms_markers - i"
+            # If the table position is invalid, i.e. it reaches out of bounds, the length is marked as -1.
+            # The loop ends with the number of symbols for the current position in the last entry of dp.
+
+            for i in range(len(dp), self.kallsyms_markers__offset - position + 1):
+                symbol_size = self.kernel_img[self.kallsyms_markers__offset - i]
+                next_i = i - symbol_size - 1
+                if symbol_size == 0:  # Last entry of the symbol table
+                    dp.append(0)
+                elif next_i < 0 or dp[next_i] == -1:  # If table would exceed kallsyms_markers, mark as invalid
+                    dp.append(-1)
                 else:
+                    dp.append(dp[next_i] + 1)
+            num_symbols = dp[-1]
+
+            if num_symbols < 256:
+                self.kallsyms_names__offset -= 4
+                if self.kallsyms_names__offset < 0:
                     raise ValueError('Could not find kallsyms_names')
                 continue
             
@@ -854,21 +854,17 @@ class KallsymsFinder:
             MAX_ALIGNMENT = 256
             
             encoded_num_symbols = pack(endianness_marker + long_size_marker, num_symbols)
-            
-            memory_to_search = bytes(self.kernel_img[self.kallsyms_names__offset - MAX_ALIGNMENT - 20:
-                self.kallsyms_names__offset])
-            
-            needle = memory_to_search.rfind(encoded_num_symbols)
+
+            needle = self.kernel_img.rfind(encoded_num_symbols, max(0, self.kallsyms_names__offset - MAX_ALIGNMENT - 20), self.kallsyms_names__offset)
             
             if needle == -1: # There may be no padding between kallsyms_names and kallsyms_num_syms, if the alignment is already correct: in this case: try other offsets for "kallsyms_names"
-                if 0 <= self.kallsyms_names__offset - 4 < self.kallsyms_markers__offset:
-                    self.kallsyms_names__offset -= 4
-                else:
+                self.kallsyms_names__offset -= 4
+                if self.kallsyms_names__offset < 0:
                     raise ValueError('Could not find kallsyms_names')
         
         logging.info('[+] Found kallsyms_names at file offset 0x%08x' % self.kallsyms_names__offset)
         
-        position = (self.kallsyms_names__offset - MAX_ALIGNMENT - 20) + needle
+        position = needle
         
         
         self.kallsyms_num_syms__offset = position

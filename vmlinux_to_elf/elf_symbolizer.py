@@ -151,17 +151,39 @@ class ElfSymbolizer():
             
             kernel.section_string_table = shstrtab
             kernel.sections += [symtab, strtab, shstrtab]
-                
-        # symtab.symbol_table = [symtab.symbol_table[0]]
-        
+
+        sections = sorted([i for i in kernel.sections if i.section_header.sh_addr > 0], key=lambda x: x.section_header.sh_addr)
+        def _find_section(address):
+            """
+            Uses binary search to quickly find the section which the address belongs to
+            """
+            # Set baseline and roofline hypotheses, expressed in
+            # section table indexes:
+            lower_range, upper_range = 0, len(sections) - 1
+            # Wait for the hypotheses to converge
+            while lower_range < upper_range:
+                # Mean operation to pick a new tentative hypothesis
+                # (add one to ensure to ceil-round the upper
+                # hypothesis in case of a difference of 1)
+                middle = (lower_range + upper_range + 1) // 2
+                if sections[middle].section_header.sh_addr <= address: # Test the hypothesis
+                    lower_range = middle # Use the hypothesis as a baseline
+                else:
+                    upper_range = middle - 1 # Disqualify the hypothesis
+            if (sections[lower_range].section_header.sh_addr <= address <=
+                sections[lower_range].section_header.sh_addr +
+                sections[lower_range].section_header.sh_size):
+                return sections[lower_range] # Select the best hypothesis if it qualifies
+            return None
+
+        elf_symbol_class = {
+            (False, False): Elf32LittleEndianSymbolTableEntry,
+            (True, False): Elf32BigEndianSymbolTableEntry,
+            (False, True): Elf64LittleEndianSymbolTableEntry,
+            (True, True): Elf64BigEndianSymbolTableEntry,
+        }[(kernel.is_big_endian, kernel.is_64_bits)]
+
         for symbol in kallsyms_finder.symbols:
-            
-            elf_symbol_class = {
-                (False, False): Elf32LittleEndianSymbolTableEntry,
-                (True, False): Elf32BigEndianSymbolTableEntry,
-                (False, True): Elf64LittleEndianSymbolTableEntry,
-                (True, True): Elf64BigEndianSymbolTableEntry,
-            }[(kernel.is_big_endian, kernel.is_64_bits)]
 
             elf_symbol = elf_symbol_class(kernel.is_big_endian, kernel.is_64_bits)
             
@@ -170,25 +192,20 @@ class ElfSymbolizer():
             
             if symbol.symbol_type not in (KallsymsSymbolType.TEXT, KallsymsSymbolType.WEAK_SYMBOL_WITH_DEFAULT):
                 elf_symbol.st_info_type = ST_INFO_TYPE.STT_OBJECT
-            
             else:
                 elf_symbol.st_info_type = ST_INFO_TYPE.STT_FUNC
             
             if symbol.symbol_type in (KallsymsSymbolType.WEAK_OBJECT_WITH_DEFAULT, KallsymsSymbolType.WEAK_SYMBOL_WITH_DEFAULT):
                 elf_symbol.st_info_binding = ST_INFO_BINDING.STB_WEAK
-            
             elif symbol.is_global:
                 elf_symbol.st_info_binding = ST_INFO_BINDING.STB_GLOBAL
-            
             else:
                 elf_symbol.st_info_binding = ST_INFO_BINDING.STB_LOCAL
 
             if symbol.symbol_type == KallsymsSymbolType.ABSOLUTE:
                 elf_symbol.st_shndx = SPECIAL_SECTION_INDEX.SHN_ABS
-            
             else:
-                elf_symbol.associated_section = next((i for i in kernel.sections
-                    if i.section_header.sh_addr <= symbol.virtual_address <= i.section_header.sh_addr + i.section_header.sh_size), None)
+                elf_symbol.associated_section = _find_section(symbol.virtual_address)
 
             symtab.symbol_table.append(elf_symbol)
         
@@ -199,26 +216,3 @@ class ElfSymbolizer():
             kernel.serialize(fd)
         
         logging.info('[+] Successfully wrote the new ELF kernel to %s' % output_file)
-    
-    
-
-
-
-
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        

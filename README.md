@@ -59,7 +59,7 @@ OpenWRT [since 2013](https://git.openwrt.org/?p=openwrt/svn-archive/archive.git;
 This means that the `kallsyms_token_table` and `kallsyms_token_address` entries disappear, and that the symbol names use plain text ASCII instead. This case is supported too.
 
 ## Kernels support
-It supports kernels from version 2.6.10 (December 2004) until now. Only kernels explicitly configured without `CONFIG_KALLSYMS` should not be supported. If this kernel configuration variable was not set at build, then you will get: `KallsymsNotFoundException: No embedded symbol table found in this kernel`.
+It supports kernels from version 2.6.10 (December 2004) until, for the moment, 6.2 (February 2023, see [this issue](https://github.com/marin-m/vmlinux-to-elf/issues/49)). Only kernels explicitly configured without `CONFIG_KALLSYMS` should not be supported. If this kernel configuration variable was not set at build, then you will get: `KallsymsNotFoundException: No embedded symbol table found in this kernel`.
 
 For raw kernels, the following architectures can be detected (using magics from [binwalk](https://github.com/ReFirmLabs/binwalk/blob/master/src/binwalk/magic/binarch)): MIPSEL, MIPSEB, ARMEL, ARMEB, PowerPC, SPARC, x86, x86-64, ARM64, MIPS64, SuperH, ARC.
 

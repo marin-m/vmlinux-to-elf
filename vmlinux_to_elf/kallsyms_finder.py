@@ -673,83 +673,33 @@ class KallsymsFinder:
             x86_64) since kernel v4.20, either as the maximum register
             byte of the system (the C "long" type) on older kernels.
             Remember about the size of this field for later.
+            The first index is always 0, it is sorted, and it is aligned.
         """
-        
-        max_number_of_space_between_two_nulls = 0
-        
-        position = self.kallsyms_token_table__offset
-        
-        # Go just before the first chunk of non-null bytes
-        
-        while position > 0 and self.kernel_img[position - 1] == 0:
-            
-            position -= 1
-        
-        
-        for null_separated_bytes_chunks in range(20):
-            
-            num_non_null_bytes = 1 # we always start at a non-null byte in this loop
-            num_null_bytes = 1 # we will at least encounter one null byte before the end of this loop
-            
-            while True:
-                position -= 1
-                assert position >= 0
-                
-                if self.kernel_img[position] == 0:
-                    break
-                num_non_null_bytes += 1
-            
-            while True:
-                position -= 1
-                assert position >= 0
-                
-                if self.kernel_img[position] != 0:
-                    break
-                num_null_bytes += 1
-            
-            max_number_of_space_between_two_nulls = max(
-                max_number_of_space_between_two_nulls,
-                num_non_null_bytes + num_null_bytes)
-        
-        if max_number_of_space_between_two_nulls % 2 == 1: # There may be a leap to a shorter offset in the latest processed entries
-            max_number_of_space_between_two_nulls -= 1
-        
-        if max_number_of_space_between_two_nulls not in (2, 4, 8):
-            
-            raise ValueError('Could not guess the architecture register ' +
-                'size for kernel')
-        
 
-        self.offset_table_element_size = max_number_of_space_between_two_nulls
-        
-        
-        # Once the size of a long has been guessed, use it to find
-        # the first offset (0)
-        
-        position = self.kallsyms_token_table__offset
-        
-        MAX_ARRAY_SIZE = 3000 * self.offset_table_element_size
+        # Try possible sizes for the table element (long type)
+        for table_element_size in (8, 4, 2):
+            position = self.kallsyms_token_table__offset
+            endianness_marker = '>' if self.is_big_endian else '<'
+            long_size_marker = {2: 'H', 4: 'I', 8: 'Q'}[table_element_size]
 
-        position -= 1
-        while position > 0 and self.kernel_img[position] == 0:
-            position -= 1
-        
+            # Search for start of kallsyms_markers given first element is 0 and it is sorted
+            for _ in range(32):
+                position = self.kernel_img.rfind(b'\x00'*table_element_size, 0, position)
+                position -= position % table_element_size
+                entries = unpack_from(endianness_marker + '4' + long_size_marker, self.kernel_img, position)
+                if entries[0] != 0:
+                    continue
 
-        needle = self.kernel_img.rfind(b'\x00' * self.offset_table_element_size, position - MAX_ARRAY_SIZE, position)
-        
-        if needle == -1:
-            
-            raise ValueError('Could not find kallsyms_markers')
-        
-        position = needle
-        
-        position -= position % self.offset_table_element_size
-        
-        
-        self.kallsyms_markers__offset = position
-        
-        logging.info('[+] Found kallsyms_markers at file offset 0x%08x' % position)
-    
+                for i in range(1, len(entries)):
+                    if entries[i-1]+0x200 > entries[i] or entries[i-1]+0x4000 < entries[i]:
+                        break
+                else:
+                    logging.info('[+] Found kallsyms_markers at file offset 0x%08x' % position)
+                    self.kallsyms_markers__offset = position
+                    self.offset_table_element_size = table_element_size
+                    return
+        raise ValueError('Could not find kallsyms_markers')
+
     def find_kallsyms_names(self):
         
         position = self.kallsyms_markers__offset
@@ -763,10 +713,15 @@ class KallsymsFinder:
             
         long_size_marker = {2: 'H', 4: 'I', 8: 'Q'}[self.offset_table_element_size]
         
-        num_of_kallsyms_markers_entries = (self.kallsyms_token_table__offset -  self.kallsyms_markers__offset)  // self.offset_table_element_size
-        
-        kallsyms_markers_entries = unpack_from(endianness_marker + str(num_of_kallsyms_markers_entries) + long_size_marker, self.kernel_img, self.kallsyms_markers__offset)
-        
+        kallsyms_markers_entries = unpack_from(endianness_marker + '3000' + long_size_marker, self.kernel_img, self.kallsyms_markers__offset)
+
+        for i in range(1, len(kallsyms_markers_entries)):
+            curr = kallsyms_markers_entries[i]
+            last = kallsyms_markers_entries[i-1]
+            if last+0x200 > curr or last+0x4000 < curr:
+                kallsyms_markers_entries = kallsyms_markers_entries[:i]
+                break
+
         last_kallsyms_markers_entry = list(filter(None, kallsyms_markers_entries))[-1]
         
         position -= last_kallsyms_markers_entry

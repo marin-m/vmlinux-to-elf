@@ -244,7 +244,8 @@ class KallsymsFinder:
             otherwise
         """
 
-        if ArchitectureName.aarch64 != self.architecture:
+        # FIX: architecture is not set when guess_architecture() wasn't called
+        if hasattr(self, 'architecture') and ArchitectureName.aarch64 != self.architecture:
 
             # I've tested this only for ARM64
             return False

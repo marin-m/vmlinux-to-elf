@@ -49,6 +49,7 @@ The schema below displays how this information is serialized into the kernel, th
 | `kallsyms_num_syms`      | The total number of symbols, as an integer (useful for checking for endianness, alignment, correct decoding of the symbols table) | `54 D4 00 00`
 | `kallsyms_names`         | The compressed, length-separated symbol names themselves. Each byte in the compressed symbol strings references an index in the "kallsyms_token_index" array, that itself references the offset of a character or string fragment in the "kallsyms_token_table" array. | `09 54 64 6F  5F E1 F1 66  F5 25 05 54  F3 74 AB 74  0E 54 FF AB` ...
 | `kallsyms_markers`       | A lookup table serving to find quickly the approximative offset of a compressed symbol name in "kallsyms_names": every 256 symbols, an offset to the concerned symbol in "kallsyms_names" is added as a long to this table. | `00 00 00 00  03 0C 00 00  0C 18 00 00  1B 24 00 00  0F 31 00 00  DA 3D 00 00  CF 4A 00 00` ...
+| `kallsyms_seqs_of_names` | This lookup table (present in 6.2+ kernels only) contains an array sequence of packed 3-byte integers, where array indexes match the alphanumeric order for a given symbol name, and array values match the corresponding entry indexes in the `kallsyms_addresses` and `kallsyms_names` arrays
 | `kallsyms_token_table`   | Null-terminated string fragments or characters that may be contained in kernel symbol names. This can contain at most 256 string fragments or characters. Indexes corresponding to ASCII code points which are actually used in any kernel symbol will correspond to the concerned ASCII character, other positions will contain a statistically chosen string fragment. This tool tries to heuristically find this array across the passed file first in order to find the `kallsyms` symbols table. | `73 69 00 67  70 00 74 74  00 79 6E 00  69 6E 74 5F  00 66 72 00  ` ...
 | `kallsyms_token_index`   | 256 words, each mapping to the offsets of the characters or string fragments designated by their respective indexes in "kallsyms_token_table". |  `00 00 03 00  06 00 09 00  0C 00 11 00  14 00 1B 00  1E 00 22 00  2C 00 30 00  35 00 38 00` ...
 
@@ -58,8 +59,27 @@ OpenWRT [since 2013](https://git.openwrt.org/?p=openwrt/svn-archive/archive.git;
 
 This means that the `kallsyms_token_table` and `kallsyms_token_address` entries disappear, and that the symbol names use plain text ASCII instead. This case is supported too.
 
+In standard Linux 6.2 kernels, `kallsyms` arrays are encoded in the following order:
+
+# `kallsyms_addresses` (or `kallsyms_offsets` + `kallsyms_relative_base`)
+# `kallsyms_num_syms`
+# `kallsyms_names`
+# `kallsyms_markers`
+# `kallsyms_seqs_of_names` (6.2+ only)
+# `kallsyms_token_table`
+# `kallsyms_token_index`
+
+While these are parsed in the following order by `vmlinux-to-elf`'s parsing algorithm:
+
+# `kallsyms_token_table` (before-last structure)
+# `kallsyms_token_index` (last structure, forwards)
+# `kallsyms_markers` (backwards)
+# `kallsyms_names` (backwards again)
+# `kallsyms_num_syms` (backwards again)
+# `kallsyms_addresses` (or `kallsyms_offsets` + `kallsyms_relative_base`) (backwards again)
+
 ## Kernels support
-It supports kernels from version 2.6.10 (December 2004) until, for the moment, 6.2 (February 2023, see [this issue](https://github.com/marin-m/vmlinux-to-elf/issues/49)). Only kernels explicitly configured without `CONFIG_KALLSYMS` should not be supported. If this kernel configuration variable was not set at build, then you will get: `KallsymsNotFoundException: No embedded symbol table found in this kernel`.
+It should support kernels from version 2.6.10 (December 2004), until the current 6.3 (as of May 2023). Only kernels explicitly configured without `CONFIG_KALLSYMS` should not be supported. If this kernel configuration variable was not set at build, then you will get: `KallsymsNotFoundException: No embedded symbol table found in this kernel`.
 
 For raw kernels, the following architectures can be detected (using magics from [binwalk](https://github.com/ReFirmLabs/binwalk/blob/master/src/binwalk/magic/binarch)): MIPSEL, MIPSEB, ARMEL, ARMEB, PowerPC, SPARC, x86, x86-64, ARM64, MIPS64, SuperH, ARC.
 

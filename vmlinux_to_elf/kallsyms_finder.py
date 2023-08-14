@@ -133,6 +133,7 @@ class KallsymsFinder:
     
     kallsyms_token_table__offset : int = None
     kallsyms_token_index__offset : int = None
+    kallsyms_token_index_end__offset : int = None
 
     elf64_rela : List[Tuple[int, int, int]] = None
     kernel_text_candidate : int = None
@@ -522,6 +523,8 @@ class KallsymsFinder:
         
             self.kallsyms_token_index__offset = position + found_position_for_be_value
         
+        self.kallsyms_token_index_end__offset = self.kallsyms_token_index__offset + len(little_endian_offsets)
+
         logging.info('[+] Found kallsyms_token_index at file offset 0x%08x' % self.kallsyms_token_index__offset)
     
 
@@ -872,13 +875,36 @@ class KallsymsFinder:
             [(False, True), (False, False)]
         ):
             
-            position = self.kallsyms_num_syms__offset
             
             address_byte_size = 8 if likely_is_64_bits else self.offset_table_element_size
             offset_byte_size = min(4, self.offset_table_element_size) # Size of an assembly ".long"
             
+            if kernel_major > 6 or (kernel_major == 6 and kernel_minor >= 4):
+
+                # Linux 6.4 or later place (kallsyms_addresses)/(kallsyms_offsets+kallsyms_relative_base) after kallsyms_token_index. 
+
+                # The align_size is defined at (https://github.com/torvalds/linux/blob/v6.4/scripts/kallsyms.c#L390). 
+                align_size = 8 if likely_is_64_bits else 4
+
+                position = self.kallsyms_token_index_end__offset
+                position += -position % align_size
+
+                if has_base_relative:
+
+                    position += self.num_symbols * offset_byte_size 
+                    position += -position % align_size
+                    position += address_byte_size 
+
+                else:
+
+                    position += self.num_symbols * address_byte_size
+
+            else:
+
+                position = self.kallsyms_num_syms__offset
             
-            # Go right after the previous address
+            # Now, position should point to some address immediately following the kallsyms_addresses or kallsyms_relative_base
+            # Go right after the previous address. And we may skip some alignments. 
             
             while True:
                 assert position > 0  # >= self.offset_table_element_size # Needed?

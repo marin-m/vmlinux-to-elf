@@ -69,6 +69,16 @@ In standard Linux 6.2 kernels, `kallsyms` arrays are encoded in the following or
 # `kallsyms_token_table`
 # `kallsyms_token_index`
 
+For Linux 6.4+ kernels, this layout is changed to: 
+
+# `kallsyms_num_syms`
+# `kallsyms_names`
+# `kallsyms_markers`
+# `kallsyms_token_table`
+# `kallsyms_token_index`
+# `kallsyms_addresses` (or `kallsyms_offsets` + `kallsyms_relative_base`)
+# `kallsyms_seqs_of_names`
+
 While these are parsed in the following order by `vmlinux-to-elf`'s parsing algorithm:
 
 # `kallsyms_token_table` (before-last structure)

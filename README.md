@@ -89,7 +89,7 @@ While these are parsed in the following order by `vmlinux-to-elf`'s parsing algo
 6. `kallsyms_addresses` (or `kallsyms_offsets` + `kallsyms_relative_base`) (backwards again)
 
 ## Kernels support
-It should support kernels from version 2.6.10 (December 2004), until the current 6.3 (as of May 2023). Only kernels explicitly configured without `CONFIG_KALLSYMS` should not be supported. If this kernel configuration variable was not set at build, then you will get: `KallsymsNotFoundException: No embedded symbol table found in this kernel`.
+It should support kernels from version 2.6.10 (December 2004), until the current 6.4 (as of August 2023). Only kernels explicitly configured without `CONFIG_KALLSYMS` should not be supported. If this kernel configuration variable was not set at build, then you will get: `KallsymsNotFoundException: No embedded symbol table found in this kernel`.
 
 For raw kernels, the following architectures can be detected (using magics from [binwalk](https://github.com/ReFirmLabs/binwalk/blob/master/src/binwalk/magic/binarch)): MIPSEL, MIPSEB, ARMEL, ARMEB, PowerPC, SPARC, x86, x86-64, ARM64, MIPS64, SuperH, ARC.
 

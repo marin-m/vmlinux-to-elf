@@ -61,32 +61,32 @@ This means that the `kallsyms_token_table` and `kallsyms_token_address` entries 
 
 In standard Linux 6.2 kernels, `kallsyms` arrays are encoded in the following order:
 
-# `kallsyms_addresses` (or `kallsyms_offsets` + `kallsyms_relative_base`)
-# `kallsyms_num_syms`
-# `kallsyms_names`
-# `kallsyms_markers`
-# `kallsyms_seqs_of_names` (6.2+ only)
-# `kallsyms_token_table`
-# `kallsyms_token_index`
+1. `kallsyms_addresses` (or `kallsyms_offsets` + `kallsyms_relative_base`)
+2. `kallsyms_num_syms`
+3. `kallsyms_names`
+4. `kallsyms_markers`
+5. `kallsyms_seqs_of_names` (6.2+ only)
+6. `kallsyms_token_table`
+7. `kallsyms_token_index`
 
 For Linux 6.4+ kernels, this layout is changed to: 
 
-# `kallsyms_num_syms`
-# `kallsyms_names`
-# `kallsyms_markers`
-# `kallsyms_token_table`
-# `kallsyms_token_index`
-# `kallsyms_addresses` (or `kallsyms_offsets` + `kallsyms_relative_base`)
-# `kallsyms_seqs_of_names`
+1. `kallsyms_num_syms`
+2. `kallsyms_names`
+3. `kallsyms_markers`
+4. `kallsyms_token_table`
+5. `kallsyms_token_index`
+6. `kallsyms_addresses` (or `kallsyms_offsets` + `kallsyms_relative_base`)
+7. `kallsyms_seqs_of_names`
 
 While these are parsed in the following order by `vmlinux-to-elf`'s parsing algorithm:
 
-# `kallsyms_token_table` (before-last structure)
-# `kallsyms_token_index` (last structure, forwards)
-# `kallsyms_markers` (backwards)
-# `kallsyms_names` (backwards again)
-# `kallsyms_num_syms` (backwards again)
-# `kallsyms_addresses` (or `kallsyms_offsets` + `kallsyms_relative_base`) (backwards again)
+1. `kallsyms_token_table` (before-last structure)
+2. `kallsyms_token_index` (last structure, forwards)
+3. `kallsyms_markers` (backwards)
+4. `kallsyms_names` (backwards again)
+5. `kallsyms_num_syms` (backwards again)
+6. `kallsyms_addresses` (or `kallsyms_offsets` + `kallsyms_relative_base`) (backwards again)
 
 ## Kernels support
 It should support kernels from version 2.6.10 (December 2004), until the current 6.3 (as of May 2023). Only kernels explicitly configured without `CONFIG_KALLSYMS` should not be supported. If this kernel configuration variable was not set at build, then you will get: `KallsymsNotFoundException: No embedded symbol table found in this kernel`.
@@ -150,10 +150,4 @@ optional arguments:
 ```
 
 Don't hesitate to [open an issue](https://github.com/marin-m/vmlinux-to-elf/issues/new) for any suggestion of improvement.
-
-
-
-
-
-
 

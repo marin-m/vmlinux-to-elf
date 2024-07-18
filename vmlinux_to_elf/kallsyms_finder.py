@@ -218,7 +218,7 @@ class KallsymsFinder:
     
     def find_linux_kernel_version(self):
         
-        regex_match = search(b'Linux version (\d+\.[\d.]*\d)[ -~]+', self.kernel_img)
+        regex_match = search(rb'Linux version (\d+\.[\d.]*\d)[ -~]+', self.kernel_img)
         
         if not regex_match:
             
@@ -537,7 +537,7 @@ class KallsymsFinder:
 
         # Find the length byte-separated symbol names
         
-        ksymtab_match = search(b'(?:[\x05-\x23][TWtbBrRAdD][a-z0-9_.]{4,34}){14}', self.kernel_img)
+        ksymtab_match = search(rb'(?:[\x05-\x23][TWtbBrRAdD][a-z0-9_.]{4,34}){14}', self.kernel_img)
         
         if not ksymtab_match:
             
@@ -562,7 +562,7 @@ class KallsymsFinder:
                 position + 1 + self.kernel_img[position]
             ]
             
-            if not match(b'^[\x21-\x7e]+$', symbol_name_and_type):
+            if not match(rb'^[\x21-\x7e]+$', symbol_name_and_type):
                 break
                         
             position += 1 + self.kernel_img[position]

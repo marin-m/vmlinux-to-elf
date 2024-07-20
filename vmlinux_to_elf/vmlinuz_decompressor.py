@@ -277,7 +277,7 @@ def obtain_raw_kernel_from_file(input_file: bytes) -> bytes:
         if decompressed_data:
             return decompressed_data
     
-    if not search(b'Linux version (\d+\.[\d.]*\d)[ -~]+', input_file):  # No kernel version string found
+    if not search(rb'Linux version (\d+\.[\d.]*\d)[ -~]+', input_file):  # No kernel version string found
 
         # If not successful, scan for compression signatures in the whole document
         for possible_signature in Signature.Compressed:

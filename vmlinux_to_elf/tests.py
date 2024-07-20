@@ -37,7 +37,7 @@ ELF_KERNELS_OUTPUT_PATH = realpath(SCRIPT_DIR + '/tests_output')
 
 def slugify(file_path):
     
-    return sub('[^a-z0-9]+', '-', file_path.lower()).strip('-')
+    return sub(r'[^a-z0-9]+', '-', file_path.lower()).strip('-')
 
 if __name__ == '__main__':
 

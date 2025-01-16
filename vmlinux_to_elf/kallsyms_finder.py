@@ -9,6 +9,7 @@ from io import BytesIO
 from enum import Enum
 from sys import argv, stdout
 import logging
+import math
 
 try:
     from architecture_detecter import guess_architecture, ArchitectureName, architecture_name_to_elf_machine_and_is64bits_and_isbigendian, ArchitectureGuessError
@@ -966,6 +967,37 @@ class KallsymsFinder:
 
             if self.has_base_relative:
                 number_of_negative_items = len([offset for offset in tentative_addresses_or_offsets if offset < 0])
+
+                # Many kerenels put their addresses in the upper half of the
+                # virtual address space. This means that many of the addresses
+                # will look like negative numbers.  On the other hand, there
+                # should be the same zeros in the high byte(s).  A true
+                # negative will probably have the top 3 nybbles or so as
+                # 0xfff00000.  Lets check this as well.  Lets perform these
+                # checks
+                BITS = 64 if self.is_64_bits else 32
+                NEGATIVE_HEURISTIC_MASK = 0xFFF << (BITS - 12)  # Mask for the top 3 nybbles
+                ABSOLUTE_HEURISTIC_MASK = 0x3f  << (BITS -  8)  # Mask for zeros in the top byte
+
+                heuristically_negative = len([offset for offset in tentative_addresses_or_offsets if (offset & NEGATIVE_HEURISTIC_MASK) == NEGATIVE_HEURISTIC_MASK])
+                heuristically_absolute = len([offset for offset in tentative_addresses_or_offsets if (offset & ABSOLUTE_HEURISTIC_MASK) == 0])
+
+                heuristic_negative_percent = heuristically_negative / len(tentative_addresses_or_offsets)
+                heuristic_absolute_percent = heuristically_absolute / len(tentative_addresses_or_offsets)
+
+                if heuristic_negative_percent < 0.5:
+                    logging.warning(f'[!] WARNING: Less than half ({math.trunc(heuristic_negative_percent * 100)}%) of offsets are negative')
+                    logging.warning( '             You may want to re-run this utility, overriding the relative base')
+
+                if heuristic_absolute_percent > 0.5:
+                    logging.warning(f'[!] WARNING: More than half ({math.trunc(heuristic_absolute_percent * 100)}%) of offsets look like absolute addresses')
+                    logging.warning( '[!]          You may want to re-run this utility, overriding the relative base')
+
+                if heuristic_absolute_percent > 0.5 or heuristic_negative_percent < 0.5:
+                    logging.info(    '[i] Note: sometimes there is junk at the beginning of the kernel and the load address is not the guessed')
+                    logging.info(    '          base address provided. You may need to play around with different load addresses to get everything')
+                    logging.info(    '          to line up.  There may be some decent tables in the kernel with known patterns to line things up')
+                    logging.info(    '          heuristically, but I have not explored this yet.')
                 
                 logging.info('[i] Negative offsets overall: %g %%' % (number_of_negative_items / len(tentative_addresses_or_offsets) * 100))
             

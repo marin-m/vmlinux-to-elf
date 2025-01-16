@@ -168,8 +168,9 @@ class KallsymsFinder:
         We'll find kallsyms_token_table and infer the rest
     """
     
-    def __init__(self, kernel_img : bytes, bit_size : int = None):
+    def __init__(self, kernel_img : bytes, bit_size : int = None, override_relative_base : bool = True):
         
+        self.override_relative_base = override_relative_base
         self.kernel_img = kernel_img
         
         # -
@@ -869,10 +870,11 @@ class KallsymsFinder:
         
         # Try different possibilities heuristically:
         
+        heuristic_search_parameters = [(True, True), (False, False)] if likely_has_base_relative else [(False, True), (False, False)]
+        if self.override_relative_base:
+            heuristic_search_parameters = [(False,False)]
         for (has_base_relative, can_skip) in (
-            [(True, True), (False, False)]
-            if likely_has_base_relative else
-            [(False, True), (False, False)]
+            heuristic_search_parameters
         ):
             
             
@@ -980,6 +982,7 @@ class KallsymsFinder:
                 self.has_absolute_percpu = False
 
             number_of_null_items = len([address for address in tentative_addresses_or_offsets if address == 0])
+
             
             logging.info('[i] Null addresses overall: %g %%' % (number_of_null_items / len(tentative_addresses_or_offsets) * 100))
         
@@ -1114,6 +1117,7 @@ if __name__ == '__main__':
         "addresses")
     
     args.add_argument('input_file', help = "Path to the kernel file to extract symbols from")
+    args.add_argument('--override-relative', help = 'Assume kallsyms offsets are absolute addresses' , action="store_true")
     args.add_argument('--bit-size', help = 'Force overriding the input kernel ' +
         'bit size, providing 32 or 64 bit (rather than auto-detect)', type = int)
     
@@ -1123,7 +1127,7 @@ if __name__ == '__main__':
     with open(args.input_file, 'rb') as kernel_bin:
         
         try:
-            kallsyms = KallsymsFinder(obtain_raw_kernel_from_file(kernel_bin.read()), args.bit_size)
+            kallsyms = KallsymsFinder(obtain_raw_kernel_from_file(kernel_bin.read()), args.bit_size, args.override_relative)
         
         except ArchitectureGuessError:
            exit('[!] The architecture of your kernel could not be guessed ' +

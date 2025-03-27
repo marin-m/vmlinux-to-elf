@@ -1146,9 +1146,10 @@ if __name__ == '__main__':
 
     args = ArgumentParser(description = "Find the kernel's embedded symbol table from a raw " +
         "or stripped ELF kernel file, and print these to the standard output with their " +
-        "addresses")
+        "addresses or optionally save them to a file")
     
     args.add_argument('input_file', help = "Path to the kernel file to extract symbols from")
+    args.add_argument('--output', help= "Path to the analyzable .kallsyms output")
     args.add_argument('--override-relative', help = 'Assume kallsyms offsets are absolute addresses' , action="store_true")
     args.add_argument('--bit-size', help = 'Force overriding the input kernel ' +
         'bit size, providing 32 or 64 bit (rather than auto-detect)', type = int)
@@ -1168,6 +1169,14 @@ if __name__ == '__main__':
         
         kallsyms.print_symbols_debug()
         
+        if args.output:
+            output_file = args.output if args.output.endswith(".kallsyms") else args.output + ".kallsyms"
+            with open(output_file, 'w') as f:
+                for symbol_address, symbol_name in zip(kallsyms.kernel_addresses, kallsyms.symbol_names):
+                    address_str = (
+                        f"{symbol_address:016x}" if kallsyms.is_64_bits else f"{symbol_address:08x}")
+                    line = f"{address_str} {symbol_name[0]} {symbol_name[1:]}\n"
+                    f.write(line)
         
         
         

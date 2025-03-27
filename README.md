@@ -134,10 +134,12 @@ optional arguments:
                         with this integer value (rather than auto-detect)
 
 $ kallsyms-finder -h
-usage: kallsyms-finder [-h] [--bit-size BIT_SIZE] input_file
+usage: kallsyms-finder [-h] [--output OUTPUT] [--override-relative] 
+                       [--bit-size BIT_SIZE] input_file
 
 Find the kernel's embedded symbol table from a raw or stripped ELF kernel
-file, and print these to the standard output with their addresses
+file, and print these to the standard output with their addresses 
+or optionally save them to a file 
 
 positional arguments:
   input_file           Path to the kernel file to extract symbols from
@@ -146,6 +148,7 @@ optional arguments:
   -h, --help           show this help message and exit
   --bit-size BIT_SIZE  Force overriding the input kernel bit size, providing
                        32 or 64 bit (rather than auto-detect)
+  --output OUTPUT_FILE Path to the analyzable .kallsyms output
 
 ```
 

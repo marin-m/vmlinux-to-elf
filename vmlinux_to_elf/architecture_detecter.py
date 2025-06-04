@@ -50,11 +50,11 @@ architecture_to_prologue_regex : Dict[ArchitectureName, bytes] = {
     ArchitectureName.mips64le: br'.\xFF\xBD\x67..[\xA0-\xBF]\xFF',
     ArchitectureName.mips64be: br'\x67\xBD\xFF.\xFF[\xA0-\xBF]..',
     ArchitectureName.x86: br'\x55\x89\xE5(?:\x83\xEC|\x57\x56)',
-    ArchitectureName.x86_64: br'(?:\xe8....)?\x55\x48\x89\xE5', # Assume that a "call __fentry__" instruction may be present at the beginning of the prologue in recent x86_64 kernels
+    ArchitectureName.x86_64: br'\x55\x48\x89\xE5',
     ArchitectureName.powerpcbe: br'\x7C\x08\x02\xA6',
     ArchitectureName.powerpcle: br'\xA6\x02\x08\x7C',
-    ArchitectureName.armbe: br'(?:\xE1\xA0\xC0\x0D)?\xE9\x2D..(?:[\xE0-\xEF]...){2}',
-    ArchitectureName.armle: br'(?:\x0D\xC0\xA0\xE1)?..\x2D\xE9(?:...[\xE0-\xEF]){2}',
+    ArchitectureName.armbe: br'\xE9\x2D..(?:[\xE0-\xEF]...){2}',
+    ArchitectureName.armle: br'\x2D\xE9(?:...[\xE0-\xEF]){2}',
     ArchitectureName.mips16e: br'\xf0\x08\x64.\x01.',
     ArchitectureName.superhle: br'\xF6\x69\x0B\x00\xF6\x68', # This is an epilogue
     ArchitectureName.superhbe: br'\x69\xF6\x00\x0B\x68\xF6', # This is an epilogue

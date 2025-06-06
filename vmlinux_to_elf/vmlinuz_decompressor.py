@@ -9,6 +9,7 @@ from typing import Union
 from re import search
 import importlib
 import logging
+import lzo
 
 """
     How to detect a vmlinuz file?
@@ -234,16 +235,7 @@ def try_decompress_at(input_file : bytes, offset : int) -> bytes:
             decoded = buf.read()
 
         elif Signature.check(input_file, offset, Signature.Compressed_LZO):
-            try:
-                import lzo
-            except ModuleNotFoundError:
-                logging.error('Error: This kernel may require LZO decompression.')
-                logging.error('       But "python-lzo" python package was not found.')
-                logging.error('       Example installation command: "sudo pip3 install git+https://github.com/clubby789/python-lzo@b4e39df"')
-                logging.error()
-                return
-            buf = BytesIO(input_file[offset:])
-            decoded = lzo.LzoFile(fileobj=buf, mode='rb').read()
+            decoded = lzo.decompress(input_file[offset:])
     except Exception:
         pass
     

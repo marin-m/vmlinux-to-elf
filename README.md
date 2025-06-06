@@ -20,7 +20,6 @@ System-wide installation (the second command may not be needed as PIP should fin
 
 ```bash
 sudo apt install python3-pip liblzo2-dev
-sudo pip3 install --upgrade lz4 zstandard git+https://github.com/clubby789/python-lzo@b4e39df
 sudo pip3 install --upgrade git+https://github.com/marin-m/vmlinux-to-elf
 ```
 

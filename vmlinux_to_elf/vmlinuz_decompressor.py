@@ -110,8 +110,6 @@ class SingleGzipReader(_GzipReader):
         self.__new_member = new_value
         
 
-missing_deps = set()  # List of missing dependencies that could be used by this kernel
-
 """
     Try to decompress a file at a given offset, without
     knowing the compression algorithm

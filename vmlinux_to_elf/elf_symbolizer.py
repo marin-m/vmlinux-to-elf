@@ -41,7 +41,7 @@ class ElfSymbolizer():
         if file_offset:
             file_contents = file_contents[file_offset:]
         
-        kallsyms_finder = KallsymsFinder(file_contents, bit_size, override_relative)
+        kallsyms_finder = KallsymsFinder(file_contents, bit_size, override_relative, base_address)
         
         
         if file_contents.startswith(b'\x7fELF'):

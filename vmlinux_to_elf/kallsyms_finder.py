@@ -171,7 +171,7 @@ class KallsymsFinder:
         We'll find kallsyms_token_table and infer the rest
     """
     
-    def __init__(self, kernel_img : bytes, bit_size : int = None, override_relative_base : bool = False):
+    def __init__(self, kernel_img : bytes, bit_size : int = None, override_relative_base : bool = False, base_address : int = None):
         
         self.override_relative_base = override_relative_base
         self.kernel_img = kernel_img
@@ -189,7 +189,7 @@ class KallsymsFinder:
             self.is_64_bits = (bit_size == 64)
 
         if self.is_64_bits:
-            self.find_elf64_rela()
+            self.find_elf64_rela(base_address)
             self.apply_elf64_rela()
         
         # -
@@ -242,7 +242,7 @@ class KallsymsFinder:
 
         self.elf_machine,  self.is_64_bits,  self.is_big_endian = architecture_name_to_elf_machine_and_is64bits_and_isbigendian[self.architecture]
 
-    def find_elf64_rela(self) -> bool:
+    def find_elf64_rela(self, base_address: int = None) -> bool:
 
         """
             Find relocations table, return True if success, False
@@ -320,11 +320,14 @@ class KallsymsFinder:
         if count < minimal_heuristic_count:
             return False
 
-        self.kernel_text_candidate = kernel_text_candidate
+        self.kernel_text_candidate = kernel_text_candidate if base_address is None else base_address
         self.elf64_rela = elf64_rela
         self.elf64_rela_end_excl = self.elf64_rela_start + count * rela64_size
         logging.info('[+] Found relocations table at file offset 0x%04x (count=%d)' % (self.elf64_rela_start, count))
-        logging.info('[+] Found kernel text candidate: 0x%08x' % (kernel_text_candidate))
+        if base_address is None:
+            logging.info('[+] Found kernel text candidate: 0x%08x' % (kernel_text_candidate))
+        else:
+            logging.info('[+] Using supplied base address as kernel text candidate: 0x%08x' % (kernel_text_candidate))
         return True
 
     def apply_elf64_rela(self) -> bool:
@@ -1157,6 +1160,9 @@ if __name__ == '__main__':
     args.add_argument('--override-relative', help = 'Assume kallsyms offsets are absolute addresses' , action="store_true")
     args.add_argument('--bit-size', help = 'Force overriding the input kernel ' +
         'bit size, providing 32 or 64 bit (rather than auto-detect)', type = int)
+    args.add_argument('--base-address', help = 'Force overriding the base address used for converting ' +
+        'relocations to relative relocations with this integer value (rather than auto-detect)',
+        type = lambda string: int(string.replace('0x', ''), 16), metavar = 'HEX_NUMBER')
     
     args = args.parse_args()
 
@@ -1164,7 +1170,7 @@ if __name__ == '__main__':
     with open(args.input_file, 'rb') as kernel_bin:
         
         try:
-            kallsyms = KallsymsFinder(obtain_raw_kernel_from_file(kernel_bin.read()), args.bit_size, args.override_relative)
+            kallsyms = KallsymsFinder(obtain_raw_kernel_from_file(kernel_bin.read()), args.bit_size, args.override_relative, args.base_address)
         
         except ArchitectureGuessError:
            exit('[!] The architecture of your kernel could not be guessed ' +

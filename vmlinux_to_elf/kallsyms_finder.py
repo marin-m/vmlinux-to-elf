@@ -137,6 +137,8 @@ class KallsymsFinder:
     kallsyms_token_index_end__offset : int = None
 
     elf64_rela : List[Tuple[int, int, int]] = None
+    elf64_rela_start : int = None
+    elf64_rela_end_excl : int = None
     kernel_text_candidate : int = None
     
     # Inferred information
@@ -254,8 +256,8 @@ class KallsymsFinder:
             return False
 
         rela64_size = 24
-        offset = len(self.kernel_img)
-        offset -= (offset & 3) # align to pointer size
+        self.elf64_rela_start = len(self.kernel_img)
+        self.elf64_rela_start -= (self.elf64_rela_start & 3) # align to pointer size
         R_AARCH64_RELATIVE = 0x403
         elf64_rela = []
         minimal_heuristic_count = 1000
@@ -266,8 +268,8 @@ class KallsymsFinder:
         # Relocations table located at 'init' part of kernel image
         # Thus reverse-search is more efficient
 
-        while offset >= rela64_size:
-            rela = unpack_from('<QQQ', self.kernel_img, offset - rela64_size)
+        while self.elf64_rela_start >= rela64_size:
+            rela = unpack_from('<QQQ', self.kernel_img, self.elf64_rela_start - rela64_size)
             r_offset, r_info, r_addend = rela
             if (0 == r_offset) and (0 == r_info) and (0 == r_addend):
 
@@ -277,12 +279,13 @@ class KallsymsFinder:
 
                     # just skip empty entries inside relocation table
 
-                    offset -= rela64_size   # move to one rela64 struct backward
+                    self.elf64_rela_start -= rela64_size   # move to one rela64 struct backward
                     continue
 
             if R_AARCH64_RELATIVE != r_info:
 
                 # Relocations must be the same type
+                # BUG: this is not true in practice, R_AARCH64_GLOB_DAT and maybe some other are between first few R_AARCH64_RELATIVE, which results in missing ~30 relocations
 
                 if len(elf64_rela) >= minimal_heuristic_count:
                     break
@@ -294,23 +297,23 @@ class KallsymsFinder:
                 
                 # move to the next candidate
                 
-                possible_offset = offset - 1
+                possible_offset = self.elf64_rela_start - 1
 
                 while possible_offset % 8 != 0: # Find a pointer-aligned r_info entry
                     possible_offset = self.kernel_img.rfind(R_AARCH64_RELATIVE.to_bytes(8, 'little'), 8, possible_offset - rela64_size + 1)
                     if possible_offset == -1:
-                        offset = 0
+                        self.elf64_rela_start = 0
                         break
 
                 if possible_offset != -1:
-                    offset = possible_offset - 8
+                    self.elf64_rela_start = possible_offset - 8
 
                 continue
 
             elf64_rela.append(rela)
             if (0 == (r_addend & 0xFFF)) and (minimal_kernel_va <= r_addend < kernel_text_candidate):
                 kernel_text_candidate = r_addend
-            offset -= rela64_size   # move to one rela64 struct backward
+            self.elf64_rela_start -= rela64_size   # move to one rela64 struct backward
 
         count = len(elf64_rela)
         
@@ -319,7 +322,8 @@ class KallsymsFinder:
 
         self.kernel_text_candidate = kernel_text_candidate
         self.elf64_rela = elf64_rela
-        logging.info('[+] Found relocations table at file offset 0x%04x (count=%d)' % (offset, count))
+        self.elf64_rela_end_excl = self.elf64_rela_start + count * rela64_size
+        logging.info('[+] Found relocations table at file offset 0x%04x (count=%d)' % (self.elf64_rela_start, count))
         logging.info('[+] Found kernel text candidate: 0x%08x' % (kernel_text_candidate))
         return True
 

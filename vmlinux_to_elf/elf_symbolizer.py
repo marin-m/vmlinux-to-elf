@@ -68,7 +68,6 @@ class ElfSymbolizer():
             progbits = ElfProgbits(kernel)
             progbits.section_name = '.kernel'
             progbits.section_header.sh_flags = SH_FLAGS.SHF_ALLOC | SH_FLAGS.SHF_EXECINSTR | SH_FLAGS.SHF_WRITE
-            progbits.section_header.sh_size = len(file_contents)
             
             first_symbol_virtual_address = next((symbol.virtual_address for symbol in kallsyms_finder.symbols if symbol.symbol_type == KallsymsSymbolType.TEXT), None)
             
@@ -84,8 +83,23 @@ class ElfSymbolizer():
             else:
                 progbits.section_header.sh_addr = first_symbol_virtual_address & 0xfffffffffffff000
                 logging.info(f"[+] Base address fallback, using first_symbol_virtual_address ({progbits.section_header.sh_addr:x})")
+
+            kernel.sections += [null, progbits]
             
-            progbits.section_contents = file_contents
+            if kallsyms_finder.elf64_rela:
+                # Punch a hole into the ELF to remove relocation tables
+                progbits.section_header.sh_size = kallsyms_finder.elf64_rela_start
+                progbits.section_contents = file_contents[:progbits.section_header.sh_size]
+                progbits2 = ElfProgbits(kernel)
+                progbits2.section_name = '.kernel2'
+                progbits2.section_header.sh_flags = SH_FLAGS.SHF_ALLOC | SH_FLAGS.SHF_EXECINSTR | SH_FLAGS.SHF_WRITE
+                progbits2.section_header.sh_addr = progbits.section_header.sh_addr + kallsyms_finder.elf64_rela_end_excl
+                progbits2.section_header.sh_size = len(file_contents) - kallsyms_finder.elf64_rela_end_excl
+                progbits2.section_contents = file_contents[kallsyms_finder.elf64_rela_end_excl:]
+                kernel.sections += [progbits2]
+            else:
+                progbits.section_contents = file_contents
+                progbits.section_header.sh_size = len(file_contents)
             
             
             bss = ElfNoBits(kernel)
@@ -94,7 +108,7 @@ class ElfSymbolizer():
             bss.section_header.sh_size = 0x8000000
             bss.section_header.sh_addr = progbits.section_header.sh_addr + len(file_contents)
             
-            kernel.sections += [null, progbits, bss]
+            kernel.sections += [bss]
             
 
         

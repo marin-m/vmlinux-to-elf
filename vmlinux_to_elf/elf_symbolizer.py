@@ -91,7 +91,7 @@ class ElfSymbolizer():
             bss = ElfNoBits(kernel)
             bss.section_name = '.bss'
             bss.section_header.sh_flags = SH_FLAGS.SHF_ALLOC | SH_FLAGS.SHF_EXECINSTR | SH_FLAGS.SHF_WRITE
-            bss.section_header.sh_size = 0x100000
+            bss.section_header.sh_size = 0x8000000
             bss.section_header.sh_addr = progbits.section_header.sh_addr + len(file_contents)
             
             kernel.sections += [null, progbits, bss]

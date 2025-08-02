@@ -950,7 +950,7 @@ class ElfRel(ElfSection):
             
             
 
-class ElfRela(ElfRel):
+class ElfRela(ElfSection):
     
     relocation_table : List[Elf32LittleEndianRelocationWithAddendTableEntry] = None
     
@@ -977,7 +977,25 @@ class ElfRela(ElfRel):
             relocation.unserialize(data)
             
             self.relocation_table.append(relocation)
-            
+
+    def post_unserialize(self):
+
+        super().post_unserialize()
+
+        self.symtab_section  = self.elf_file.sections[self.section_header.sh_link]
+
+
+    def pre_serialize(self):
+
+        super().pre_serialize()
+
+        self.section_header.sh_entsize = memoryview(self.relocation_table[0]).nbytes
+
+    def _serialize_contents(self, data : BytesIO):
+
+        for relocation in self.relocation_table:
+
+            relocation.serialize(data)
     
 
 class ElfDynamic(ElfSection):

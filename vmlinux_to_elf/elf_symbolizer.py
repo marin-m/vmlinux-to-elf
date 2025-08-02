@@ -15,12 +15,12 @@ import logging
 try:
     from kallsyms_finder import KallsymsFinder, KallsymsSymbolType
 
-    from utils.elf import ElfFile, ElfSymtab, ElfRel, Elf32LittleEndianSymbolTableEntry, Elf32BigEndianSymbolTableEntry, Elf64LittleEndianSymbolTableEntry, Elf64BigEndianSymbolTableEntry, SPECIAL_SECTION_INDEX, ST_INFO_TYPE, ST_INFO_BINDING, ElfStrtab, ElfProgbits, ElfNullSection, ElfNoBits, SH_FLAGS
+    from utils.elf import ElfFile, ElfSymtab, ElfRel, Elf32LittleEndianSymbolTableEntry, Elf32BigEndianSymbolTableEntry, Elf64LittleEndianSymbolTableEntry, Elf64BigEndianSymbolTableEntry, SPECIAL_SECTION_INDEX, ST_INFO_TYPE, ST_INFO_BINDING, ElfStrtab, ElfProgbits, ElfNullSection, ElfNoBits, SH_FLAGS, ElfRela, Elf32LittleEndianRelocationWithAddendTableEntry, Elf32BigEndianRelocationWithAddendTableEntry, Elf64LittleEndianRelocationWithAddendTableEntry, Elf64BigEndianRelocationWithAddendTableEntry
 
 except ImportError:
     from vmlinux_to_elf.kallsyms_finder import KallsymsFinder, KallsymsSymbolType
 
-    from vmlinux_to_elf.utils.elf import ElfFile, ElfSymtab, ElfRel, Elf32LittleEndianSymbolTableEntry, Elf32BigEndianSymbolTableEntry, Elf64LittleEndianSymbolTableEntry, Elf64BigEndianSymbolTableEntry, SPECIAL_SECTION_INDEX, ST_INFO_TYPE, ST_INFO_BINDING, ElfStrtab, ElfProgbits, ElfNullSection, ElfNoBits, SH_FLAGS
+    from vmlinux_to_elf.utils.elf import ElfFile, ElfSymtab, ElfRel, Elf32LittleEndianSymbolTableEntry, Elf32BigEndianSymbolTableEntry, Elf64LittleEndianSymbolTableEntry, Elf64BigEndianSymbolTableEntry, SPECIAL_SECTION_INDEX, ST_INFO_TYPE, ST_INFO_BINDING, ElfStrtab, ElfProgbits, ElfNullSection, ElfNoBits, SH_FLAGS, ElfRela, Elf32LittleEndianRelocationWithAddendTableEntry, Elf32BigEndianRelocationWithAddendTableEntry, Elf64LittleEndianRelocationWithAddendTableEntry, Elf64BigEndianRelocationWithAddendTableEntry
 
 
 class ElfSymbolizer():
@@ -211,6 +211,28 @@ class ElfSymbolizer():
                 elf_symbol.associated_section = _find_section(symbol.virtual_address)
 
             symtab.symbol_table.append(elf_symbol)
+
+        if kallsyms_finder.elf64_rela:
+            srela = ElfRela(kernel)
+            srela.section_name = '.rela.dyn'
+            relocation_class = {
+                (False, False): Elf32LittleEndianRelocationWithAddendTableEntry,
+                (True, False): Elf32BigEndianRelocationWithAddendTableEntry,
+                (False, True): Elf64LittleEndianRelocationWithAddendTableEntry,
+                (True, True): Elf64BigEndianRelocationWithAddendTableEntry,
+            }[(kernel.is_big_endian, kernel.is_64_bits)]
+            srela.relocation_table = []
+            srela.symtab_section = symtab
+            kernel.sections += [srela]
+            for rela in kallsyms_finder.elf64_rela:
+                relocation = relocation_class(kernel.is_big_endian, kernel.is_64_bits)
+
+                relocation.r_offset = rela[0]
+                relocation.r_info_type = 1027
+                relocation.r_addend = rela[2]
+
+                srela.relocation_table.append(relocation)
+
         
         # Save the modified ELF
         

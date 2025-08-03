@@ -15,19 +15,19 @@ import logging
 try:
     from kallsyms_finder import KallsymsFinder, KallsymsSymbolType
 
-    from utils.elf import ElfFile, ElfSymtab, ElfRel, Elf32LittleEndianSymbolTableEntry, Elf32BigEndianSymbolTableEntry, Elf64LittleEndianSymbolTableEntry, Elf64BigEndianSymbolTableEntry, SPECIAL_SECTION_INDEX, ST_INFO_TYPE, ST_INFO_BINDING, ElfStrtab, ElfProgbits, ElfNullSection, ElfNoBits, SH_FLAGS
+    from utils.elf import ElfFile, ElfSymtab, ElfRel, Elf32LittleEndianSymbolTableEntry, Elf32BigEndianSymbolTableEntry, Elf64LittleEndianSymbolTableEntry, Elf64BigEndianSymbolTableEntry, SPECIAL_SECTION_INDEX, ST_INFO_TYPE, ST_INFO_BINDING, ElfStrtab, ElfProgbits, ElfNullSection, ElfNoBits, SH_FLAGS, ElfRela, Elf32LittleEndianRelocationWithAddendTableEntry, Elf32BigEndianRelocationWithAddendTableEntry, Elf64LittleEndianRelocationWithAddendTableEntry, Elf64BigEndianRelocationWithAddendTableEntry
 
 except ImportError:
     from vmlinux_to_elf.kallsyms_finder import KallsymsFinder, KallsymsSymbolType
 
-    from vmlinux_to_elf.utils.elf import ElfFile, ElfSymtab, ElfRel, Elf32LittleEndianSymbolTableEntry, Elf32BigEndianSymbolTableEntry, Elf64LittleEndianSymbolTableEntry, Elf64BigEndianSymbolTableEntry, SPECIAL_SECTION_INDEX, ST_INFO_TYPE, ST_INFO_BINDING, ElfStrtab, ElfProgbits, ElfNullSection, ElfNoBits, SH_FLAGS
+    from vmlinux_to_elf.utils.elf import ElfFile, ElfSymtab, ElfRel, Elf32LittleEndianSymbolTableEntry, Elf32BigEndianSymbolTableEntry, Elf64LittleEndianSymbolTableEntry, Elf64BigEndianSymbolTableEntry, SPECIAL_SECTION_INDEX, ST_INFO_TYPE, ST_INFO_BINDING, ElfStrtab, ElfProgbits, ElfNullSection, ElfNoBits, SH_FLAGS, ElfRela, Elf32LittleEndianRelocationWithAddendTableEntry, Elf32BigEndianRelocationWithAddendTableEntry, Elf64LittleEndianRelocationWithAddendTableEntry, Elf64BigEndianRelocationWithAddendTableEntry
 
 
 class ElfSymbolizer():
     
     def __init__(self, file_contents : bytes, output_file : str,
         elf_machine : int = None, bit_size : int = None,
-        base_address : int = None, file_offset : int = None):
+        base_address : int = None, file_offset : int = None, override_relative : bool = None):
         
         if file_contents.startswith(b'\x27\x05\x19\x56'): # uImage header magic (always big-endian)
             
@@ -41,7 +41,7 @@ class ElfSymbolizer():
         if file_offset:
             file_contents = file_contents[file_offset:]
         
-        kallsyms_finder = KallsymsFinder(file_contents, bit_size)
+        kallsyms_finder = KallsymsFinder(file_contents, bit_size, override_relative, base_address)
         
         
         if file_contents.startswith(b'\x7fELF'):
@@ -68,7 +68,6 @@ class ElfSymbolizer():
             progbits = ElfProgbits(kernel)
             progbits.section_name = '.kernel'
             progbits.section_header.sh_flags = SH_FLAGS.SHF_ALLOC | SH_FLAGS.SHF_EXECINSTR | SH_FLAGS.SHF_WRITE
-            progbits.section_header.sh_size = len(file_contents)
             
             first_symbol_virtual_address = next((symbol.virtual_address for symbol in kallsyms_finder.symbols if symbol.symbol_type == KallsymsSymbolType.TEXT), None)
             
@@ -84,17 +83,32 @@ class ElfSymbolizer():
             else:
                 progbits.section_header.sh_addr = first_symbol_virtual_address & 0xfffffffffffff000
                 logging.info(f"[+] Base address fallback, using first_symbol_virtual_address ({progbits.section_header.sh_addr:x})")
+
+            kernel.sections += [null, progbits]
             
-            progbits.section_contents = file_contents
+            if kallsyms_finder.elf64_rela:
+                # Punch a hole into the ELF to remove relocation tables
+                progbits.section_header.sh_size = kallsyms_finder.elf64_rela_start
+                progbits.section_contents = file_contents[:progbits.section_header.sh_size]
+                progbits2 = ElfProgbits(kernel)
+                progbits2.section_name = '.kernel2'
+                progbits2.section_header.sh_flags = SH_FLAGS.SHF_ALLOC | SH_FLAGS.SHF_EXECINSTR | SH_FLAGS.SHF_WRITE
+                progbits2.section_header.sh_addr = progbits.section_header.sh_addr + kallsyms_finder.elf64_rela_end_excl
+                progbits2.section_header.sh_size = len(file_contents) - kallsyms_finder.elf64_rela_end_excl
+                progbits2.section_contents = file_contents[kallsyms_finder.elf64_rela_end_excl:]
+                kernel.sections += [progbits2]
+            else:
+                progbits.section_contents = file_contents
+                progbits.section_header.sh_size = len(file_contents)
             
             
             bss = ElfNoBits(kernel)
             bss.section_name = '.bss'
             bss.section_header.sh_flags = SH_FLAGS.SHF_ALLOC | SH_FLAGS.SHF_EXECINSTR | SH_FLAGS.SHF_WRITE
-            bss.section_header.sh_size = 0x100000
+            bss.section_header.sh_size = 0x8000000
             bss.section_header.sh_addr = progbits.section_header.sh_addr + len(file_contents)
             
-            kernel.sections += [null, progbits, bss]
+            kernel.sections += [bss]
             
 
         
@@ -211,6 +225,28 @@ class ElfSymbolizer():
                 elf_symbol.associated_section = _find_section(symbol.virtual_address)
 
             symtab.symbol_table.append(elf_symbol)
+
+        if kallsyms_finder.elf64_rela:
+            srela = ElfRela(kernel)
+            srela.section_name = '.rela.dyn'
+            relocation_class = {
+                (False, False): Elf32LittleEndianRelocationWithAddendTableEntry,
+                (True, False): Elf32BigEndianRelocationWithAddendTableEntry,
+                (False, True): Elf64LittleEndianRelocationWithAddendTableEntry,
+                (True, True): Elf64BigEndianRelocationWithAddendTableEntry,
+            }[(kernel.is_big_endian, kernel.is_64_bits)]
+            srela.relocation_table = []
+            srela.symtab_section = symtab
+            kernel.sections += [srela]
+            for rela in kallsyms_finder.elf64_rela:
+                relocation = relocation_class(kernel.is_big_endian, kernel.is_64_bits)
+
+                relocation.r_offset = rela[0]
+                relocation.r_info_type = 1027
+                relocation.r_addend = rela[2]
+
+                srela.relocation_table.append(relocation)
+
         
         # Save the modified ELF
         

@@ -137,6 +137,8 @@ class KallsymsFinder:
     kallsyms_token_index_end__offset : int = None
 
     elf64_rela : List[Tuple[int, int, int]] = None
+    elf64_rela_start : int = None
+    elf64_rela_end_excl : int = None
     kernel_text_candidate : int = None
     
     # Inferred information
@@ -169,7 +171,7 @@ class KallsymsFinder:
         We'll find kallsyms_token_table and infer the rest
     """
     
-    def __init__(self, kernel_img : bytes, bit_size : int = None, override_relative_base : bool = False):
+    def __init__(self, kernel_img : bytes, bit_size : int = None, override_relative_base : bool = False, base_address : int = None):
         
         self.override_relative_base = override_relative_base
         self.kernel_img = kernel_img
@@ -187,7 +189,7 @@ class KallsymsFinder:
             self.is_64_bits = (bit_size == 64)
 
         if self.is_64_bits:
-            self.find_elf64_rela()
+            self.find_elf64_rela(base_address)
             self.apply_elf64_rela()
         
         # -
@@ -240,7 +242,7 @@ class KallsymsFinder:
 
         self.elf_machine,  self.is_64_bits,  self.is_big_endian = architecture_name_to_elf_machine_and_is64bits_and_isbigendian[self.architecture]
 
-    def find_elf64_rela(self) -> bool:
+    def find_elf64_rela(self, base_address: int = None) -> bool:
 
         """
             Find relocations table, return True if success, False
@@ -254,8 +256,8 @@ class KallsymsFinder:
             return False
 
         rela64_size = 24
-        offset = len(self.kernel_img)
-        offset -= (offset & 3) # align to pointer size
+        self.elf64_rela_start = len(self.kernel_img)
+        self.elf64_rela_start -= (self.elf64_rela_start & 3) # align to pointer size
         R_AARCH64_RELATIVE = 0x403
         elf64_rela = []
         minimal_heuristic_count = 1000
@@ -266,8 +268,8 @@ class KallsymsFinder:
         # Relocations table located at 'init' part of kernel image
         # Thus reverse-search is more efficient
 
-        while offset >= rela64_size:
-            rela = unpack_from('<QQQ', self.kernel_img, offset - rela64_size)
+        while self.elf64_rela_start >= rela64_size:
+            rela = unpack_from('<QQQ', self.kernel_img, self.elf64_rela_start - rela64_size)
             r_offset, r_info, r_addend = rela
             if (0 == r_offset) and (0 == r_info) and (0 == r_addend):
 
@@ -277,12 +279,13 @@ class KallsymsFinder:
 
                     # just skip empty entries inside relocation table
 
-                    offset -= rela64_size   # move to one rela64 struct backward
+                    self.elf64_rela_start -= rela64_size   # move to one rela64 struct backward
                     continue
 
             if R_AARCH64_RELATIVE != r_info:
 
                 # Relocations must be the same type
+                # BUG: this is not true in practice, R_AARCH64_GLOB_DAT and maybe some other are between first few R_AARCH64_RELATIVE, which results in missing ~30 relocations
 
                 if len(elf64_rela) >= minimal_heuristic_count:
                     break
@@ -294,33 +297,37 @@ class KallsymsFinder:
                 
                 # move to the next candidate
                 
-                possible_offset = offset - 1
+                possible_offset = self.elf64_rela_start - 1
 
                 while possible_offset % 8 != 0: # Find a pointer-aligned r_info entry
                     possible_offset = self.kernel_img.rfind(R_AARCH64_RELATIVE.to_bytes(8, 'little'), 8, possible_offset - rela64_size + 1)
                     if possible_offset == -1:
-                        offset = 0
+                        self.elf64_rela_start = 0
                         break
 
                 if possible_offset != -1:
-                    offset = possible_offset - 8
+                    self.elf64_rela_start = possible_offset - 8
 
                 continue
 
             elf64_rela.append(rela)
             if (0 == (r_addend & 0xFFF)) and (minimal_kernel_va <= r_addend < kernel_text_candidate):
                 kernel_text_candidate = r_addend
-            offset -= rela64_size   # move to one rela64 struct backward
+            self.elf64_rela_start -= rela64_size   # move to one rela64 struct backward
 
         count = len(elf64_rela)
         
         if count < minimal_heuristic_count:
             return False
 
-        self.kernel_text_candidate = kernel_text_candidate
+        self.kernel_text_candidate = kernel_text_candidate if base_address is None else base_address
         self.elf64_rela = elf64_rela
-        logging.info('[+] Found relocations table at file offset 0x%04x (count=%d)' % (offset, count))
-        logging.info('[+] Found kernel text candidate: 0x%08x' % (kernel_text_candidate))
+        self.elf64_rela_end_excl = self.elf64_rela_start + count * rela64_size
+        logging.info('[+] Found relocations table at file offset 0x%04x (count=%d)' % (self.elf64_rela_start, count))
+        if base_address is None:
+            logging.info('[+] Found kernel text candidate: 0x%08x' % (kernel_text_candidate))
+        else:
+            logging.info('[+] Using supplied base address as kernel text candidate: 0x%08x' % (kernel_text_candidate))
         return True
 
     def apply_elf64_rela(self) -> bool:
@@ -1153,6 +1160,9 @@ if __name__ == '__main__':
     args.add_argument('--override-relative', help = 'Assume kallsyms offsets are absolute addresses' , action="store_true")
     args.add_argument('--bit-size', help = 'Force overriding the input kernel ' +
         'bit size, providing 32 or 64 bit (rather than auto-detect)', type = int)
+    args.add_argument('--base-address', help = 'Force overriding the base address used for converting ' +
+        'relocations to relative relocations with this integer value (rather than auto-detect)',
+        type = lambda string: int(string.replace('0x', ''), 16), metavar = 'HEX_NUMBER')
     
     args = args.parse_args()
 
@@ -1160,7 +1170,7 @@ if __name__ == '__main__':
     with open(args.input_file, 'rb') as kernel_bin:
         
         try:
-            kallsyms = KallsymsFinder(obtain_raw_kernel_from_file(kernel_bin.read()), args.bit_size, args.override_relative)
+            kallsyms = KallsymsFinder(obtain_raw_kernel_from_file(kernel_bin.read()), args.bit_size, args.override_relative, args.base_address)
         
         except ArchitectureGuessError:
            exit('[!] The architecture of your kernel could not be guessed ' +

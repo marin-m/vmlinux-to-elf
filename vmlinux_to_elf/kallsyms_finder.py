@@ -171,7 +171,8 @@ class KallsymsFinder:
         We'll find kallsyms_token_table and infer the rest
     """
     
-    def __init__(self, kernel_img : bytes, bit_size : int = None, override_relative_base : bool = False, base_address : int = None):
+    def __init__(self, kernel_img : bytes, bit_size : int = None, override_relative_base : bool = False,
+        base_address : int = None):
         
         self.override_relative_base = override_relative_base
         self.kernel_img = kernel_img

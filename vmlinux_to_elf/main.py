@@ -44,6 +44,9 @@ if __name__ == '__main__':
         'base address field with this integer value (rather than auto-detect)',
         type = lambda string: int(string.replace('0x', ''), 16), metavar = 'HEX_NUMBER')
 
+    args.add_argument('--bss-size', help = 'Size in megabytes of the .bss section in the binary',
+        type = int, default = 16)
+
     args.add_argument('--use-absolute', help = 'Assume kallsyms offsets are absolute addresses', action="store_true")
 
     args = args.parse_args()
@@ -66,7 +69,7 @@ if __name__ == '__main__':
                 obtain_raw_kernel_from_file(
                     kernel_bin.read()
                 ), args.output_file, args.e_machine, args.bit_size,
-                args.base_address, args.file_offset, args.use_absolute
+                args.base_address, args.bss_size, args.file_offset, args.use_absolute
             )
         
         except ArchitectureGuessError:

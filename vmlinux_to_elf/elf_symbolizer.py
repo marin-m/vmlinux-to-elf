@@ -27,7 +27,8 @@ class ElfSymbolizer():
     
     def __init__(self, file_contents : bytes, output_file : str,
         elf_machine : int = None, bit_size : int = None,
-        base_address : int = None, file_offset : int = None, override_relative : bool = None):
+        base_address : int = None, bss_size : int = 16,
+        file_offset : int = None, override_relative : bool = None):
         
         if file_contents.startswith(b'\x27\x05\x19\x56'): # uImage header magic (always big-endian)
             
@@ -105,7 +106,7 @@ class ElfSymbolizer():
             bss = ElfNoBits(kernel)
             bss.section_name = '.bss'
             bss.section_header.sh_flags = SH_FLAGS.SHF_ALLOC | SH_FLAGS.SHF_EXECINSTR | SH_FLAGS.SHF_WRITE
-            bss.section_header.sh_size = 0x8000000
+            bss.section_header.sh_size = bss_size * 1024 * 1024
             bss.section_header.sh_addr = progbits.section_header.sh_addr + len(file_contents)
             
             kernel.sections += [bss]

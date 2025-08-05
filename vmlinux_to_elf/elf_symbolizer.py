@@ -112,7 +112,7 @@ class ElfSymbolizer():
             
 
         
-        """
+        r"""
             Find the entry point symbol. Based on executing this command
             on the Linux tree source:
             

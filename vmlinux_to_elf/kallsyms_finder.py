@@ -962,7 +962,7 @@ class KallsymsFinder:
             endianness_marker = '>' if self.is_big_endian else '<'
             
             if self.has_base_relative:
-                long_size_marker = {2: 'h', 4: 'i'}[offset_byte_size] # offsets may be negative, contrary to addresses
+                long_size_marker = {2: 'h', 4: 'i'}[offset_byte_size] # Offsets may be negative, contrary to addresses
             else:
                 long_size_marker = {2: 'H', 4: 'I', 8: 'Q'}[address_byte_size]
             
@@ -976,15 +976,16 @@ class KallsymsFinder:
             if self.has_base_relative:
                 number_of_negative_items = len([offset for offset in tentative_addresses_or_offsets if offset < 0])
 
-                # Many kerenels put their addresses in the upper half of the
+                # Many kernels put their addresses in the upper half of the
                 # virtual address space. This means that many of the addresses
-                # will look like negative numbers.  On the other hand, there
-                # should be the same zeros in the high byte(s).  A true
-                # negative will probably have the top 3 nybbles or so as
-                # 0xfff00000.  Lets check this as well.  Lets perform these
-                # checks
+                # will look like negative numbers. On the other hand (?), there
+                # should be the same zeroes in the high part of the address. 
+
+                # A true negative address will probably have the top 3 nibbles
+                # or so as in 0xfff00000.  Let's check this as well.
+
                 BITS = 64 if self.is_64_bits else 32
-                NEGATIVE_HEURISTIC_MASK = 0xFFF << (BITS - 12)  # Mask for the top 3 nybbles
+                NEGATIVE_HEURISTIC_MASK = 0xfff << (BITS - 12)  # Mask for the top 3 nibbles
                 ABSOLUTE_HEURISTIC_MASK = 0x3f  << (BITS -  8)  # Mask for zeros in the top byte
 
                 heuristically_negative = len([offset for offset in tentative_addresses_or_offsets if (offset & NEGATIVE_HEURISTIC_MASK) == NEGATIVE_HEURISTIC_MASK])
@@ -1004,8 +1005,8 @@ class KallsymsFinder:
                 if heuristic_absolute_percent > 0.5 or heuristic_negative_percent < 0.5:
                     logging.info(    '[i] Note: sometimes there is junk at the beginning of the kernel and the load address is not the guessed')
                     logging.info(    '          base address provided. You may need to play around with different load addresses to get everything')
-                    logging.info(    '          to line up.  There may be some decent tables in the kernel with known patterns to line things up')
-                    logging.info(    '          heuristically, but I have not explored this yet.')
+                    logging.info(    '          to line up. There may be some decent tables in the kernel with known patterns that could be used to')
+                    logging.info(    '          line things up heuristically, but this has not been explored this yet.')
                 
                 logging.info('[i] Negative offsets overall: %g %%' % (number_of_negative_items / len(tentative_addresses_or_offsets) * 100))
             
@@ -1036,7 +1037,7 @@ class KallsymsFinder:
             
             self.kernel_addresses = tentative_addresses_or_offsets
             
-            break # DEBUG
+            break
     
     def get_token_table(self) -> list:
         
@@ -1105,7 +1106,6 @@ class KallsymsFinder:
             symbol.name = symbol_name[1:] # Exclude the type letter
             
             symbol.virtual_address = symbol_address
-            # symbol.file_offset = 
             
             if symbol_name[0].lower() in 'uvw':
                 

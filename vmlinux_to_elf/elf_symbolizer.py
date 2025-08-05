@@ -77,13 +77,13 @@ class ElfSymbolizer():
             
             if base_address is not None:
                 progbits.section_header.sh_addr = base_address
-                logging.info(f"[+] Explicit base address given ({progbits.section_header.sh_addr:x})")
+                logging.info(f"[+] An explicit base address was given ({progbits.section_header.sh_addr:x})")
             elif kallsyms_finder.kernel_text_candidate:
                 progbits.section_header.sh_addr = kallsyms_finder.kernel_text_candidate
-                logging.info(f"[+] Base address using kernel_text_candidate ({progbits.section_header.sh_addr:x})")
+                logging.info(f"[+] Guessed the base address using the kernel_text_candidate heuristic ({progbits.section_header.sh_addr:x})")
             else:
                 progbits.section_header.sh_addr = first_symbol_virtual_address & 0xfffffffffffff000
-                logging.info(f"[+] Base address fallback, using first_symbol_virtual_address ({progbits.section_header.sh_addr:x})")
+                logging.info(f"[+] Guessed the base address using the first_symbol_virtual_address fallback heuristic ({progbits.section_header.sh_addr:x})")
 
             kernel.sections += [null, progbits]
             

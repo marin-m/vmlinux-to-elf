@@ -1170,7 +1170,7 @@ if __name__ == '__main__':
     with open(args.input_file, 'rb') as kernel_bin:
         
         try:
-            kallsyms = KallsymsFinder(obtain_raw_kernel_from_file(kernel_bin.read()), args.bit_size, args.override_relative, args.base_address)
+            kallsyms = KallsymsFinder(obtain_raw_kernel_from_file(kernel_bin.read()), args.bit_size, args.use_absolute, args.base_address)
         
         except ArchitectureGuessError:
            exit('[!] The architecture of your kernel could not be guessed ' +

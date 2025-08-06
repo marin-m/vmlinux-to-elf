@@ -1003,10 +1003,10 @@ class KallsymsFinder:
                     logging.warning( '[!]          You may want to re-run this utility, overriding the relative base')
 
                 if heuristic_absolute_percent > 0.5 or heuristic_negative_percent < 0.5:
-                    logging.info(    '[i] Note: sometimes there is junk at the beginning of the kernel and the load address is not the guessed')
-                    logging.info(    '          base address provided. You may need to play around with different load addresses to get everything')
-                    logging.info(    '          to line up. There may be some decent tables in the kernel with known patterns that could be used to')
-                    logging.info(    '          line things up heuristically, but this has not been explored this yet.')
+                    logging.info(    '[i] Note: sometimes there is junk at the beginning of the kernel, and the load address is not the guessed')
+                    logging.info(    '          base address. You may need to play around with different load addresses to get everything')
+                    logging.info(    '          to line up. There may be some decent tables in the kernel with known patterns that could be')
+                    logging.info(    '          used to line things up heuristically, but this has not been explored this yet.')
                 
                 logging.info('[i] Negative offsets overall: %g %%' % (number_of_negative_items / len(tentative_addresses_or_offsets) * 100))
             

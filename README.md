@@ -105,52 +105,35 @@ Some parameters that should be automatically inferred by the tool (such as the i
 $ vmlinux-to-elf -h
 usage: vmlinux-to-elf [-h] [--e-machine DECIMAL_NUMBER] [--bit-size BIT_SIZE]
                       [--file-offset HEX_NUMBER] [--base-address HEX_NUMBER]
+                      [--bss-size BSS_SIZE] [--use-absolute]
                       input_file output_file
 
-Turn a raw or compressed kernel binary, or a kernel ELF without symbols, into
-a fully analyzable ELF whose symbols were extracted from the kernel symbol
-table
+Turn a raw or compressed kernel binary, or a kernel ELF without symbols, into a fully analyzable ELF whose symbols were extracted from the kernel symbol table
 
 positional arguments:
-  input_file            Path to the
-                        vmlinux/vmlinuz/zImage/bzImage/kernel.bin/kernel.elf
-                        file to make into an analyzable .ELF
+  input_file            Path to the vmlinux/vmlinuz/zImage/bzImage/kernel.bin/kernel.elf file to make into an analyzable .ELF
   output_file           Path to the analyzable .ELF to output
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   --e-machine DECIMAL_NUMBER
-                        Force overriding the output ELF "e_machine" field with
-                        this integer value (rather than auto-detect)
-  --bit-size BIT_SIZE   Force overriding the input kernel bit size, providing
-                        32 or 64 bit (rather than auto-detect)
+                        Force overriding the output ELF "e_machine" field with this integer value (rather than auto-detect)
+  --bit-size BIT_SIZE   Force overriding the input kernel bit size, providing 32 or 64 bit (rather than auto-detect)
   --file-offset HEX_NUMBER
-                        Consider that the raw kernel starts at this offset of
-                        the provided raw file or compressed stream (rather
-                        than 0, or the beginning of the ELF sections if an ELF
-                        header was present in the input)
+                        Consider that the raw kernel starts at this offset of the provided raw file or compressed stream (rather than 0, or the beginning of the ELF
+                        sections if an ELF header was present in the input)
   --base-address HEX_NUMBER
-                        Force overriding the output ELF base address field
-                        with this integer value (rather than auto-detect)
-
-$ kallsyms-finder -h
-usage: kallsyms-finder [-h] [--output OUTPUT] [--override-relative] 
-                       [--bit-size BIT_SIZE] input_file
-
-Find the kernel's embedded symbol table from a raw or stripped ELF kernel
-file, and print these to the standard output with their addresses 
-or optionally save them to a file 
-
-positional arguments:
-  input_file           Path to the kernel file to extract symbols from
-
-optional arguments:
-  -h, --help           show this help message and exit
-  --bit-size BIT_SIZE  Force overriding the input kernel bit size, providing
-                       32 or 64 bit (rather than auto-detect)
-  --output OUTPUT_FILE Path to the analyzable .kallsyms output
+                        Force overriding the output ELF base address field with this integer value (rather than auto-detect)
+  --bss-size BSS_SIZE   Size in megabytes of the .bss section in the binary
+  --use-absolute        Assume kallsyms offsets are absolute addresses
 
 ```
 
+## Bug fixes, improvements, etc.
+
 Don't hesitate to [open an issue](https://github.com/marin-m/vmlinux-to-elf/issues/new) for any suggestion of improvement.
+
+Please privilege the current Github repository issues and pull requests in priority for reporting bugs, asking questions, etc.
+
+Alternatively, you can use [this matrix channel](https://matrix.to/#/!ppalJoNacGRgESlXnK:matrix.org) if needing directly contact with the author of the project, but please reserve this as a secondary channel e.g for sending kernel samples, what goes here otherwise is more likely to be lost.
 

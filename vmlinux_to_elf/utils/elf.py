@@ -54,8 +54,6 @@ from pretty_print import pretty_print_structure
     
 """
 
-
-
 Elf32_Addr = c_uint32
 Elf32_Half = c_uint16
 Elf32_Off = c_uint32
@@ -70,7 +68,6 @@ Elf64_Sxword = c_int64
 Elf64_Word = c_uint32
 Elf64_Lword = c_uint64
 Elf64_Xword = c_uint64
-
 
 
 class VariableEndiannessAndWordsizeStructure:
@@ -211,7 +208,6 @@ class ElfFile:
         # Filter out .gnu.version not to confuse readelf for now TODO
         self.sections = list(filter(lambda section: '.gnu.version' not in section.section_name, self.sections))
             
-            
         self.file_header.e_ehsize = memoryview(self.file_header).nbytes
 
         self.file_header.e_shstrndx = self.sections.index(self.section_string_table)
@@ -221,7 +217,6 @@ class ElfFile:
         self.file_header.e_shnum = len(self.sections)
         
         self.file_header.e_shentsize = memoryview(self.sections[0].section_header).nbytes
-        
 
         for section in self.sections:
             
@@ -234,8 +229,6 @@ class ElfFile:
             data.seek(self.file_header.e_shoff + self.file_header.e_shentsize * num_section)
             
             section.serialize(data)
-        
-            
         
         # Calculate the address of segments
         
@@ -274,16 +267,9 @@ class ElfFile:
             
             raise ValueError('This ELF object does not have a section with SH_ALLOC flag')
         
-        
-        
         # Write the segment headers
         
         data.seek(0, SEEK_END)
-        
-        
-        
-        
-        
         
         self.file_header.e_phoff = data.tell()
         
@@ -297,28 +283,11 @@ class ElfFile:
             
             segment.serialize(data)
         
-        
-        
-        
         # Write the program headers
         
         data.seek(0)
         
         self.file_header.serialize(data)
-        
-        
-        
-        """
-        self._program_header.unserialize(data)
-        """
-    
-    """
-        When writing sections, make sure to 
-    """
-
-
-
-# class ElfSectionTable
 
 
 class SH_TYPE(IntEnum):
@@ -359,7 +328,6 @@ class SH_FLAGS(IntEnum):
     SHF_WRITE = 0x1 # Section writable during execution
     SHF_ALLOC = 0x2 # Section occupies memory
     SHF_EXECINSTR = 0x4 # Section contains executable instruc-tions
-
 
 
 
@@ -458,8 +426,6 @@ class ElfSection:
         
         self.section_name = section_string_table.return_string_from_offset(self.section_header.sh_name)
     
-    # -
-    
     def pre_serialize(self):
         
         # Write our entry in .shstrtab
@@ -513,9 +479,6 @@ class ElfSection:
         
         data.write(self.section_contents)
 
-        
-
-
 
 class ElfNullSection(ElfSection):
     
@@ -530,7 +493,7 @@ class ElfNullSection(ElfSection):
     
 class ElfProgbits(ElfSection):
     
-    # virtual adress stored in self.section_header.sh_addr
+    # Virtual address is stored in self.section_header.sh_addr
 
     # Only PROGBITS and NOBITS will have their virtual address specified
     # in their ElfSection structure. For sections like INTERP or DYNAMIC
@@ -547,8 +510,7 @@ class ElfProgbits(ElfSection):
 
 class ElfNoBits(ElfProgbits):
     
-    # virtual adress stored in self.section_header.sh_addr
-    
+    # Virtual address is stored in self.section_header.sh_addr
     
     def _unserialize_contents(self, data : BytesIO):
         
@@ -642,7 +604,6 @@ class Elf64BigEndianSymbolTableEntry(Elf64LittleEndianSymbolTableEntry):
     ]
 
 
-
 class ElfSymtab(ElfSection):
 
     string_table : ElfSection = None # .dynstr or .strtab
@@ -680,8 +641,6 @@ class ElfSymtab(ElfSection):
     def post_unserialize(self):
             
         super().post_unserialize()
-        
-        # print('=> Interpreting symbol table at', self.section_name, 'at', hex(self.section_header.sh_offset))
         
         # Link strings to symbols
             
@@ -739,10 +698,7 @@ class ElfSymtab(ElfSection):
                 
             
             symbol.serialize(data)
-            
-        
-        
-    
+
 class ElfDynsym(ElfSymtab):
     
     pass
@@ -783,9 +739,6 @@ class ElfStrtab(ElfSection):
         self._cache[string] = string_offset = len(self._raw_string_table)
         self._raw_string_table += string.encode('ascii') + b'\x00'        
         return string_offset
-
-
-
 
 
 class Elf32LittleEndianRelocationTableEntry(VariableEndiannessAndWordsizeStructure):

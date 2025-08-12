@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #-*- encoding: Utf-8 -*-
-from vmlinux_to_elf.gui import main
+from vmlinux_to_elf.gtk_app import main
 
 if __name__ == '__main__':
     main()

@@ -6,6 +6,7 @@
   <requires lib="gtk" version="4.0"/>
   <requires lib="libadwaita" version="1.4"/>
   <object class="AdwApplicationWindow" id="main_window">
+    <property name="default-height">700</property>
     <child>
       <object class="AdwToolbarView">
         <property name="content">
@@ -98,7 +99,7 @@
             </child>
             <child>
               <object class="AdwPreferencesGroup">
-                <property name="description">Information auto-detected by vmlinux-to-elf - click an address to display in the lateral hex view pane - TODO </property>
+                <property name="description">Information auto-detected by vmlinux-to-elf - click an address to display in the lateral hex view pane </property>
                 <property name="title">Address detection</property>
                 <child>
                   <object class="AdwActionRow"/>

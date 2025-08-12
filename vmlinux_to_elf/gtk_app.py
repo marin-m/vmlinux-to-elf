@@ -27,7 +27,7 @@ class MyApp(Adw.Application):
         # Create a Builder
 
         self.builder = Gtk.Builder()
-        self.builder.add_from_file(SCRIPT_DIR + "/gui.ui")
+        self.builder.add_from_file(SCRIPT_DIR + "/ui/gui.ui")
         
         # Connect UI signals
 

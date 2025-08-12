@@ -7,110 +7,136 @@
   <requires lib="libadwaita" version="1.4"/>
   <object class="AdwApplicationWindow" id="main_window">
     <child>
-      <object class="AdwNavigationView">
-        <child>
-          <object class="AdwNavigationPage">
-            <property name="title">vmlinux-to-elf</property>
+      <object class="AdwToolbarView">
+        <property name="content">
+          <object class="AdwPreferencesPage">
+            <property name="title">Main panel</property>
             <child>
-              <object class="AdwToolbarView">
-                <property name="top-bar-style">raised</property>
-                <child type="top">
-                  <object class="AdwHeaderBar">
-                    <child type="end">
-                      <object class="GtkMenuButton">
-                        <property name="icon-name">open-menu-symbolic</property>
-                        <property name="popover">
-                          <object class="GtkPopoverMenu">
-                            <property name="menu-model">menu</property>
-                          </object>
-                        </property>
+              <object class="AdwPreferencesGroup">
+                <child>
+                  <object class="GtkLabel">
+                    <property name="label">Welcome to vmlinux-to-elf. This tool serves the purpose of facilitating reverse engineering of Linux kernels found in embedded devices, generating symbol and/or ELF files suitable for tools such as IDA Pro.</property>
+                    <property name="wrap">True</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="description">Please select a kernel to analyse (*.vmlinux, *.vmlinuz, *.bzImage, *.zImage)</property>
+                <property name="title">Kernel selection</property>
+                <child>
+                  <object class="AdwActionRow" id="file_picker_button">
+                    <property name="activatable">True</property>
+                    <property name="activatable-widget">file_picker_icon</property>
+                    <property name="title">Select a file...</property>
+                    <child>
+                      <object class="GtkButton" id="file_picker_icon">
+                        <property name="icon-name">document-open</property>
+                        <style>
+                          <class name="flat"/>
+                        </style>
                       </object>
                     </child>
                   </object>
                 </child>
                 <child>
-                  <object class="AdwPreferencesPage">
-                    <property name="title">Main panel</property>
-                    <child>
-                      <object class="AdwPreferencesGroup">
-                        <child>
-                          <object class="GtkLabel">
-                            <property name="label">Welcome to vmlinux-to-elf. This tool serves the purpose of facilitating reverse engineering of Linux kernels found in embedded devices, generating symbol and/or ELF files suitable for tools such as IDA Pro.</property>
-                            <property name="wrap">True</property>
-                          </object>
-                        </child>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="AdwPreferencesGroup">
-                        <property name="description">Please select a kernel to analyse (*.vmlinux, *.vmlinuz, *.bzImage, *.zImage)</property>
-                        <property name="title">Kernel selection</property>
-                        <child>
-                          <object class="AdwActionRow" id="file_picker_button">
-                            <property name="activatable">True</property>
-                            <property name="activatable-widget">file_picker_icon</property>
-                            <property name="title">Select a file...</property>
-                            <child>
-                              <object class="GtkButton" id="file_picker_icon">
-                                <property name="icon-name">document-open</property>
-                                <style>
-                                  <class name="flat"/>
-                                </style>
-                              </object>
-                            </child>
-                          </object>
-                        </child>
-                        <child>
-                          <object class="AdwActionRow" id="kernel_string_row">
-                            <property name="title">Detected kernel string</property>
-                            <property name="visible">False</property>
-                          </object>
-                        </child>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="AdwPreferencesGroup">
-                        <property name="description">vmlinux-to-elf will attempt to detect automatically the following parameters if not specified explictly.</property>
-                        <property name="title">Analysis options</property>
-                        <child>
-                          <object class="AdwEntryRow">
-                            <property name="text">Testt</property>
-                            <property name="title">Test</property>
-                          </object>
-                        </child>
-                        <child>
-                          <object class="AdwEntryRow">
-                            <property name="name">Test 2</property>
-                          </object>
-                        </child>
-                        <child>
-                          <object class="AdwComboRow">
-                            <property name="subtitle">Architecture</property>
-                          </object>
-                        </child>
-                        <child>
-                          <object class="AdwSwitchRow"/>
-                        </child>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="AdwPreferencesGroup">
-                        <child type="end">
-                          <object class="GtkButton">
-                            <property name="halign">end</property>
-                            <property name="label">Detect symbols</property>
-                            <property name="sensitive">False</property>
-                            <property name="valign">center</property>
-                            <style>
-                              <class name="pill"/>
-                              <class name="suggested-action"/>
-                            </style>
-                          </object>
-                        </child>
-                      </object>
-                    </child>
+                  <object class="AdwActionRow" id="kernel_string_row">
+                    <property name="title">Detected kernel string</property>
+                    <property name="visible">False</property>
                   </object>
                 </child>
+              </object>
+            </child>
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="description">vmlinux-to-elf will attempt to detect automatically the following parameters if not specified explictly.</property>
+                <property name="title">Analysis options</property>
+                <child>
+                  <object class="AdwComboRow" id="architecture_combo">
+                    <property name="title">Architecture (auto-detect: XX)</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="AdwSwitchRow">
+                    <property name="title">64-bit (auto-detect: XX)</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="AdwEntryRow">
+                    <property name="text">Testt</property>
+                    <property name="title">File offset (auto-detect: FFXXFF)</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="AdwEntryRow">
+                    <property name="name">Test 2</property>
+                    <property name="text">Testt</property>
+                    <property name="title">Base address (auto-detect: FFXXFF)</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="AdwSpinRow">
+                    <property name="adjustment">
+                      <object class="GtkAdjustment">
+                        <property name="page-increment">1.0</property>
+                        <property name="step-increment">1.0</property>
+                        <property name="upper">128.0</property>
+                      </object>
+                    </property>
+                    <property name="numeric">True</property>
+                    <property name="title">BSS size in megabytes (default: 16)</property>
+                    <property name="value">16.0</property>
+                  </object>
+                </child>
+                <child>
+                  <object class="AdwSwitchRow">
+                    <property name="title">Use absolute base address</property>
+                  </object>
+                </child>
+              </object>
+            </child>
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="description">Information auto-detected by vmlinux-to-elf - click an address to display in the lateral hex view pane - TODO </property>
+                <property name="title">Address detection</property>
+                <child>
+                  <object class="AdwActionRow"/>
+                </child>
+                <child>
+                  <object class="AdwActionRow"/>
+                </child>
+              </object>
+            </child>
+          </object>
+        </property>
+        <property name="top-bar-style">raised</property>
+        <child type="top">
+          <object class="AdwHeaderBar">
+            <child type="end">
+              <object class="GtkMenuButton">
+                <property name="icon-name">open-menu-symbolic</property>
+                <property name="popover">
+                  <object class="GtkPopoverMenu">
+                    <property name="menu-model">menu</property>
+                  </object>
+                </property>
+              </object>
+            </child>
+          </object>
+        </child>
+        <child type="bottom">
+          <object class="GtkActionBar">
+            <child type="end">
+              <object class="GtkButton">
+                <property name="halign">end</property>
+                <property name="label">Detect symbols</property>
+                <property name="sensitive">False</property>
+                <property name="valign">center</property>
+                <style>
+                  <class name="pill"/>
+                  <class name="suggested-action"/>
+                </style>
               </object>
             </child>
           </object>

@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
+#-*- encoding: Utf-8 -*-
+from os.path import dirname, realpath
 from typing import Optional
+
+SCRIPT_DIR = dirname(realpath(__file__))
 
 # Based on https://github.com/Taiko2k/GTK4PythonTutorial?tab=readme-ov-file#ui-from-graphical-designer
 
@@ -9,7 +13,8 @@ gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 from gi.repository import Gtk, Adw, Gio
 
-from kallsyms_finder import KallsymsFinder, ArchitectureGuessError, obtain_raw_kernel_from_file
+from vmlinux_to_elf.kallsyms_finder import KallsymsFinder, obtain_raw_kernel_from_file
+from vmlinux_to_elf.architecture_detecter import ArchitectureGuessError
 
 class MyApp(Adw.Application):
     kernel_path : Optional[str] = None
@@ -20,16 +25,39 @@ class MyApp(Adw.Application):
 
     def on_activate(self, app):
         # Create a Builder
+
         self.builder = Gtk.Builder()
-        self.builder.add_from_file("gui.ui")
+        self.builder.add_from_file(SCRIPT_DIR + "/gui.ui")
         
+        # Connect UI signals
+
         self.file_picker_button : Adw.ActionRow = self.builder.get_object('file_picker_button')
         self.file_picker_button.connect('activated', self.pick_file)
 
+        # TODO set up callbacks for syncing interface elements between them
+        # + a correct model object?
+
+        # WIP set the architecture ListModel+ListItemFactory into the Adw.ComboRow for the architecture list
+
+        self.arch_combo : Adw.ComboRow = self.builder.get_object('architecture_combo')
+
+        arch_model = Gtk.StringList()
+
+        arch_model.append('x86')
+        arch_model.append('ARM')
+        # WIP add all supported architectures
+
+        self.arch_combo.set_model(arch_model)
+
+        # TODO Switch to GJS, or Py+Server anything?
+
         # Obtain and show the main window
+
         self.win : Adw.ApplicationWindow = self.builder.get_object("main_window")
         self.win.set_application(self)  # Application will close once it no longer has active windows attached to it
+
         # TODO Remove the singleton behavior later?
+
         self.win.present()
 
     def pick_file(self, button : Adw.ActionRow):
@@ -47,7 +75,7 @@ class MyApp(Adw.Application):
             self.file_picker_button.set_title('Kernel blob')
             self.file_picker_button.set_subtitle(path)
             
-            # TODO use parallel thread
+            # TODO use parallel thread (!! SEE .ODT)
 
             with open(path, 'rb') as kernel_bin:
                 
@@ -72,7 +100,8 @@ class MyApp(Adw.Application):
                 kernel_string_row.set_visible(True)
                 kernel_string_row.set_subtitle(kallsyms.version_string)
 
-            
 
-app = MyApp(application_id="com.example.GtkApplication")
-app.run(sys.argv)
+def main():            
+
+    app = MyApp(application_id="com.example.GtkApplication")
+    app.run(sys.argv)

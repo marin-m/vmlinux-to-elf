@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #-*- encoding: Utf-8 -*-
-from typing import Dict, Union, Sequence, Set, Tuple, List
+from typing import Dict, Union, Sequence, Set, Tuple, Optional, List
 from re import search, findall, finditer, DOTALL
 from collections import Counter
 from argparse import Namespace
@@ -66,129 +66,152 @@ architecture_to_prologue_regex : Dict[ArchitectureName, bytes] = {
 
 # From https://github.com/torvalds/linux/blob/master/include/uapi/linux/elf-em.h
 
-# These constants define the various ELF target machines
-EM_NONE = 0
-EM_M32 = 1
-EM_SPARC = 2
-EM_386 = 3
-EM_68K = 4
-EM_88K = 5
-EM_486 = 6 # Perhaps disused
-EM_860 = 7
-EM_MIPS = 8 # MIPS R3000 (officially, big-endian only)
-# Next two are historical and binaries and
-# modules of these types will be rejected by
-# Linux. 
-EM_MIPS_RS3_LE = 10 # MIPS R3000 little-endian
-EM_MIPS_RS4_BE = 10 # MIPS R4000 big-endian
+class ElfMachine(IntEnum):
+    # These constants define the various ELF target machines
+    EM_NONE = 0
+    EM_M32 = 1
+    EM_SPARC = 2
+    EM_386 = 3
+    EM_68K = 4
+    EM_88K = 5
+    EM_486 = 6 # Perhaps disused
+    EM_860 = 7
+    EM_MIPS = 8 # MIPS R3000 (officially, big-endian only)
+    # Next two are historical and binaries and
+    # modules of these types will be rejected by
+    # Linux. 
+    EM_MIPS_RS3_LE = 10 # MIPS R3000 little-endian
+    EM_MIPS_RS4_BE = 10 # MIPS R4000 big-endian
 
-EM_PARISC = 15 # HPPA
-EM_SPARC32PLUS = 18 # Sun's "v8plus"
-EM_PPC = 20 # PowerPC
-EM_PPC64 = 21 # PowerPC64
-EM_SPU = 23 # Cell BE SPU
-EM_ARM = 40 # ARM 32 bit
-EM_SH = 42 # SuperH
-EM_SPARCV9 = 43 # SPARC v9 64-bit
-EM_H8_300 = 46 # Renesas H8/300
-EM_IA_64 = 50 # HP/Intel IA-64
-EM_X86_64 = 62 # AMD x86-64
-EM_S390 = 22 # IBM S/390
-EM_CRIS = 76 # Axis Communications 32-bit embedded processor
-EM_M32R = 88 # Renesas M32R
-EM_MN10300 = 89 # Panasonic/MEI MN10300, AM33
-EM_OPENRISC = 92 # OpenRISC 32-bit embedded processor
-EM_ARCOMPACT = 93 # ARCompact processor
-EM_XTENSA = 94 # Tensilica Xtensa Architecture
-EM_BLACKFIN = 106 # ADI Blackfin Processor
-EM_UNICORE = 110 # UniCore-32
-EM_ALTERA_NIOS2 = 113 # Altera Nios II soft-core processor
-EM_TI_C6000 = 140 # TI C6X DSPs
-EM_HEXAGON = 164 # QUALCOMM Hexagon
-EM_NDS32 = 167 # Andes Technology compact code size embedded RISC processor family
-EM_AARCH64 = 183 # ARM 64 bit
-EM_TILEPRO = 188 # Tilera TILEPro
-EM_MICROBLAZE = 189 # Xilinx MicroBlaze
-EM_TILEGX = 191 # Tilera TILE-Gx
-EM_ARCV2 = 195 # ARCv2 Cores
-EM_RISCV = 243 # RISC-V
-EM_BPF = 247 # Linux BPF - in-kernel virtual machine
-EM_CSKY = 252 # C-SKY
-EM_FRV = 0x5441 # Fujitsu FR-V
+    EM_PARISC = 15 # HPPA
+    EM_SPARC32PLUS = 18 # Sun's "v8plus"
+    EM_PPC = 20 # PowerPC
+    EM_PPC64 = 21 # PowerPC64
+    EM_SPU = 23 # Cell BE SPU
+    EM_ARM = 40 # ARM 32 bit
+    EM_SH = 42 # SuperH
+    EM_SPARCV9 = 43 # SPARC v9 64-bit
+    EM_H8_300 = 46 # Renesas H8/300
+    EM_IA_64 = 50 # HP/Intel IA-64
+    EM_X86_64 = 62 # AMD x86-64
+    EM_S390 = 22 # IBM S/390
+    EM_CRIS = 76 # Axis Communications 32-bit embedded processor
+    EM_M32R = 88 # Renesas M32R
+    EM_MN10300 = 89 # Panasonic/MEI MN10300, AM33
+    EM_OPENRISC = 92 # OpenRISC 32-bit embedded processor
+    EM_ARCOMPACT = 93 # ARCompact processor
+    EM_XTENSA = 94 # Tensilica Xtensa Architecture
+    EM_BLACKFIN = 106 # ADI Blackfin Processor
+    EM_UNICORE = 110 # UniCore-32
+    EM_ALTERA_NIOS2 = 113 # Altera Nios II soft-core processor
+    EM_TI_C6000 = 140 # TI C6X DSPs
+    EM_HEXAGON = 164 # QUALCOMM Hexagon
+    EM_NDS32 = 167 # Andes Technology compact code size embedded RISC processor family
+    EM_AARCH64 = 183 # ARM 64 bit
+    EM_TILEPRO = 188 # Tilera TILEPro
+    EM_MICROBLAZE = 189 # Xilinx MicroBlaze
+    EM_TILEGX = 191 # Tilera TILE-Gx
+    EM_ARCV2 = 195 # ARCv2 Cores
+    EM_RISCV = 243 # RISC-V
+    EM_BPF = 247 # Linux BPF - in-kernel virtual machine
+    EM_CSKY = 252 # C-SKY
+    EM_FRV = 0x5441 # Fujitsu FR-V
 
-# This is an interim value that we will use until the committee comes
-# up with a final number.
-EM_ALPHA = 0x9026
+    # This is an interim value that we will use until the committee comes
+    # up with a final number.
+    EM_ALPHA = 0x9026
 
-# Bogus old m32r magic number, used by old tools.
-EM_CYGNUS_M32R = 0x9041
-# This is the old interim value for S/390 architecture
-EM_S390_OLD = 0xA390
-# Also Panasonic/MEI MN10300, AM33
-EM_CYGNUS_MN10300 = 0xbeef
+    # Bogus old m32r magic number, used by old tools.
+    EM_CYGNUS_M32R = 0x9041
+    # This is the old interim value for S/390 architecture
+    EM_S390_OLD = 0xA390
+    # Also Panasonic/MEI MN10300, AM33
+    EM_CYGNUS_MN10300 = 0xbeef
 
+class ArchitectureDetectionResult:
 
-architecture_name_to_elf_machine_and_is64bits_and_isbigendian : Dict[ArchitectureName, Tuple[int, bool, bool]] = {
-    ArchitectureName.mipsle: (EM_MIPS, False, False),
-    ArchitectureName.mipsbe: (EM_MIPS, False, True),
-    ArchitectureName.mips64le: (EM_MIPS, True, False),
-    ArchitectureName.mips64be: (EM_MIPS, True, True),
-    ArchitectureName.x86: (EM_386, False, False),
-    ArchitectureName.x86_64: (EM_X86_64, True, False),
-    ArchitectureName.powerpcbe: (EM_PPC, False, True),
-    ArchitectureName.powerpcle: (EM_PPC, False, False),
-    ArchitectureName.armbe: (EM_ARM, False, True),
-    ArchitectureName.armle: (EM_ARM, False, False),
-    ArchitectureName.mips16e: (EM_MIPS, False, True),
-    ArchitectureName.superhle: (EM_SH, False, False),
-    ArchitectureName.superhbe: (EM_SH, False, True),
-    ArchitectureName.aarch64: (EM_AARCH64, True, False),
-    ArchitectureName.sparc: (EM_SPARC, False, True),
-    ArchitectureName.arcompact: (EM_ARCOMPACT, False, False),
-}
+    architecture_name : ArchitectureName
+    elf_machine : ElfMachine
+    is_64_bit : bool
+    is_big_endian : bool
 
-"""
-    Guess the architecture based on special knowledge, like custom signatures or binary format
-"""
-def guess_architecture_special(binary : bytes) -> ArchitectureName:
+    def __init__(self, architecture_name : ArchitectureName):
 
-    if binary[:2] == b'MZ':
+        self.architecture_name = architecture_name
 
-        # Maybe UEFI boot stub ?
-        if binary[0x38:0x3C] == b'ARMd':
-            return ArchitectureName.aarch64
+        lookup_table : Dict[ArchitectureName, Tuple[int, bool, bool]] = {
+            ArchitectureName.mipsle: (ElfMachine.EM_MIPS, False, False),
+            ArchitectureName.mipsbe: (ElfMachine.EM_MIPS, False, True),
+            ArchitectureName.mips64le: (ElfMachine.EM_MIPS, True, False),
+            ArchitectureName.mips64be: (ElfMachine.EM_MIPS, True, True),
+            ArchitectureName.x86: (ElfMachine.EM_386, False, False),
+            ArchitectureName.x86_64: (ElfMachine.EM_X86_64, True, False),
+            ArchitectureName.powerpcbe: (ElfMachine.EM_PPC, False, True),
+            ArchitectureName.powerpcle: (ElfMachine.EM_PPC, False, False),
+            ArchitectureName.armbe: (ElfMachine.EM_ARM, False, True),
+            ArchitectureName.armle: (ElfMachine.EM_ARM, False, False),
+            ArchitectureName.mips16e: (ElfMachine.EM_MIPS, False, True),
+            ArchitectureName.superhle: (ElfMachine.EM_SH, False, False),
+            ArchitectureName.superhbe: (ElfMachine.EM_SH, False, True),
+            ArchitectureName.aarch64: (ElfMachine.EM_AARCH64, True, False),
+            ArchitectureName.sparc: (ElfMachine.EM_SPARC, False, True),
+            ArchitectureName.arcompact: (ElfMachine.EM_ARCOMPACT, False, False),
+        }
 
-    return None
+        self.elf_machine, self.is_64_bit, self.is_big_endian = lookup_table[architecture_name]
 
-"""
-    Guess the architecture based on common patterns
-"""
-def guess_architecture_common(binary : bytes) -> ArchitectureName:
+class ArchitectureDetector:
 
-    architecture_to_number_of_prologues :  Dict[ArchitectureName, int] = Counter()
+    """
+        Main architecture guess function
 
-    for architecture, prologue in architecture_to_prologue_regex.items():
+        @param binary (bytes): A raw kernel blob
+        @raises ArchitectureGuessError
+        @returns ArchitectureDetectionResult
+    """
+
+    @classmethod
+    def guess(cls, binary : bytes) -> ArchitectureDetectionResult:
+            
+        begin_time = time()
+
+        architecture_guess = cls._guess_architecture_special(binary)
+        if not architecture_guess:
+            architecture_guess = cls._guess_architecture_common(binary)
+
+        if not architecture_guess:
+            raise ArchitectureGuessError('The architecture could not be guessed successfully')
+
+        logging.info('[+] Guessed architecture: %s successfully in %.2f seconds' % (architecture_guess.name, time() - begin_time))
+
+        return ArchitectureDetectionResult(architecture_guess)
+
+    """
+        Guess the architecture based on special knowledge, like custom signatures or binary format
+    """
+    @staticmethod
+    def _guess_architecture_special(binary : bytes) -> Optional[ArchitectureName]:
+
+        if binary[:2] == b'MZ':
+
+            # Maybe UEFI boot stub ?
+            if binary[0x38:0x3C] == b'ARMd':
+                return ArchitectureName.aarch64
+
+        return None
+
+    """
+        Guess the architecture based on common patterns
+    """
+    @staticmethod
+    def _guess_architecture_common(binary : bytes) -> Optional[ArchitectureName]:
+
+        architecture_to_number_of_prologues :  Dict[ArchitectureName, int] = Counter()
+
+        for architecture, prologue in architecture_to_prologue_regex.items():
+            
+            architecture_to_number_of_prologues[architecture] = len(findall(prologue, binary,  flags = DOTALL))
         
-        architecture_to_number_of_prologues[architecture] = len(findall(prologue, binary,  flags = DOTALL))
-    
-    best_architecture_guess, number_of_prologues = architecture_to_number_of_prologues.most_common(1)[0]
+        best_architecture_guess, number_of_prologues = architecture_to_number_of_prologues.most_common(1)[0]
 
-    return None if number_of_prologues < 100 else best_architecture_guess
-
-"""
-    Main architecture guess function
-"""
-def guess_architecture(binary : bytes) -> ArchitectureName:
-        
-    begin_time = time()
-
-    architecture_guess = guess_architecture_special(binary)
-    if not architecture_guess:
-        architecture_guess = guess_architecture_common(binary)
-
-    if not architecture_guess:
-        raise ArchitectureGuessError('The architecture could not be guessed successfully')
-
-    logging.info('[+] Guessed architecture: %s successfully in %.2f seconds' % (architecture_guess.name, time() - begin_time))
-
-    return architecture_guess
+        return None if number_of_prologues < 100 else best_architecture_guess

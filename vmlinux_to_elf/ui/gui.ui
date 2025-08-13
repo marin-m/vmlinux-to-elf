@@ -92,6 +92,7 @@
                 </child>
                 <child>
                   <object class="AdwSwitchRow">
+                    <property name="subtitle">ℹ️ Remind to toggle this if the addresses previewed below do not look good</property>
                     <property name="title">Use absolute base address</property>
                   </object>
                 </child>
@@ -99,8 +100,13 @@
             </child>
             <child>
               <object class="AdwPreferencesGroup">
+                <property name="title">Analysis notes</property>
+              </object>
+            </child>
+            <child>
+              <object class="AdwPreferencesGroup">
                 <property name="description">Information auto-detected by vmlinux-to-elf - click an address to display in the lateral hex view pane </property>
-                <property name="title">Address detection</property>
+                <property name="title">Symbol table offset detection</property>
                 <child>
                   <object class="AdwActionRow"/>
                 </child>
@@ -109,11 +115,21 @@
                 </child>
               </object>
             </child>
+            <child>
+              <object class="AdwPreferencesGroup">
+                <property name="title">Symbol table preview</property>
+              </object>
+            </child>
           </object>
         </property>
         <property name="top-bar-style">raised</property>
         <child type="top">
           <object class="AdwHeaderBar">
+            <property name="title-widget">
+              <object class="GtkLabel">
+                <property name="label">vmlinux-to-elf</property>
+              </object>
+            </property>
             <child type="end">
               <object class="GtkMenuButton">
                 <property name="icon-name">open-menu-symbolic</property>

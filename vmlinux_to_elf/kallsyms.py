@@ -9,7 +9,7 @@ from enum import Enum
 import logging
 import math
 
-from vmlinux_to_elf.architecture_detecter import guess_architecture, ArchitectureName, architecture_name_to_elf_machine_and_is64bits_and_isbigendian
+from vmlinux_to_elf.architecture_detecter import ArchitectureDetector, ArchitectureName, ArchitectureGuessError, ArchitectureDetectionResult
 from vmlinux_to_elf.vmlinuz_decompressor import obtain_raw_kernel_from_file
 
 """
@@ -100,7 +100,6 @@ class KallsymsSymbolType(Enum):
     UNKNOWN = '?'
 
 
-
 class KallsymsSymbol:
     
     name : str = None
@@ -135,7 +134,11 @@ class KallsymsFinder:
     kernel_text_candidate : int = None
     
     # Inferred information
+
+    architecture : ArchitectureName = None
     
+    elf_machine : int = None
+    is_64_bits : int = None # Can be set manually
     is_big_endian : bool = None
     offset_table_element_size : int = None
     
@@ -144,6 +147,12 @@ class KallsymsFinder:
     num_symbols : int = None
     symbol_names : list = None
     symbol_addresses : list = None
+
+    has_relative_base : bool = None
+    has_absolute_percpu : bool = None
+    relative_base_address : int = None
+
+    kernel_addresses : List[int] = None
     
     symbols : List[KallsymsSymbol] = None
     name_to_symbol : Dict[str, KallsymsSymbol] = None
@@ -174,13 +183,13 @@ class KallsymsFinder:
         
         self.find_linux_kernel_version()
         
-        if not bit_size:
-            self.guess_architecture()
-        elif bit_size not in (64, 32):
+        if bit_size and bit_size not in (64, 32):
             exit('[!] Please specify a register bit size of either 32 or 64 ' +
                 'bits')
         else:
             self.is_64_bits = (bit_size == 64)
+
+        self.guess_architecture()
 
         if self.is_64_bits:
             self.find_elf64_rela(base_address)
@@ -230,11 +239,19 @@ class KallsymsFinder:
         #logging.info('[+] Architecture string: {0:s}'.format(search(b'mod_unload[ -~]+', self.kernel_img).group(0)))
     
     def guess_architecture(self):
-        
-        self.architecture : ArchitectureName = guess_architecture(self.kernel_img)
-        # self.architecture  =  ArchitectureName.mipsle # DEBUG
 
-        self.elf_machine,  self.is_64_bits,  self.is_big_endian = architecture_name_to_elf_machine_and_is64bits_and_isbigendian[self.architecture]
+        try:
+            result : ArchitectureDetectionResult = ArchitectureDetector.guess(self.kernel_img)
+        except ArchitectureGuessError:
+            if self.is_64_bits is None:
+                raise
+        else:
+            self.architecture : ArchitectureName = result.architecture_name
+
+            self.elf_machine = int(result.elf_machine)
+            if self.is_64_bits is None:
+                self.is_64_bits = result.is_64_bits
+            self.is_big_endian = result.is_big_endian
 
     def find_elf64_rela(self, base_address: int = None) -> bool:
 
@@ -927,7 +944,7 @@ class KallsymsFinder:
                 
                 # Parse the base_relative value
                 
-                self.relative_base_address :  int  =  int.from_bytes(self.kernel_img[position:position + address_byte_size], 'big' if self.is_big_endian else 'little')
+                self.relative_base_address : int = int.from_bytes(self.kernel_img[position:position + address_byte_size], 'big' if self.is_big_endian else 'little')
             
                 # Go right after the previous offset
                 

@@ -37,11 +37,11 @@ sudo pip3 install --upgrade git+https://github.com/marin-m/vmlinux-to-elf
 
 ## How does it work, really?
 
-A brief history of the "kallsyms" symbol table can be found at the top of the "[kallsyms_finder.py](vmlinux_to_elf/kallsyms_finder.py)" file. Briefly, this was introduced circa 2004 in the Linux kernel in its current form and is used to print the "Kernel oops" messages, among other things.
+A brief history of the "kallsyms" symbol table can be found at the top of the "[kallsyms.py](vmlinux_to_elf/kallsyms.py)" file. Briefly, this was introduced circa 2004 in the Linux kernel in its current form and is used to print the "Kernel oops" messages, among other things.
 
 It contains tuples of "symbol name", "symbol address", "symbol type" (symbol types being designated with a single letter in a fashion similar to the [`nm`](http://man7.org/linux/man-pages/man1/nm.1p.html) utility), this information being tightly packed with a simple compression algorithm.
 
-The schema below displays how this information is serialized into the kernel, the offset of each respective structure being detected by `vmlinux-to-elf` through [heuristics](vmlinux_to_elf/kallsyms_finder.py):
+The schema below displays how this information is serialized into the kernel, the offset of each respective structure being detected by `vmlinux-to-elf` through [heuristics](vmlinux_to_elf/kallsyms.py):
 
 | Array name | Description | Sample contents |
 | ---------- | ----------- | --------------- |

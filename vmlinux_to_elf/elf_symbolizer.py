@@ -12,18 +12,12 @@ import logging
     kernel compressions), in order to generate the output ELF file.
 """
 
-try:
-    from kallsyms_finder import KallsymsFinder, KallsymsSymbolType
-
-    from utils.elf import ElfFile, ElfSymtab, ElfRel, Elf32LittleEndianSymbolTableEntry, Elf32BigEndianSymbolTableEntry, Elf64LittleEndianSymbolTableEntry, Elf64BigEndianSymbolTableEntry, SPECIAL_SECTION_INDEX, ST_INFO_TYPE, ST_INFO_BINDING, ElfStrtab, ElfProgbits, ElfNullSection, ElfNoBits, SH_FLAGS, ElfRela, Elf32LittleEndianRelocationWithAddendTableEntry, Elf32BigEndianRelocationWithAddendTableEntry, Elf64LittleEndianRelocationWithAddendTableEntry, Elf64BigEndianRelocationWithAddendTableEntry
-
-except ImportError:
-    from vmlinux_to_elf.kallsyms_finder import KallsymsFinder, KallsymsSymbolType
-
-    from vmlinux_to_elf.utils.elf import ElfFile, ElfSymtab, ElfRel, Elf32LittleEndianSymbolTableEntry, Elf32BigEndianSymbolTableEntry, Elf64LittleEndianSymbolTableEntry, Elf64BigEndianSymbolTableEntry, SPECIAL_SECTION_INDEX, ST_INFO_TYPE, ST_INFO_BINDING, ElfStrtab, ElfProgbits, ElfNullSection, ElfNoBits, SH_FLAGS, ElfRela, Elf32LittleEndianRelocationWithAddendTableEntry, Elf32BigEndianRelocationWithAddendTableEntry, Elf64LittleEndianRelocationWithAddendTableEntry, Elf64BigEndianRelocationWithAddendTableEntry
+from vmlinux_to_elf.utils.elf import ElfFile, ElfSymtab, ElfRel, Elf32LittleEndianSymbolTableEntry, Elf32BigEndianSymbolTableEntry, Elf64LittleEndianSymbolTableEntry, Elf64BigEndianSymbolTableEntry, SPECIAL_SECTION_INDEX, ST_INFO_TYPE, ST_INFO_BINDING, ElfStrtab, ElfProgbits, ElfNullSection, ElfNoBits, SH_FLAGS, ElfRela, Elf32LittleEndianRelocationWithAddendTableEntry, Elf32BigEndianRelocationWithAddendTableEntry, Elf64LittleEndianRelocationWithAddendTableEntry, Elf64BigEndianRelocationWithAddendTableEntry
+from vmlinux_to_elf.architecture_detecter import ArchitectureGuessError
+from vmlinux_to_elf.kallsyms import KallsymsFinder, KallsymsSymbolType
 
 
-class ElfSymbolizer():
+class ElfSymbolizer:
     
     def __init__(self, file_contents : bytes, output_file : str,
         elf_machine : int = None, bit_size : int = None,
@@ -43,7 +37,10 @@ class ElfSymbolizer():
             file_contents = file_contents[file_offset:]
         
         kallsyms_finder = KallsymsFinder(file_contents, bit_size, override_relative, base_address)
-        
+    
+        if elf_machine is None and not kallsyms_finder.elf_machine:
+            raise ArchitectureGuessError('The architecture could not be guessed successfully')
+            
         
         if file_contents.startswith(b'\x7fELF'):
             
@@ -53,7 +50,7 @@ class ElfSymbolizer():
             
             kernel = ElfFile(kallsyms_finder.is_big_endian, kallsyms_finder.is_64_bits)
             
-            #  Previsouly the register size was based on the kernel version string:       bool(kallsyms_finder.offset_table_element_size >= 8 or search('itanium|(?:amd|aarch|ia|arm|x86_|\D-)64', kallsyms_finder.version_string, flags = IGNORECASE))
+            #  Previsouly the register size was based on the kernel version string: bool(kallsyms_finder.offset_table_element_size >= 8 or search('itanium|(?:amd|aarch|ia|arm|x86_|\D-)64', kallsyms_finder.version_string, flags = IGNORECASE))
             
             if elf_machine is not None:
                 kernel.file_header.e_machine = elf_machine

@@ -1156,4 +1156,3 @@ class KallsymsFinder:
                 symbol_name[0], # The symbol type
                 symbol_name[1:] # The symbol name itself
             ))
-        

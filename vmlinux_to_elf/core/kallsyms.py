@@ -9,8 +9,8 @@ from enum import Enum
 import logging
 import math
 
-from vmlinux_to_elf.architecture_detecter import ArchitectureDetector, ArchitectureName, ArchitectureGuessError, ArchitectureDetectionResult
-from vmlinux_to_elf.vmlinuz_decompressor import obtain_raw_kernel_from_file
+from vmlinux_to_elf.core.architecture_detecter import ArchitectureDetector, ArchitectureName, ArchitectureGuessError, ArchitectureDetectionResult
+from vmlinux_to_elf.core.vmlinuz_decompressor import obtain_raw_kernel_from_file
 
 """
     This class will take a raw kernel image (.IMG), and return the file

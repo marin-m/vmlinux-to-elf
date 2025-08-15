@@ -108,16 +108,16 @@
                 <property name="description">Information auto-detected by vmlinux-to-elf - click an address to display in the lateral hex view pane </property>
                 <property name="title">Symbol table offset detection</property>
                 <child>
-                  <object class="AdwActionRow"/>
-                </child>
-                <child>
-                  <object class="AdwActionRow"/>
+                  <object class="GtkListView"/>
                 </child>
               </object>
             </child>
             <child>
               <object class="AdwPreferencesGroup">
                 <property name="title">Symbol table preview</property>
+                <child>
+                  <object class="GtkListView"/>
+                </child>
               </object>
             </child>
           </object>

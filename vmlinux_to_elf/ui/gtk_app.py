@@ -13,8 +13,8 @@ gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 from gi.repository import Gtk, Adw, Gio
 
-from vmlinux_to_elf.kallsyms import KallsymsFinder, obtain_raw_kernel_from_file
-from vmlinux_to_elf.architecture_detecter import ArchitectureGuessError
+from vmlinux_to_elf.core.kallsyms import KallsymsFinder, obtain_raw_kernel_from_file
+from vmlinux_to_elf.core.architecture_detecter import ArchitectureGuessError
 
 class MyApp(Adw.Application):
     kernel_path : Optional[str] = None
@@ -27,7 +27,7 @@ class MyApp(Adw.Application):
         # Create a Builder
 
         self.builder = Gtk.Builder()
-        self.builder.add_from_file(SCRIPT_DIR + "/ui/gui.ui")
+        self.builder.add_from_file(SCRIPT_DIR + "/gui.ui")
         
         # Connect UI signals
 

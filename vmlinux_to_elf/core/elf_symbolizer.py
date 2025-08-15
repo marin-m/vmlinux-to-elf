@@ -13,8 +13,8 @@ import logging
 """
 
 from vmlinux_to_elf.utils.elf import ElfFile, ElfSymtab, ElfRel, Elf32LittleEndianSymbolTableEntry, Elf32BigEndianSymbolTableEntry, Elf64LittleEndianSymbolTableEntry, Elf64BigEndianSymbolTableEntry, SPECIAL_SECTION_INDEX, ST_INFO_TYPE, ST_INFO_BINDING, ElfStrtab, ElfProgbits, ElfNullSection, ElfNoBits, SH_FLAGS, ElfRela, Elf32LittleEndianRelocationWithAddendTableEntry, Elf32BigEndianRelocationWithAddendTableEntry, Elf64LittleEndianRelocationWithAddendTableEntry, Elf64BigEndianRelocationWithAddendTableEntry
-from vmlinux_to_elf.architecture_detecter import ArchitectureGuessError
-from vmlinux_to_elf.kallsyms import KallsymsFinder, KallsymsSymbolType
+from vmlinux_to_elf.core.architecture_detecter import ArchitectureGuessError
+from vmlinux_to_elf.core.kallsyms import KallsymsFinder, KallsymsSymbolType
 
 
 class ElfSymbolizer:

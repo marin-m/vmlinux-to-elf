@@ -10,6 +10,7 @@ setup(name='vmlinux-to-elf',
       url='https://github.com/marin-m/vmlinux-to-elf',
       install_requires=['lz4', 'zstandard',
         'python-lzo @ git+https://github.com/clubby789/python-lzo@b4e39df'],
-      packages=['vmlinux_to_elf', 'vmlinux_to_elf.utils'],
+      packages=['vmlinux_to_elf', 'vmlinux_to_elf.utils',
+        'vmlinux_to_elf.core', 'vmlinux_to_elf.ui', 'vmlinux_to_elf.scripts'],
       scripts=['vmlinux-to-elf', 'kallsyms-finder']
      )

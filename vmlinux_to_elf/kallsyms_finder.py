@@ -705,7 +705,8 @@ class KallsymsFinder:
                     continue
 
                 for i in range(1, len(entries)):
-                    if entries[i-1]+0x200 > entries[i] or entries[i-1]+0x4000 < entries[i]:
+                    # kallsyms_names entries are at least 2 bytes and at most 0x3FFF bytes long
+                    if entries[i-1]+0x200 >= entries[i] or entries[i-1]+0x400000 < entries[i]:
                         break
                 else:
                     logging.info('[+] Found kallsyms_markers at file offset 0x%08x' % position)
@@ -732,7 +733,7 @@ class KallsymsFinder:
         for i in range(1, len(kallsyms_markers_entries)):
             curr = kallsyms_markers_entries[i]
             last = kallsyms_markers_entries[i-1]
-            if last+0x200 > curr or last+0x4000 < curr:
+            if last+0x200 >= curr or last+0x400000 < curr:
                 kallsyms_markers_entries = kallsyms_markers_entries[:i]
                 break
 
@@ -746,7 +747,6 @@ class KallsymsFinder:
         
         
         self.kallsyms_names__offset = position
-        
         # Guessing continues in the function below (in order to handle the
         # absence of padding)
         
@@ -793,9 +793,14 @@ class KallsymsFinder:
             # The loop ends with the number of symbols for the current position in the last entry of dp.
 
             for i in range(len(dp), self.kallsyms_markers__offset - position + 1):
-                symbol_size = self.kernel_img[self.kallsyms_markers__offset - i]
-                next_i = i - symbol_size - 1
-                if symbol_size == 0:  # Last entry of the symbol table
+                curr = self.kernel_img[self.kallsyms_markers__offset - i]
+                if curr & 0x80:
+                    # "Big" symbol
+                    symbol_size = (curr&0x7F | (self.kernel_img[self.kallsyms_markers__offset - i + 1]<<7)) + 2
+                else:
+                    symbol_size = curr + 1
+                next_i = i - symbol_size
+                if curr == 0:  # Last entry of the symbol table
                     dp.append(0)
                 elif next_i < 0 or dp[next_i] == -1:  # If table would exceed kallsyms_markers, mark as invalid
                     dp.append(-1)
@@ -830,7 +835,7 @@ class KallsymsFinder:
                 if self.kallsyms_names__offset < 0:
                     raise ValueError('Could not find kallsyms_names')
         
-        logging.info('[+] Found kallsyms_names at file offset 0x%08x' % self.kallsyms_names__offset)
+        logging.info('[+] Found kallsyms_names at file offset 0x%08x (%d symbols)' % (self.kallsyms_names__offset, self.num_symbols))
         
         position = needle
         
@@ -1083,6 +1088,9 @@ class KallsymsFinder:
             
             length = self.kernel_img[position]
             position += 1
+            if length & 0x80:
+                length = length & 0x7f | (self.kernel_img[position] << 7)
+                position += 1
             
             for i in range(length):
                 

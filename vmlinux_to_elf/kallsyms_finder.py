@@ -804,7 +804,7 @@ class KallsymsFinder:
                     symbol_size = curr + 1
                 next_i = i - symbol_size
                 if curr == 0:  # Last entry of the symbol table
-                    dp.append(0 if i < 64 else -1)
+                    dp.append(0 if i <= 256 else -1)
                 elif next_i < 0 or dp[next_i] == -1:  # If table would exceed kallsyms_markers, mark as invalid
                     dp.append(-1)
                 else:

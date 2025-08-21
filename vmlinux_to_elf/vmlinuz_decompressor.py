@@ -216,7 +216,7 @@ def try_decompress_at(input_file : bytes, offset : int) -> bytes:
     except Exception:
         pass
     
-    if decoded and decoded.startswith(b'\x7fELF') and len(decoded) > 0x1000:
+    if decoded and 0 in decoded[:32] and len(decoded) > 0x1000:
         logging.info(('[+] Kernel successfully decompressed in-memory (the offsets that ' +
             'follow will be given relative to the decompressed binary)'))
     

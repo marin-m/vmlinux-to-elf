@@ -706,7 +706,7 @@ class KallsymsFinder:
 
                 for i in range(1, len(entries)):
                     # kallsyms_names entries are at least 2 bytes and at most 0x3FFF bytes long
-                    if entries[i-1]+0x200 >= entries[i] or entries[i-1]+0x400000 < entries[i]:
+                    if entries[i-1]+0x200 >= entries[i] or entries[i-1]+0x40000 < entries[i]:
                         break
                 else:
                     logging.info('[+] Found kallsyms_markers at file offset 0x%08x' % position)
@@ -727,13 +727,16 @@ class KallsymsFinder:
         endianness_marker = '>' if self.is_big_endian else '<'
             
         long_size_marker = {2: 'H', 4: 'I', 8: 'Q'}[self.offset_table_element_size]
+
+        # Estimate kallsyms_markers length. Limit to 3000 for kernels with kallsyms_seqs_of_names
+        num_of_kallsyms_markers_entries = (self.kallsyms_token_table__offset - self.kallsyms_markers__offset) // self.offset_table_element_size
         
-        kallsyms_markers_entries = unpack_from(endianness_marker + '3000' + long_size_marker, self.kernel_img, self.kallsyms_markers__offset)
+        kallsyms_markers_entries = unpack_from(endianness_marker + str(min(3000, num_of_kallsyms_markers_entries)) + long_size_marker, self.kernel_img, self.kallsyms_markers__offset)
 
         for i in range(1, len(kallsyms_markers_entries)):
             curr = kallsyms_markers_entries[i]
             last = kallsyms_markers_entries[i-1]
-            if last+0x200 >= curr or last+0x400000 < curr:
+            if last+0x200 >= curr or last+0x40000 < curr:
                 kallsyms_markers_entries = kallsyms_markers_entries[:i]
                 break
 
@@ -801,7 +804,7 @@ class KallsymsFinder:
                     symbol_size = curr + 1
                 next_i = i - symbol_size
                 if curr == 0:  # Last entry of the symbol table
-                    dp.append(0)
+                    dp.append(0 if i < 64 else -1)
                 elif next_i < 0 or dp[next_i] == -1:  # If table would exceed kallsyms_markers, mark as invalid
                     dp.append(-1)
                 else:

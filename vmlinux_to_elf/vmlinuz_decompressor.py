@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 #-*- encoding: Utf-8 -*-
-from lzma import LZMADecompressor
 from io import BytesIO, SEEK_END
-from bz2 import BZ2Decompressor
 from gzip import _GzipReader
 from struct import unpack
 from typing import Union
@@ -117,7 +115,6 @@ class SingleGzipReader(_GzipReader):
     knowing the compression algorithm
 """
 
-
 def try_decompress_at(input_file : bytes, offset : int) -> bytes:
     
     decoded = None
@@ -178,6 +175,7 @@ def try_decompress_at(input_file : bytes, offset : int) -> bytes:
         
         elif (Signature.check(input_file, offset, Signature.Compressed_XZ) or
               Signature.check(input_file, offset, Signature.Compressed_LZMA)):
+            from lzma import LZMADecompressor
             try:
                 decoded = LZMADecompressor().decompress(input_file[offset:]) # LZMA - Will discard the extra bytes and put it an attribute.
                 
@@ -185,47 +183,25 @@ def try_decompress_at(input_file : bytes, offset : int) -> bytes:
                 decoded = LZMADecompressor().decompress(input_file[offset:offset + 5] + b'\xff' * 8 + input_file[offset + 5:]) # pylzma format compatibility
         
         elif Signature.check(input_file, offset, Signature.Compressed_BZ2):
+            from bz2 import BZ2Decompressor
             decoded = BZ2Decompressor().decompress(input_file[offset:]) # BZ2 - Will discard the extra bytes and put it an attribute.
 
         elif Signature.check(input_file, offset, Signature.Compressed_LZ4): # LZ4 support
-            try:
-                LZ4Decompressor = importlib.import_module('lz4.frame')
-                
-            except ModuleNotFoundError:
-                logging.error('Error: This kernel may require LZ4 decompression.')
-                logging.error('       But "lz4" python package was not found.')
-                logging.error('       Example installation command: "sudo pip3 install lz4"')
-                logging.error()
-                return
+            LZ4Decompressor = importlib.import_module('lz4.frame')
 
             context = LZ4Decompressor.create_decompression_context()
             decoded, bytes_read, end_of_frame = LZ4Decompressor.decompress_chunk(context, input_file[offset:])
         
         elif Signature.check(input_file, offset, Signature.Compressed_LZ4_Legacy): # LZ4 support (legacy format)
-            
             try:
                 from utils.lz4_legacy import decompress_lz4_buffer
             except ImportError:
-                try:
-                    from vmlinux_to_elf.utils.lz4_legacy import decompress_lz4_buffer
-                except ModuleNotFoundError:
-                    logging.error('Error: This kernel may require LZ4 decompression.')
-                    logging.error('       But "lz4" python package was not found.')
-                    logging.error('       Example installation command: "sudo pip3 install lz4"')
-                    logging.error()
-                    return
+                from vmlinux_to_elf.utils.lz4_legacy import decompress_lz4_buffer
                 
             decoded = decompress_lz4_buffer(BytesIO(input_file[offset:]))
 
         elif Signature.check(input_file, offset, Signature.Compressed_ZSTD):
-            try:
-                import zstandard as zstd
-            except ModuleNotFoundError:
-                logging.error('Error: This kernel may require ZSTD decompression.')
-                logging.error('       But "zstandard" python package was not found.')
-                logging.error('       Example installation command: "sudo pip3 install zstandard"')
-                logging.error()
-                return
+            import zstandard as zstd
             buf = BytesIO()
             context = zstd.ZstdDecompressor()
             for chunk in context.read_to_iter(BytesIO(input_file[offset:])):
@@ -234,20 +210,13 @@ def try_decompress_at(input_file : bytes, offset : int) -> bytes:
             decoded = buf.read()
 
         elif Signature.check(input_file, offset, Signature.Compressed_LZO):
-            try:
-                import lzo
-            except ModuleNotFoundError:
-                logging.error('Error: This kernel may require LZO decompression.')
-                logging.error('       But "python-lzo" python package was not found.')
-                logging.error('       Example installation command: "sudo pip3 install git+https://github.com/clubby789/python-lzo@b4e39df"')
-                logging.error()
-                return
+            import minilzo
             buf = BytesIO(input_file[offset:])
-            decoded = lzo.LzoFile(fileobj=buf, mode='rb').read()
+            decoded = minilzo.LzoFile(fileobj=buf, mode='rb').read()
     except Exception:
         pass
     
-    if decoded and len(decoded) > 0x1000:
+    if decoded and 0 in decoded[:32] and len(decoded) > 0x1000:
         logging.info(('[+] Kernel successfully decompressed in-memory (the offsets that ' +
             'follow will be given relative to the decompressed binary)'))
     
@@ -277,8 +246,7 @@ def obtain_raw_kernel_from_file(input_file: bytes) -> bytes:
         if decompressed_data:
             return decompressed_data
     
-    if not search(rb'Linux version (\d+\.[\d.]*\d)[ -~]+', input_file):  # No kernel version string found
-
+    if not input_file.startswith(b'\x7fELF'):
         # If not successful, scan for compression signatures in the whole document
         for possible_signature in Signature.Compressed:
             
@@ -290,9 +258,5 @@ def obtain_raw_kernel_from_file(input_file: bytes) -> bytes:
                     return decompressed_data
                 possible_offset = input_file.find(possible_signature, possible_offset + 1)
 
-    
     return input_file
-    
-    
-
 

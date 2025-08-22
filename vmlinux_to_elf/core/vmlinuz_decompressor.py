@@ -193,10 +193,7 @@ def try_decompress_at(input_file : bytes, offset : int) -> bytes:
             decoded, bytes_read, end_of_frame = LZ4Decompressor.decompress_chunk(context, input_file[offset:])
         
         elif Signature.check(input_file, offset, Signature.Compressed_LZ4_Legacy): # LZ4 support (legacy format)
-            try:
-                from utils.lz4_legacy import decompress_lz4_buffer
-            except ImportError:
-                from vmlinux_to_elf.utils.lz4_legacy import decompress_lz4_buffer
+            from vmlinux_to_elf.utils.lz4_legacy import decompress_lz4_buffer
                 
             decoded = decompress_lz4_buffer(BytesIO(input_file[offset:]))
 

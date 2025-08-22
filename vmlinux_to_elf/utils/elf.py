@@ -779,26 +779,6 @@ class Elf64BigEndianRelocationTableEntry(Elf64LittleEndianRelocationTableEntry):
        ('r_info_sym', Elf64_Xword, 32), # index and type of relocation
        ('r_info_type', Elf64_Xword, 32),
     ]
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 class Elf32LittleEndianRelocationWithAddendTableEntry(Elf32LittleEndianRelocationTableEntry):
@@ -834,7 +814,6 @@ class Elf64BigEndianRelocationWithAddendTableEntry(Elf64LittleEndianRelocationWi
         
 
 
-
 class ElfRel(ElfSection):
     
     relocation_table : List[Elf32LittleEndianRelocationTableEntry] = None
@@ -864,10 +843,6 @@ class ElfRel(ElfSection):
             
             
             
-            
-        
-        
-    
     def post_unserialize(self):
         
         super().post_unserialize()
@@ -1086,7 +1061,6 @@ class ElfFileHeader(VariableEndiannessAndWordsizeStructure):
         
 
 
-
 class P_TYPE: # PROGRAM_HEADER_TYPE
     
     PT_NULL = 0 # Null descriptor — ignore
@@ -1134,13 +1108,4 @@ class Elf64ProgramHeaderEntry(Elf32ProgramHeaderEntry):
         ('p_align', Elf64_Xword), # Segment alignment, file & memory
     ]
     
-
-
-
-
-
-
-
-
-
 

@@ -23,6 +23,15 @@ sudo apt install pipx
 sudo pipx install git+https://github.com/marin-m/vmlinux-to-elf
 ```
 
+Local use and dependencies installation:
+
+```bash
+sudo apt install python3-pip git
+sudo pip3 install --upgrade lz4 zstandard minilzo
+git clone git@github.com:marin-m/vmlinux-to-elf.git
+cd vmlinux-to-elf
+```
+
 ## Features
 * Take a raw binary blob or ELF kernel file as an input  [OK]
 * Automatically detect and unpack the main compression formats used for the Linux kernel [OK]

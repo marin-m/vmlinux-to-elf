@@ -16,12 +16,20 @@ Usage:
 ./vmlinux-to-elf <input_kernel.bin> <output_kernel.elf>
 ```
 
-System-wide installation (the second command may not be needed as PIP should find the dependencies within the `setup.py` file):
+System-wide installation:
 
 ```bash
-sudo apt install python3-pip liblzo2-dev
-sudo pip3 install --upgrade lz4 zstandard git+https://github.com/clubby789/python-lzo@b4e39df
-sudo pip3 install --upgrade git+https://github.com/marin-m/vmlinux-to-elf
+sudo apt install pipx
+sudo pipx install git+https://github.com/marin-m/vmlinux-to-elf
+```
+
+Local use and dependencies installation:
+
+```bash
+sudo apt install python3-pip git
+sudo pip3 install --upgrade lz4 zstandard minilzo
+git clone git@github.com:marin-m/vmlinux-to-elf.git
+cd vmlinux-to-elf
 ```
 
 ## Features

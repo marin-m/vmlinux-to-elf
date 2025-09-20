@@ -16,28 +16,28 @@ from gi.repository import Gtk, Adw, Gio
 from vmlinux_to_elf.core.kallsyms import KallsymsFinder, obtain_raw_kernel_from_file
 from vmlinux_to_elf.core.architecture_detecter import ArchitectureGuessError
 
+class AppStateMachine:
+    pass # XX
+
 class MyApp(Adw.Application):
     kernel_path : Optional[str] = None
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.connect('activate', self.on_activate)
-
-    def on_activate(self, app):
-        # Create a Builder
-
-        self.builder = Gtk.Builder()
-        self.builder.add_from_file(SCRIPT_DIR + "/gui.ui")
-        
-        # Connect UI signals
+    
+    def update_state(self):
+        pass # XX
+    
+    def connect_signals(self):
 
         self.file_picker_button : Adw.ActionRow = self.builder.get_object('file_picker_button')
         self.file_picker_button.connect('activated', self.pick_file)
 
         # TODO set up callbacks for syncing interface elements between them
         # + a correct model object?
-
-        # WIP set the architecture ListModel+ListItemFactory into the Adw.ComboRow for the architecture list
+    
+    def init_arch_list(self):
 
         self.arch_combo : Adw.ComboRow = self.builder.get_object('architecture_combo')
 
@@ -49,7 +49,20 @@ class MyApp(Adw.Application):
 
         self.arch_combo.set_model(arch_model)
 
-        # TODO Switch to GJS, or Py+Server anything?
+    def on_activate(self, app):
+        # Create a Builder object, in order
+        # to parse the Cambalache-produced UI file
+
+        self.builder = Gtk.Builder()
+        self.builder.add_from_file(SCRIPT_DIR + "/gui.ui")
+        
+        # Connect UI signals
+
+        self.connect_signals()
+
+        # WIP set the architecture ListModel+ListItemFactory into the Adw.ComboRow for the architecture list
+
+        self.init_arch_list()
 
         # Obtain and show the main window
 

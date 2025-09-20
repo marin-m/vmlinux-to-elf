@@ -127,8 +127,7 @@ def try_decompress_at(input_file : bytes, offset : int) -> bytes:
             
             decoded = input_file[offset + 20:offset + 20 + min(dtb_offset_le, dtb_offset_be)]
         
-        elif Signature.check(input_file, offset, Signature.Android_Bootimg): # Unpack an uncompressed Android Bootimg file, version 0, 1, 2 or 3
-            
+        elif Signature.check(input_file, offset, Signature.Android_Bootimg): # Unpack an uncompressed Android Bootimg file, version 0, 1, 2, 3, or 4
             # See, for reference:
             # - https://github.com/osm0sis/mkbootimg/blob/master/unpackbootimg.c
             # - https://github.com/osm0sis/mkbootimg/blob/master/bootimg.h
@@ -136,13 +135,17 @@ def try_decompress_at(input_file : bytes, offset : int) -> bytes:
             assert len(input_file) > 4096
             
             header_version_raw = input_file[offset + 10 * 4: offset + 11 * 4]
+            assert header_version_raw in (
+                b'\0\0\0\1', b'\1\0\0\0', b'\0\0\0\2', b'\2\0\0\0',
+                b'\0\0\0\3', b'\3\0\0\0', b'\0\0\0\4', b'\4\0\0\0'
+            ), f"Unsupported Android bootimg version {header_version_raw}"
             
             endianness = 'little'
 
-            if header_version_raw in (b'\0\0\0\3', b'\3\0\0\0'):
+            if header_version_raw in (b'\0\0\0\3', b'\3\0\0\0', b'\0\0\0\4', b'\4\0\0\0'):
                 page_size = 4096
                 
-                if header_version_raw == b'\0\0\0\3':
+                if header_version_raw in (b'\0\0\0\3', b'\0\0\0\4'):
                     endianness = 'big'
                 
             else:

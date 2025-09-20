@@ -183,11 +183,11 @@ class KallsymsFinder:
         
         self.find_linux_kernel_version()
         
-        if bit_size and bit_size not in (64, 32):
-            exit('[!] Please specify a register bit size of either 32 or 64 ' +
-                'bits')
-        else:
-            self.is_64_bits = (bit_size == 64)
+        if bit_size:
+            if bit_size not in (64, 32):
+                exit('[!] Please specify a register bit size of either 32 or 64 bits')
+            else:
+                self.is_64_bits = (bit_size == 64)
 
         self.guess_architecture()
 
@@ -250,7 +250,7 @@ class KallsymsFinder:
 
             self.elf_machine = int(result.elf_machine)
             if self.is_64_bits is None:
-                self.is_64_bits = result.is_64_bits
+                self.is_64_bits = result.is_64_bit
             self.is_big_endian = result.is_big_endian
 
     def find_elf64_rela(self, base_address: int = None) -> bool:

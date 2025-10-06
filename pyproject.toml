@@ -1,0 +1,25 @@
+
+[build-system]
+requires = ["uv_build>=0.8.23,<0.9.0"]
+build-backend = "uv_build"
+
+[project]
+name = "vmlinux-to-elf"
+version = "1.0"
+dependencies = ["lz4", "zstandard", "minilzo"]
+requires-python = ">=3.6"
+authors = [{ name = "Marin Moulinier" }]
+description = "A tool to recover a fully analyzable .ELF from a raw kernel, through extracting the kernel symbol table (kallsyms)"
+readme = "README.md"
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
+
+
+[project.urls]
+Homepage = "https://github.com/marin-m/vmlinux-to-elf"
+Repository = "https://github.com/marin-m/vmlinux-to-elf"
+Issues = "https://github.com/marin-m/vmlinux-to-elf/issues"
+
+[project.scripts]
+kallsyms-finder = "vmlinux_to_elf.scripts.kallsyms_finder:main"
+vmlinux-to-elf = "vmlinux_to_elf.scripts.vmlinux_to_elf:main"

@@ -322,6 +322,10 @@ class SH_TYPE(IntEnum):
     SHT_MIPS_REGINFO = 0x70000006
     SHT_MIPS_ABIFLAGS = 0x7000002a
 
+    # Android's experimental support for SHT_RELR sections.
+    # https://android.googlesource.com/platform/bionic/+/b7feec74547f84559a1467aca02708ff61346d2a/libc/include/elf.h#512
+    SHT_ANDROID_RELR = 0x6fffff00 # Relocation entries; only offsets.
+
 
 class SH_FLAGS(IntEnum):
     

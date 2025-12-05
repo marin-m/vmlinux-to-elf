@@ -136,7 +136,7 @@ def try_decompress_at(input_file : bytes, offset : int) -> bytes:
             
             header_version_raw = input_file[offset + 10 * 4: offset + 11 * 4]
             assert header_version_raw in (
-                b'\0\0\0\1', b'\1\0\0\0', b'\0\0\0\2', b'\2\0\0\0',
+                b'\0\0\0\0', b'\0\0\0\1', b'\1\0\0\0', b'\0\0\0\2', b'\2\0\0\0',
                 b'\0\0\0\3', b'\3\0\0\0', b'\0\0\0\4', b'\4\0\0\0'
             ), f"Unsupported Android bootimg version {header_version_raw}"
             
@@ -259,4 +259,3 @@ def obtain_raw_kernel_from_file(input_file: bytes) -> bytes:
                 possible_offset = input_file.find(possible_signature, possible_offset + 1)
 
     return input_file
-

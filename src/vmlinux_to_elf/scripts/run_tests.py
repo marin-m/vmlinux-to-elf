@@ -15,18 +15,12 @@
     ELF files to an automatically created "tests_output/" folder.
 """
 
-from os.path import dirname, realpath, exists
+from os.path import realpath, exists
 from traceback import print_exc
 from os import makedirs
 from sys import stdout
 from re import sub
 import logging
-import sys
-
-SCRIPT_DIR = dirname(realpath(__file__))
-PACKAGE_DIR = dirname(SCRIPT_DIR)
-PARENT_DIR = dirname(PACKAGE_DIR)
-sys.path.insert(0, PARENT_DIR)
 
 from vmlinux_to_elf.vmlinuz_decompressor import obtain_raw_kernel_from_file
 from vmlinux_to_elf.elf_symbolizer import ElfSymbolizer

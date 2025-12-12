@@ -37,7 +37,7 @@ def main():
         "--base-address",
         help="Force overriding the base address used for converting "
         + "relocations to relative relocations with this integer value (rather than auto-detect)",
-        type=lambda string: int(string.replace("0x", ""), 16),
+        type=lambda st: int(st, 16),
         metavar="HEX_NUMBER",
     )
 

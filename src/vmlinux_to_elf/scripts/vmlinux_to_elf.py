@@ -47,7 +47,7 @@ def main():
         + "at this offset of the provided raw file or compressed stream (rather than "
         + "0, or the beginning of the ELF sections if an ELF header was present in the "
         + "input)",
-        type=lambda string: int(string.replace("0x", ""), 16),
+        type=lambda st: int(st, 16),
         metavar="HEX_NUMBER",
     )
 
@@ -55,7 +55,7 @@ def main():
         "--base-address",
         help="Force overriding the output ELF "
         + "base address field with this integer value (rather than auto-detect)",
-        type=lambda string: int(string.replace("0x", ""), 16),
+        type=lambda st: int(st, 16),
         metavar="HEX_NUMBER",
     )
 

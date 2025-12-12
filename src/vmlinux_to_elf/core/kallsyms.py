@@ -274,7 +274,7 @@ class KallsymsFinder:
         minimal_heuristic_count = 1000
         minimal_kernel_va = 0xFFFFC00080000000
         maximal_kernel_va = 0xFFFFFFFFFFFFFFFF
-        kernel_text_candidate = maximal_kernel_va
+        addend_candidate = None
 
         # Relocations table located at 'init' part of kernel image
         # Thus reverse-search is more efficient
@@ -322,8 +322,9 @@ class KallsymsFinder:
                 continue
 
             elf64_rela.append(rela)
-            if (0 == (r_addend & 0xFFF)) and (minimal_kernel_va <= r_addend < kernel_text_candidate):
-                kernel_text_candidate = r_addend
+            if (0 == (r_addend & 0xFFF)) and (minimal_kernel_va <= r_addend):
+                if addend_candidate is None or r_addend < addend_candidate:
+                    addend_candidate = r_addend
             self.elf64_rela_start -= rela64_size   # move to one rela64 struct backward
 
         count = len(elf64_rela)
@@ -331,14 +332,40 @@ class KallsymsFinder:
         if count < minimal_heuristic_count:
             return False
 
-        self.kernel_text_candidate = kernel_text_candidate if base_address is None else base_address
         self.elf64_rela = elf64_rela
         self.elf64_rela_end_excl = self.elf64_rela_start + count * rela64_size
         logging.info('[+] Found relocations table at file offset 0x%04x (count=%d)' % (self.elf64_rela_start, count))
-        if base_address is None:
-            logging.info('[+] Found kernel text candidate: 0x%08x' % (kernel_text_candidate))
+
+        # Infer a sane base range from relocation offsets so that every
+        # relocation offset maps somewhere inside the image.
+        min_offset = min(r[0] for r in elf64_rela)
+        max_offset = max(r[0] for r in elf64_rela)
+        img_len = len(self.kernel_img)
+        base_low = max_offset - (img_len - 8)
+        base_high = min_offset
+
+        def fits(base: int) -> bool:
+            return base is not None and base_low <= base <= base_high
+
+        if base_address is not None:
+            self.kernel_text_candidate = base_address
+            logging.info('[+] Using supplied base address as kernel text candidate: 0x%08x' % (self.kernel_text_candidate))
+        elif addend_candidate is not None and fits(addend_candidate):
+            self.kernel_text_candidate = addend_candidate
+            logging.info('[+] Found kernel text candidate from relocation addends: 0x%08x' % (self.kernel_text_candidate))
+        elif base_low <= base_high:
+            # HACK: kernel might not be aligned to 0x10000?
+            ALIGN = 0x10000
+            candidate = (base_low + ALIGN - 1) & ~(ALIGN - 1)
+            if candidate > base_high:
+                candidate = base_high & ~(ALIGN - 1)
+            self.kernel_text_candidate = candidate
+            logging.info('[+] Guessed kernel base from relocation offsets range 0x%08x-0x%08x -> 0x%08x' % (base_low, base_high, self.kernel_text_candidate))
         else:
-            logging.info('[+] Using supplied base address as kernel text candidate: 0x%08x' % (kernel_text_candidate))
+            self.kernel_text_candidate = addend_candidate if addend_candidate is not None else base_address
+            logging.info('[!] Could not derive a consistent base from relocations, keeping candidate 0x%08x' % (self.kernel_text_candidate))
+
+        logging.info('[+] Found relocations table at file offset 0x%04x (count=%d)' % (self.elf64_rela_start, count))
         return True
 
     def apply_elf64_rela(self) -> bool:

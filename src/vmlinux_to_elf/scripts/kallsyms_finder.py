@@ -1,15 +1,8 @@
 #!/usr/bin/env python3
 # -*- encoding: Utf-8 -*-
 import logging
-import sys
 from argparse import ArgumentParser
-from os.path import dirname, realpath
 from sys import stdout
-
-SCRIPT_DIR = dirname(realpath(__file__))
-PACKAGE_DIR = dirname(SCRIPT_DIR)
-PARENT_DIR = dirname(PACKAGE_DIR)
-sys.path.insert(0, PARENT_DIR)
 
 from vmlinux_to_elf.core.architecture_detecter import ArchitectureGuessError
 from vmlinux_to_elf.core.kallsyms import KallsymsFinder

@@ -3,7 +3,6 @@
 
 from collections import OrderedDict
 
-
 """
     Pretty print a file name in an ASCII rectangle.
     
@@ -139,13 +138,7 @@ def pretty_print_table(rows):
         print('+-%s-+' % '---'.join('-' * max_len for max_len in column_to_max_length))
         
 
-
-from sys import path
-from os.path import dirname, realpath
-
-path.append(realpath(dirname(__file__)))
-
-import elf
+from vmlinux_to_elf.utils import elf
 
 field_name_to_structure = {
     key.lower(): value for key, value in vars(elf).items()

@@ -1,17 +1,21 @@
 #!/usr/bin/env python3
 #-*- encoding: Utf-8 -*-
-from ctypes import BigEndianStructure, LittleEndianStructure
-from ctypes import c_uint8, c_uint16, c_int32, c_uint32, c_int64, c_uint64, c_char
+from ctypes import (
+    BigEndianStructure,
+    LittleEndianStructure,
+    c_char,
+    c_int32,
+    c_int64,
+    c_uint8,
+    c_uint16,
+    c_uint32,
+    c_uint64,
+)
+from enum import IntEnum
 from io import SEEK_END, BytesIO
-from enum import Enum, IntEnum
-from typing import List, Dict
+from typing import List
 
-from sys import path
-from os.path import dirname, realpath
-
-path.append(realpath(dirname(__file__)))
-
-from pretty_print import pretty_print_structure
+from vmlinux_to_elf.utils.pretty_print import pretty_print_structure
 
 """
     This file contains a wrapper for parsing and writing ELF files.

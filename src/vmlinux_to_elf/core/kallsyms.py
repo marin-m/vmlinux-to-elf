@@ -6,7 +6,6 @@ import math
 from enum import Enum
 from re import match, search
 from struct import pack, unpack_from
-from typing import Dict, List, Tuple
 
 from vmlinux_to_elf.core.architecture_detecter import (
     ArchitectureDetectionResult,
@@ -131,7 +130,7 @@ class KallsymsFinder:
     kallsyms_token_index__offset : int = None
     kallsyms_token_index_end__offset : int = None
 
-    elf64_rela : List[Tuple[int, int, int]] = None
+    elf64_rela : list[tuple[int, int, int]] = None
     elf64_rela_start : int = None
     elf64_rela_end_excl : int = None
     kernel_text_candidate : int = None
@@ -155,10 +154,10 @@ class KallsymsFinder:
     has_absolute_percpu : bool = None
     relative_base_address : int = None
 
-    kernel_addresses : List[int] = None
+    kernel_addresses : list[int] = None
     
-    symbols : List[KallsymsSymbol] = None
-    name_to_symbol : Dict[str, KallsymsSymbol] = None
+    symbols : list[KallsymsSymbol] = None
+    name_to_symbol : dict[str, KallsymsSymbol] = None
     
 
     """
@@ -598,7 +597,7 @@ class KallsymsFinder:
         position = self.kallsyms_names__offset
         self.number_of_symbols = 0
         
-        self.symbol_names : List[str] = []
+        self.symbol_names : list[str] = []
         
         while position + 1 < len(self.kernel_img):
             

@@ -13,7 +13,6 @@ from ctypes import (
 )
 from enum import IntEnum
 from io import SEEK_END, BytesIO
-from typing import List
 
 from vmlinux_to_elf.utils.pretty_print import pretty_print_structure
 
@@ -136,7 +135,7 @@ class ElfFile:
         
         # Exposed to the user
         
-        self.sections : List[ElfSection] = []
+        self.sections : list[ElfSection] = []
         
         self.section_string_table : ElfStrtab = None
         
@@ -144,7 +143,7 @@ class ElfFile:
         
         # Not exposed to the user (inferred from sections)
         
-        self.segments : List[Elf32ProgramHeaderEntry] = []
+        self.segments : list[Elf32ProgramHeaderEntry] = []
     
     @classmethod
     def from_bytes(cls, data : BytesIO):
@@ -616,7 +615,7 @@ class ElfSymtab(ElfSection):
 
     string_table : ElfSection = None # .dynstr or .strtab
     
-    symbol_table : List[Elf32LittleEndianSymbolTableEntry] = None
+    symbol_table : list[Elf32LittleEndianSymbolTableEntry] = None
     
     def __init__(self, elf_file : ElfFile):
         
@@ -824,7 +823,7 @@ class Elf64BigEndianRelocationWithAddendTableEntry(Elf64LittleEndianRelocationWi
 
 class ElfRel(ElfSection):
     
-    relocation_table : List[Elf32LittleEndianRelocationTableEntry] = None
+    relocation_table : list[Elf32LittleEndianRelocationTableEntry] = None
     
     
     def _unserialize_contents(self, data : BytesIO):
@@ -888,7 +887,7 @@ class ElfRel(ElfSection):
 
 class ElfRela(ElfSection):
     
-    relocation_table : List[Elf32LittleEndianRelocationWithAddendTableEntry] = None
+    relocation_table : list[Elf32LittleEndianRelocationWithAddendTableEntry] = None
     
     
     def unserialize(self, data : BytesIO):

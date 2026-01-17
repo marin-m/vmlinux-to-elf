@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 #-*- encoding: Utf-8 -*-
-from typing import Dict, Union, Sequence, Set, Tuple, Optional, List
-from re import search, findall, finditer, DOTALL
+from typing import Dict, Tuple, Optional
+from re import findall, DOTALL
 from collections import Counter
-from argparse import Namespace
 from enum import IntEnum
-from io import BytesIO
 from time import time
 import logging
 

@@ -3,6 +3,8 @@
 
 from collections import OrderedDict
 
+from vmlinux_to_elf.utils import elf
+
 """
     Pretty print a file name in an ASCII rectangle.
     
@@ -47,7 +49,7 @@ def structure_to_key_values_strings(ctypes_structure):
         
         # Stringify the value
         
-        if type(value) == bytes: # Strings
+        if type(value) is bytes: # Strings
             
             key_values[pretty_key] = value.decode('ascii')
         
@@ -62,7 +64,7 @@ def structure_to_key_values_strings(ctypes_structure):
             
                 key_values[pretty_key] = str(value) + ' ?'
         
-        elif type(value) == int: # Integer
+        elif type(value) is int: # Integer
             
             key_values[pretty_key] = '0x%08x' % value if value else 'N/A'
     
@@ -138,7 +140,6 @@ def pretty_print_table(rows):
         print('+-%s-+' % '---'.join('-' * max_len for max_len in column_to_max_length))
         
 
-from vmlinux_to_elf.utils import elf
 
 field_name_to_structure = {
     key.lower(): value for key, value in vars(elf).items()

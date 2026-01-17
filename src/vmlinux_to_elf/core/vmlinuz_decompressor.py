@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 #-*- encoding: Utf-8 -*-
-from io import BytesIO, SEEK_END
-from gzip import _GzipReader
-from struct import unpack
-from typing import Union
-from re import search
 import importlib
 import logging
+from gzip import _GzipReader
+from io import SEEK_END, BytesIO
+from struct import unpack
 
 """
     How to detect a vmlinuz file?
@@ -236,7 +234,7 @@ def obtain_raw_kernel_from_file(input_file: bytes) -> bytes:
     # last words of the file, as well for
     # the start of the file
     
-    possible_offsets :     Set[int] =         set([0])
+    possible_offsets :     set[int] =         set([0])
 
     for possible_endianness in '<>':
         possible_offsets |=       set(unpack(possible_endianness + '20I',  input_file[file_size - 4 * 20:]))

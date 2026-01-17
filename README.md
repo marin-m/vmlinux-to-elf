@@ -27,10 +27,12 @@ Local development environment setup:
 ```bash
 git clone git@github.com:marin-m/vmlinux-to-elf.git
 cd vmlinux-to-elf
-# With uv
+# With uv (local dev environment, vmlinux-to-elf not callable system wide)
 uv sync
-# Or with pipx
-pipx install --editable .
+# Or system-wide (vmlinux-to-elf is callable system wide)
+uv tool install -e .
+# Or with pipx (vmlinux-to-elf is callable system wide)
+pipx install -e .
 ```
 
 ## Features

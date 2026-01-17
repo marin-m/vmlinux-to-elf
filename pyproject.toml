@@ -1,13 +1,13 @@
 
 [build-system]
-requires = ["uv_build>=0.9.0,<0.10.0"]
+requires = ["uv_build>=0.9.26,<0.10.0"]
 build-backend = "uv_build"
 
 [project]
 name = "vmlinux-to-elf"
 version = "1.0"
-dependencies = ["lz4", "zstandard", "minilzo"]
-requires-python = ">=3.6"
+dependencies = ["lz4>=4.4.5", "zstandard>=0.25.0", "minilzo>=1.2"]
+requires-python = ">=3.9"
 authors = [{ name = "Marin Moulinier" }]
 description = "A tool to recover a fully analyzable .ELF from a raw kernel, through extracting the kernel symbol table (kallsyms)"
 readme = "README.md"

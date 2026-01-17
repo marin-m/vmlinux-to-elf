@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
 #-*- encoding: Utf-8 -*-
 
-from re import search, findall, IGNORECASE, match
-from struct import pack, unpack_from
-from typing import List, Dict, Tuple
-from io import BytesIO
-from enum import Enum
 import logging
 import math
+from enum import Enum
+from re import match, search
+from struct import pack, unpack_from
 
-from vmlinux_to_elf.core.architecture_detecter import ArchitectureDetector, ArchitectureName, ArchitectureGuessError, ArchitectureDetectionResult
-from vmlinux_to_elf.core.vmlinuz_decompressor import obtain_raw_kernel_from_file
+from vmlinux_to_elf.core.architecture_detecter import (
+    ArchitectureDetectionResult,
+    ArchitectureDetector,
+    ArchitectureGuessError,
+    ArchitectureName,
+)
 
 """
     This class will take a raw kernel image (.IMG), and return the file
@@ -128,7 +130,7 @@ class KallsymsFinder:
     kallsyms_token_index__offset : int = None
     kallsyms_token_index_end__offset : int = None
 
-    elf64_rela : List[Tuple[int, int, int]] = None
+    elf64_rela : list[tuple[int, int, int]] = None
     elf64_rela_start : int = None
     elf64_rela_end_excl : int = None
     kernel_text_candidate : int = None
@@ -152,10 +154,10 @@ class KallsymsFinder:
     has_absolute_percpu : bool = None
     relative_base_address : int = None
 
-    kernel_addresses : List[int] = None
+    kernel_addresses : list[int] = None
     
-    symbols : List[KallsymsSymbol] = None
-    name_to_symbol : Dict[str, KallsymsSymbol] = None
+    symbols : list[KallsymsSymbol] = None
+    name_to_symbol : dict[str, KallsymsSymbol] = None
     
 
     """
@@ -511,9 +513,7 @@ class KallsymsFinder:
     def find_kallsyms_token_index(self):
         
         # Get to the end of the kallsyms_token_table
-        
-        current_index_in_array = 0
-        
+
         position = self.kallsyms_token_table__offset
         
         all_token_offsets = []
@@ -597,7 +597,7 @@ class KallsymsFinder:
         position = self.kallsyms_names__offset
         self.number_of_symbols = 0
         
-        self.symbol_names : List[str] = []
+        self.symbol_names : list[str] = []
         
         while position + 1 < len(self.kernel_img):
             

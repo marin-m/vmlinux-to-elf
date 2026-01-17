@@ -1,9 +1,31 @@
 #!/usr/bin/env python3
 #-*- encoding: Utf-8 -*-
-from re import search, IGNORECASE
-from argparse import Namespace
-from io import BytesIO
 import logging
+from io import BytesIO
+
+from vmlinux_to_elf.core.architecture_detecter import ArchitectureGuessError
+from vmlinux_to_elf.core.kallsyms import KallsymsFinder, KallsymsSymbolType
+from vmlinux_to_elf.utils.elf import (
+    SH_FLAGS,
+    SPECIAL_SECTION_INDEX,
+    ST_INFO_BINDING,
+    ST_INFO_TYPE,
+    Elf32BigEndianRelocationWithAddendTableEntry,
+    Elf32BigEndianSymbolTableEntry,
+    Elf32LittleEndianRelocationWithAddendTableEntry,
+    Elf32LittleEndianSymbolTableEntry,
+    Elf64BigEndianRelocationWithAddendTableEntry,
+    Elf64BigEndianSymbolTableEntry,
+    Elf64LittleEndianRelocationWithAddendTableEntry,
+    Elf64LittleEndianSymbolTableEntry,
+    ElfFile,
+    ElfNoBits,
+    ElfNullSection,
+    ElfProgbits,
+    ElfRela,
+    ElfStrtab,
+    ElfSymtab,
+)
 
 """
     The ElfSymbolizer class, defined in this file, gathers information from
@@ -11,10 +33,6 @@ import logging
     runtime symbol table, or vmlinuz_decompressor, which processes possible
     kernel compressions), in order to generate the output ELF file.
 """
-
-from vmlinux_to_elf.utils.elf import ElfFile, ElfSymtab, ElfRel, Elf32LittleEndianSymbolTableEntry, Elf32BigEndianSymbolTableEntry, Elf64LittleEndianSymbolTableEntry, Elf64BigEndianSymbolTableEntry, SPECIAL_SECTION_INDEX, ST_INFO_TYPE, ST_INFO_BINDING, ElfStrtab, ElfProgbits, ElfNullSection, ElfNoBits, SH_FLAGS, ElfRela, Elf32LittleEndianRelocationWithAddendTableEntry, Elf32BigEndianRelocationWithAddendTableEntry, Elf64LittleEndianRelocationWithAddendTableEntry, Elf64BigEndianRelocationWithAddendTableEntry
-from vmlinux_to_elf.core.architecture_detecter import ArchitectureGuessError
-from vmlinux_to_elf.core.kallsyms import KallsymsFinder, KallsymsSymbolType
 
 
 class ElfSymbolizer:

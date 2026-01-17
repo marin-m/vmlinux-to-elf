@@ -1,13 +1,11 @@
 #!/usr/bin/env python3
 #-*- encoding: Utf-8 -*-
-from typing import Dict, Union, Sequence, Set, Tuple, Optional, List
-from re import search, findall, finditer, DOTALL
-from collections import Counter
-from argparse import Namespace
-from enum import IntEnum
-from io import BytesIO
-from time import time
 import logging
+from collections import Counter
+from enum import IntEnum
+from re import DOTALL, findall
+from time import time
+from typing import Optional
 
 """
     Guess the architecture of a given binary.
@@ -44,7 +42,7 @@ class ArchitectureName(IntEnum):
     arcompact = 16
 
 # Prologues taken from the binwalk file linked above
-architecture_to_prologue_regex : Dict[ArchitectureName, bytes] = {
+architecture_to_prologue_regex : dict[ArchitectureName, bytes] = {
     ArchitectureName.mipsle: br'.\xFF\xBD\x27..[\xA0-\xBF]\xAF',
     ArchitectureName.mipsbe: br'\x27\xBD\xFF.\xAF[\xA0-\xBF]..',
     ArchitectureName.mips64le: br'.\xFF\xBD\x67..[\xA0-\xBF]\xFF',
@@ -139,7 +137,7 @@ class ArchitectureDetectionResult:
 
         self.architecture_name = architecture_name
 
-        lookup_table : Dict[ArchitectureName, Tuple[int, bool, bool]] = {
+        lookup_table : dict[ArchitectureName, tuple[int, bool, bool]] = {
             ArchitectureName.mipsle: (ElfMachine.EM_MIPS, False, False),
             ArchitectureName.mipsbe: (ElfMachine.EM_MIPS, False, True),
             ArchitectureName.mips64le: (ElfMachine.EM_MIPS, True, False),
@@ -206,7 +204,7 @@ class ArchitectureDetector:
     @staticmethod
     def _guess_architecture_common(binary : bytes) -> Optional[ArchitectureName]:
 
-        architecture_to_number_of_prologues :  Dict[ArchitectureName, int] = Counter()
+        architecture_to_number_of_prologues :  dict[ArchitectureName, int] = Counter()
 
         for architecture, prologue in architecture_to_prologue_regex.items():
             

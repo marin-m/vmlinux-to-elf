@@ -11,25 +11,28 @@ Because the concerned symbol table is originally compressed, it should recover s
 It produces an .ELF file that you can analyze using IDA Pro and Ghidra. This tool is hence useful for embedded systems reverse engineering.
 
 Usage:
-
 ```bash
-./vmlinux-to-elf <input_kernel.bin> <output_kernel.elf>
+vmlinux-to-elf <input_kernel.bin> <output_kernel.elf>
 ```
 
-System-wide installation:
-
+Installation:
 ```bash
-sudo apt install pipx
-sudo pipx install git+https://github.com/marin-m/vmlinux-to-elf
+# With uv
+uv tool install git+https://github.com/marin-m/vmlinux-to-elf
+# Or with pipx
+pipx install git+https://github.com/marin-m/vmlinux-to-elf
 ```
 
-Local use and dependencies installation:
-
+Local development environment setup:
 ```bash
-sudo apt install python3-pip git
-sudo pip3 install --upgrade lz4 zstandard minilzo
 git clone git@github.com:marin-m/vmlinux-to-elf.git
 cd vmlinux-to-elf
+# With uv (local dev environment, vmlinux-to-elf not callable system wide)
+uv sync
+# Or system-wide (vmlinux-to-elf is callable system wide)
+uv tool install -e .
+# Or with pipx (vmlinux-to-elf is callable system wide)
+pipx install -e .
 ```
 
 ## Features

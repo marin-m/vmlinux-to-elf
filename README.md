@@ -18,9 +18,10 @@ vmlinux-to-elf <input_kernel.bin> <output_kernel.elf>
 Installation:
 ```bash
 # With uv
-uv tool install git+https://github.com/marin-m/vmlinux-to-elf
+uv tool install vmlinux-to-elf
+
 # Or with pipx
-pipx install git+https://github.com/marin-m/vmlinux-to-elf
+pipx install vmlinux-to-elf
 ```
 
 Local development environment setup:

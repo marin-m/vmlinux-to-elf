@@ -18,9 +18,11 @@ vmlinux-to-elf <input_kernel.bin> <output_kernel.elf>
 Installation:
 ```bash
 # With uv
+sudo snap install astral-uv
 uv tool install vmlinux-to-elf
 
 # Or with pipx
+sudo apt install pipx
 pipx install vmlinux-to-elf
 ```
 
@@ -28,9 +30,10 @@ Local development environment setup:
 ```bash
 git clone git@github.com:marin-m/vmlinux-to-elf.git
 cd vmlinux-to-elf
-# With uv (local dev environment, vmlinux-to-elf not callable system wide)
+# With uv (creates ".venv", call "source .venv/bin/activate" to set up)
 uv sync
-# Or system-wide (vmlinux-to-elf is callable system wide)
+# With uv, vmlinux-to-elf is callable system-wide (creates a symlink
+# to the source in "~/.local/bin")
 uv tool install -e .
 # Or with pipx (vmlinux-to-elf is callable system wide)
 pipx install -e .

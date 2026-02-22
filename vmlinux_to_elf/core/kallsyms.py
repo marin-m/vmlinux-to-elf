@@ -281,7 +281,7 @@ class KallsymsFinder:
                 self.is_64_bits = result.is_64_bit
             self.is_big_endian = result.is_big_endian
 
-    def extract_db_information(self, extra_info = True):
+    def extract_db_information(self, extra_info=True):
         kernel_major = int(self.version_number.split('.')[0])
         kernel_minor = int(self.version_number.split('.')[1])
         version_partial = 'v%d.%d' % (kernel_major, kernel_minor)
@@ -376,18 +376,29 @@ class KallsymsFinder:
                                     file.file_name
                                     logging.info('[~]     - ' + file.file_name)
             if extra_info:
-                debian_version = next(iter(DebianRelease.select().where(
-                    DebianRelease.debian_release_date <= kernel.release_date
-                ).order_by(
-                    DebianRelease.debian_release_date.desc()
-                )), None)
+                debian_version = next(
+                    iter(
+                        DebianRelease.select()
+                        .where(
+                            DebianRelease.debian_release_date
+                            <= kernel.release_date
+                        )
+                        .order_by(DebianRelease.debian_release_date.desc())
+                    ),
+                    None,
+                )
                 if debian_version:
-                    logging.info('[+]   Suggested build environment: docker run -it %s (Debian %s "%s" released %s)' % (
-                        debian_version.docker_archive_name,
-                        debian_version.debian_version_number,
-                        debian_version.debian_version_name,
-                        debian_version.debian_release_date.strftime('%Y-%m-%d')
-                    ))
+                    logging.info(
+                        '[+]   Suggested build environment: docker run -it %s (Debian %s "%s" released %s)'
+                        % (
+                            debian_version.docker_archive_name,
+                            debian_version.debian_version_number,
+                            debian_version.debian_version_name,
+                            debian_version.debian_release_date.strftime(
+                                '%Y-%m-%d'
+                            ),
+                        )
+                    )
 
     def find_elf64_rela(self, base_address: int = None) -> bool:
         """

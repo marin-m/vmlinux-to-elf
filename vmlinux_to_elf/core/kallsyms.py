@@ -14,6 +14,8 @@ from vmlinux_to_elf.core.architecture_detecter import (
     ArchitectureName,
 )
 
+# from vmlinux_to_elf.kernel_db.database import TODO
+
 """
     This class will take a raw kernel image (.IMG), and return the file
     offsets for all kernel symbols, as well as the kallsyms_* structs and
@@ -195,6 +197,8 @@ class KallsymsFinder:
 
         self.guess_architecture()
 
+        self.extract_db_information()
+
         if self.is_64_bits:
             self.find_elf64_rela(base_address)
             self.apply_elf64_rela()
@@ -263,6 +267,12 @@ class KallsymsFinder:
             if self.is_64_bits is None:
                 self.is_64_bits = result.is_64_bit
             self.is_big_endian = result.is_big_endian
+
+    def extract_db_information(self):
+        pass  # WIP 2026-02-22
+
+        # Use: self.elf_machine
+        # Use: self.version_number
 
     def find_elf64_rela(self, base_address: int = None) -> bool:
         """

@@ -10,7 +10,12 @@ module-root = ""
 [project]
 name = "vmlinux-to-elf"
 version = "1.0"
-dependencies = ["lz4>=4.4.5", "zstandard>=0.25.0", "minilzo>=1.2"]
+dependencies = [
+    "lz4>=4.4.5",
+    "zstandard>=0.25.0",
+    "minilzo>=1.2",
+    "peewee>=4.0.0",
+]
 requires-python = ">=3.9"
 authors = [{ name = "Marin Moulinier" }]
 description = "A tool to recover a fully analyzable .ELF from a raw kernel, through extracting the kernel symbol table (kallsyms)"

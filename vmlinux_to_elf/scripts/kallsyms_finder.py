@@ -46,13 +46,13 @@ def main():
         type=lambda st: int(st, 16),
         metavar='HEX_NUMBER',
     )
-    args.add_argument(
-        '-e',
-        '--extra-info',
-        help='Print extra information useful to rebuild the kernel, including links to '
-        + 'source code',
-        action='store_true',
-    )
+    # args.add_argument(
+    #     '-e',
+    #     '--extra-info',
+    #     help='Print extra information useful to rebuild the kernel, including links to '
+    #     + 'source code',
+    #     action='store_true',
+    # )
 
     args = args.parse_args()
 
@@ -63,7 +63,7 @@ def main():
                 args.bit_size,
                 args.use_absolute,
                 args.base_address,
-                args.extra_info,
+                # args.extra_info,
             )
 
         except ArchitectureGuessError:

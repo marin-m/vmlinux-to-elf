@@ -16,6 +16,9 @@ from vmlinux_to_elf.core.architecture_detecter import (
 
 from vmlinux_to_elf.kernel_db.database import (
     KernelVersion,
+    KernelRelevantFile,
+    DebianRelease,
+    KernelVersionDependency,
     EMachineValue,
     KnownArchitecture,
 )
@@ -185,7 +188,7 @@ class KallsymsFinder:
         bit_size: int = None,
         override_relative_base: bool = False,
         base_address: int = None,
-        extra_info: bool = False,
+        # extra_info: bool = False,
     ):
         self.override_relative_base = override_relative_base
         self.kernel_img = kernel_img
@@ -204,7 +207,7 @@ class KallsymsFinder:
 
         self.guess_architecture()
 
-        self.extract_db_information(extra_info)
+        self.extract_db_information()
 
         if self.is_64_bits:
             self.find_elf64_rela(base_address)
@@ -278,9 +281,7 @@ class KallsymsFinder:
                 self.is_64_bits = result.is_64_bit
             self.is_big_endian = result.is_big_endian
 
-    def extract_db_information(self, extra_info):
-        # WIP 2026-02-22
-
+    def extract_db_information(self, extra_info = True):
         kernel_major = int(self.version_number.split('.')[0])
         kernel_minor = int(self.version_number.split('.')[1])
         version_partial = 'v%d.%d' % (kernel_major, kernel_minor)
@@ -314,38 +315,79 @@ class KallsymsFinder:
                 + kernel.release_date.strftime('%Y-%m-%d')
             )
             if self.elf_machine:
-                if not extra_info:
-                    logging.info(
-                        '[+]   Use --extra-info or -e to print more interesting details'
-                    )
-                else:
-                    e_machine = next(
-                        iter(
-                            EMachineValue.select().where(
-                                EMachineValue.elf_machine_int == self.elf_machine
+                # if not extra_info:
+                #     logging.info(
+                #         '[+]   Use --extra-info or -e to print more interesting details'
+                #     )
+                if extra_info:
+                    logging.info('[+]   Interesting files:')
+                    for file in kernel.relevant_files.select().where(
+                        KernelRelevantFile.architecture_code == None
+                    ):
+                        if file.vcs_browser_url:
+                            logging.info(
+                                '[~]     - %s: %s'
+                                % (file.file_name, file.vcs_browser_url)
                             )
-                        ),
-                        None,
-                    )
-                    if e_machine:
-                        machine_name = e_machine.elf_machine_str
-                        for link in e_machine.arch_code_links:
-                            arch: KnownArchitecture = link.architecture
-                            arch_code: str = arch.architecture_code
-                            capacities = []
-                            if arch.has_32bit_class:
-                                capacities.append('32-bit')
-                            if arch.has_64bit_class:
-                                capacities.append('64-bit')
-                            if arch.has_msb_class:
-                                capacities.append('big-endian')
-                            if arch.has_lsb_class:
-                                capacities.append('little-endian')
-                            logging.info('[+]   Architecture %s (%s) supports %s' % (
-                                arch_code,
-                                machine_name,
-                                ', '.join(capacities)
-                            ))
+                        else:
+                            file.file_name
+                            logging.info('[~]     - ' + file.file_name)
+
+                e_machine = next(
+                    iter(
+                        EMachineValue.select().where(
+                            EMachineValue.elf_machine_int == self.elf_machine
+                        )
+                    ),
+                    None,
+                )
+                if e_machine:
+                    machine_name = e_machine.elf_machine_str
+                    for link in e_machine.arch_code_links:
+                        arch: KnownArchitecture = link.architecture
+                        arch_code: str = arch.architecture_code
+                        capacities = []
+                        if arch.has_32bit_class:
+                            capacities.append('32-bit')
+                        if arch.has_64bit_class:
+                            capacities.append('64-bit')
+                        if arch.has_msb_class:
+                            capacities.append('big-endian')
+                        if arch.has_lsb_class:
+                            capacities.append('little-endian')
+                        logging.info(
+                            '[+]   Architecture %s (%s) supports %s'
+                            % (arch_code, machine_name, ', '.join(capacities))
+                        )
+                        if extra_info:
+                            for file in kernel.relevant_files.select().where(
+                                KernelRelevantFile.architecture_code
+                                == arch_code
+                            ):
+                                if file.vcs_browser_url:
+                                    logging.info(
+                                        '[~]     - %s: %s'
+                                        % (
+                                            file.file_name,
+                                            file.vcs_browser_url,
+                                        )
+                                    )
+                                else:
+                                    file.file_name
+                                    logging.info('[~]     - ' + file.file_name)
+            if extra_info:
+                debian_version = next(iter(DebianRelease.select().where(
+                    DebianRelease.debian_release_date <= kernel.release_date
+                ).order_by(
+                    DebianRelease.debian_release_date.desc()
+                )), None)
+                if debian_version:
+                    logging.info('[+]   Suggested build environment: docker run -it %s (Debian %s "%s" released %s)' % (
+                        debian_version.docker_archive_name,
+                        debian_version.debian_version_number,
+                        debian_version.debian_version_name,
+                        debian_version.debian_release_date.strftime('%Y-%m-%d')
+                    ))
 
     def find_elf64_rela(self, base_address: int = None) -> bool:
         """

@@ -14,7 +14,11 @@ from vmlinux_to_elf.core.architecture_detecter import (
     ArchitectureName,
 )
 
-# from vmlinux_to_elf.kernel_db.database import TODO
+from vmlinux_to_elf.kernel_db.database import (
+    KernelVersion,
+    EMachineValue,
+    KnownArchitecture,
+)
 
 """
     This class will take a raw kernel image (.IMG), and return the file
@@ -181,6 +185,7 @@ class KallsymsFinder:
         bit_size: int = None,
         override_relative_base: bool = False,
         base_address: int = None,
+        extra_info: bool = False,
     ):
         self.override_relative_base = override_relative_base
         self.kernel_img = kernel_img
@@ -199,7 +204,7 @@ class KallsymsFinder:
 
         self.guess_architecture()
 
-        self.extract_db_information()
+        self.extract_db_information(extra_info)
 
         if self.is_64_bits:
             self.find_elf64_rela(base_address)
@@ -273,11 +278,74 @@ class KallsymsFinder:
                 self.is_64_bits = result.is_64_bit
             self.is_big_endian = result.is_big_endian
 
-    def extract_db_information(self):
-        pass  # WIP 2026-02-22
+    def extract_db_information(self, extra_info):
+        # WIP 2026-02-22
 
-        # Use: self.elf_machine
-        # Use: self.version_number
+        kernel_major = int(self.version_number.split('.')[0])
+        kernel_minor = int(self.version_number.split('.')[1])
+        version_partial = 'v%d.%d' % (kernel_major, kernel_minor)
+        if self.version_number.count('.') > 1:
+            kernel_sublevel = int(self.version_number.split('.')[2])
+            version_full = '%s.%d' % (version_partial, kernel_sublevel)
+        else:
+            kernel_sublevel = None
+            version_full = version_partial
+        kernel = next(
+            iter(
+                KernelVersion.select().where(
+                    KernelVersion.version_string == version_full
+                )
+            ),
+            None,
+        ) or next(
+            iter(
+                KernelVersion.select().where(
+                    KernelVersion.version_string == version_partial
+                )
+            ),
+            None,
+        )
+        if kernel:
+            logging.info('[+] Kernel found in database')
+            logging.info('[+]   Read kernel source: ' + kernel.browse_url)
+            logging.info('[+]   Download kernel: ' + kernel.download_url)
+            logging.info(
+                '[+]   Kernel release date: '
+                + kernel.release_date.strftime('%Y-%m-%d')
+            )
+            if self.elf_machine:
+                if not extra_info:
+                    logging.info(
+                        '[+]   Use --extra-info or -e to print more interesting details'
+                    )
+                else:
+                    e_machine = next(
+                        iter(
+                            EMachineValue.select().where(
+                                EMachineValue.elf_machine_int == self.elf_machine
+                            )
+                        ),
+                        None,
+                    )
+                    if e_machine:
+                        machine_name = e_machine.elf_machine_str
+                        for link in e_machine.arch_code_links:
+                            arch: KnownArchitecture = link.architecture
+                            arch_code: str = arch.architecture_code
+                            capacities = []
+                            if arch.has_32bit_class:
+                                capacities.append('32-bit')
+                            if arch.has_64bit_class:
+                                capacities.append('64-bit')
+                            if arch.has_msb_class:
+                                capacities.append('big-endian')
+                            if arch.has_lsb_class:
+                                capacities.append('little-endian')
+                            logging.info('[+]   Architecture %s (%s) supports %s' % (
+                                arch_code,
+                                machine_name,
+                                ', '.join(capacities)
+                            ))
 
     def find_elf64_rela(self, base_address: int = None) -> bool:
         """

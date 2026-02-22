@@ -46,6 +46,7 @@ class ElfSymbolizer:
         bss_size: int = 16,
         file_offset: int = None,
         override_relative: bool = None,
+        extra_info: bool = False,
     ):
         if file_contents.startswith(
             b'\x27\x05\x19\x56'
@@ -62,7 +63,11 @@ class ElfSymbolizer:
             file_contents = file_contents[file_offset:]
 
         kallsyms_finder = KallsymsFinder(
-            file_contents, bit_size, override_relative, base_address
+            file_contents,
+            bit_size,
+            override_relative,
+            base_address,
+            extra_info,
         )
 
         if elf_machine is None and not kallsyms_finder.elf_machine:

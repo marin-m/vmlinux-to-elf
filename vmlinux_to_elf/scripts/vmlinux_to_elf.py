@@ -78,6 +78,14 @@ def main():
         action='store_true',
     )
 
+    args.add_argument(
+        '-e',
+        '--extra-info',
+        help='Print extra information useful to rebuild the kernel, including links to '
+        + 'source code',
+        action='store_true',
+    )
+
     args = args.parse_args()
 
     if (args.e_machine is not None and args.bit_size is None) or (
@@ -102,6 +110,7 @@ def main():
                 args.bss_size,
                 args.file_offset,
                 args.use_absolute,
+                args.extra_info,
             )
 
         except ArchitectureGuessError:

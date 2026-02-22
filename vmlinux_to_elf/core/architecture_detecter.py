@@ -46,22 +46,22 @@ class ArchitectureName(IntEnum):
 
 # Prologues taken from the binwalk file linked above
 architecture_to_prologue_regex: dict[ArchitectureName, bytes] = {
-    ArchitectureName.mipsle: rb".\xFF\xBD\x27..[\xA0-\xBF]\xAF",
-    ArchitectureName.mipsbe: rb"\x27\xBD\xFF.\xAF[\xA0-\xBF]..",
-    ArchitectureName.mips64le: rb".\xFF\xBD\x67..[\xA0-\xBF]\xFF",
-    ArchitectureName.mips64be: rb"\x67\xBD\xFF.\xFF[\xA0-\xBF]..",
-    ArchitectureName.x86: rb"\x55\x89\xE5(?:\x83\xEC|\x57\x56)",
-    ArchitectureName.x86_64: rb"\x55\x48\x89\xE5",
-    ArchitectureName.powerpcbe: rb"\x7C\x08\x02\xA6",
-    ArchitectureName.powerpcle: rb"\xA6\x02\x08\x7C",
-    ArchitectureName.armbe: rb"\xE9\x2D..(?:[\xE0-\xEF]...){2}",
-    ArchitectureName.armle: rb"\x2D\xE9(?:...[\xE0-\xEF]){2}",
-    ArchitectureName.mips16e: rb"\xf0\x08\x64.\x01.",
-    ArchitectureName.superhle: rb"\xF6\x69\x0B\x00\xF6\x68",  # This is an epilogue
-    ArchitectureName.superhbe: rb"\x69\xF6\x00\x0B\x68\xF6",  # This is an epilogue
-    ArchitectureName.aarch64: rb"\xc0\x03\x5f\xd6",  # This is an epilogue
-    ArchitectureName.sparc: rb"\x81\xC7\xE0\x08\x81\xE8",  # This is an epilogue
-    ArchitectureName.arcompact: b"\xf1\xc0.\x1c\x48[\xb0-\xbf]",  # push_s blink; st.a r??, [sp, -??]
+    ArchitectureName.mipsle: rb'.\xFF\xBD\x27..[\xA0-\xBF]\xAF',
+    ArchitectureName.mipsbe: rb'\x27\xBD\xFF.\xAF[\xA0-\xBF]..',
+    ArchitectureName.mips64le: rb'.\xFF\xBD\x67..[\xA0-\xBF]\xFF',
+    ArchitectureName.mips64be: rb'\x67\xBD\xFF.\xFF[\xA0-\xBF]..',
+    ArchitectureName.x86: rb'\x55\x89\xE5(?:\x83\xEC|\x57\x56)',
+    ArchitectureName.x86_64: rb'\x55\x48\x89\xE5',
+    ArchitectureName.powerpcbe: rb'\x7C\x08\x02\xA6',
+    ArchitectureName.powerpcle: rb'\xA6\x02\x08\x7C',
+    ArchitectureName.armbe: rb'\xE9\x2D..(?:[\xE0-\xEF]...){2}',
+    ArchitectureName.armle: rb'\x2D\xE9(?:...[\xE0-\xEF]){2}',
+    ArchitectureName.mips16e: rb'\xf0\x08\x64.\x01.',
+    ArchitectureName.superhle: rb'\xF6\x69\x0B\x00\xF6\x68',  # This is an epilogue
+    ArchitectureName.superhbe: rb'\x69\xF6\x00\x0B\x68\xF6',  # This is an epilogue
+    ArchitectureName.aarch64: rb'\xc0\x03\x5f\xd6',  # This is an epilogue
+    ArchitectureName.sparc: rb'\x81\xC7\xE0\x08\x81\xE8',  # This is an epilogue
+    ArchitectureName.arcompact: b'\xf1\xc0.\x1c\x48[\xb0-\xbf]',  # push_s blink; st.a r??, [sp, -??]
 }
 
 
@@ -156,7 +156,11 @@ class ArchitectureDetectionResult:
             ArchitectureName.superhbe: (ElfMachine.EM_SH, False, True),
             ArchitectureName.aarch64: (ElfMachine.EM_AARCH64, True, False),
             ArchitectureName.sparc: (ElfMachine.EM_SPARC, False, True),
-            ArchitectureName.arcompact: (ElfMachine.EM_ARCOMPACT, False, False),
+            ArchitectureName.arcompact: (
+                ElfMachine.EM_ARCOMPACT,
+                False,
+                False,
+            ),
         }
 
         self.elf_machine, self.is_64_bit, self.is_big_endian = lookup_table[
@@ -183,11 +187,11 @@ class ArchitectureDetector:
 
         if not architecture_guess:
             raise ArchitectureGuessError(
-                "The architecture could not be guessed successfully"
+                'The architecture could not be guessed successfully'
             )
 
         logging.info(
-            "[+] Guessed architecture: %s successfully in %.2f seconds"
+            '[+] Guessed architecture: %s successfully in %.2f seconds'
             % (architecture_guess.name, time() - begin_time)
         )
 
@@ -198,10 +202,12 @@ class ArchitectureDetector:
     """
 
     @staticmethod
-    def _guess_architecture_special(binary: bytes) -> Optional[ArchitectureName]:
-        if binary[:2] == b"MZ":
+    def _guess_architecture_special(
+        binary: bytes,
+    ) -> Optional[ArchitectureName]:
+        if binary[:2] == b'MZ':
             # Maybe UEFI boot stub ?
-            if binary[0x38:0x3C] == b"ARMd":
+            if binary[0x38:0x3C] == b'ARMd':
                 return ArchitectureName.aarch64
 
         return None
@@ -211,8 +217,12 @@ class ArchitectureDetector:
     """
 
     @staticmethod
-    def _guess_architecture_common(binary: bytes) -> Optional[ArchitectureName]:
-        architecture_to_number_of_prologues: dict[ArchitectureName, int] = Counter()
+    def _guess_architecture_common(
+        binary: bytes,
+    ) -> Optional[ArchitectureName]:
+        architecture_to_number_of_prologues: dict[ArchitectureName, int] = (
+            Counter()
+        )
 
         for architecture, prologue in architecture_to_prologue_regex.items():
             architecture_to_number_of_prologues[architecture] = len(

@@ -4,7 +4,7 @@
 import logging
 import math
 from enum import Enum
-from re import match, search
+from re import match, search, findall
 from struct import pack, unpack_from
 
 from vmlinux_to_elf.core.architecture_detecter import (
@@ -12,6 +12,15 @@ from vmlinux_to_elf.core.architecture_detecter import (
     ArchitectureDetector,
     ArchitectureGuessError,
     ArchitectureName,
+)
+
+from vmlinux_to_elf.kernel_db.database import (
+    KernelVersion,
+    KernelRelevantFile,
+    DebianRelease,
+    KernelVersionDependency,
+    EMachineValue,
+    KnownArchitecture,
 )
 
 """
@@ -79,27 +88,27 @@ from vmlinux_to_elf.core.architecture_detecter import (
 
 class KallsymsSymbolType(Enum):
     # Seen in actual kernels
-    ABSOLUTE = "A"
-    BSS = "B"
-    DATA = "D"
-    RODATA = "R"
-    TEXT = "T"
-    WEAK_OBJECT_WITH_DEFAULT = "V"
-    WEAK_SYMBOL_WITH_DEFAULT = "W"
+    ABSOLUTE = 'A'
+    BSS = 'B'
+    DATA = 'D'
+    RODATA = 'R'
+    TEXT = 'T'
+    WEAK_OBJECT_WITH_DEFAULT = 'V'
+    WEAK_SYMBOL_WITH_DEFAULT = 'W'
 
     # Seen on nm's manpage
-    SMALL_DATA = "G"
-    INDIRECT_FUNCTION = "I"
-    DEBUGGING = "N"
-    STACK_UNWIND = "P"
-    COMMON = "C"
-    SMALL_BSS = "S"
-    UNDEFINED = "U"
-    UNIQUE_GLOBAL = "u"
-    WEAK_OBJECT = "v"
-    WEAK_SYMBOL = "w"
-    STABS_DEBUG = "-"
-    UNKNOWN = "?"
+    SMALL_DATA = 'G'
+    INDIRECT_FUNCTION = 'I'
+    DEBUGGING = 'N'
+    STACK_UNWIND = 'P'
+    COMMON = 'C'
+    SMALL_BSS = 'S'
+    UNDEFINED = 'U'
+    UNIQUE_GLOBAL = 'u'
+    WEAK_OBJECT = 'v'
+    WEAK_SYMBOL = 'w'
+    STABS_DEBUG = '-'
+    UNKNOWN = '?'
 
 
 class KallsymsSymbol:
@@ -179,6 +188,7 @@ class KallsymsFinder:
         bit_size: int = None,
         override_relative_base: bool = False,
         base_address: int = None,
+        # extra_info: bool = False,
     ):
         self.override_relative_base = override_relative_base
         self.kernel_img = kernel_img
@@ -189,11 +199,15 @@ class KallsymsFinder:
 
         if bit_size:
             if bit_size not in (64, 32):
-                exit("[!] Please specify a register bit size of either 32 or 64 bits")
+                exit(
+                    '[!] Please specify a register bit size of either 32 or 64 bits'
+                )
             else:
                 self.is_64_bits = bit_size == 64
 
         self.guess_architecture()
+
+        self.extract_db_information()
 
         if self.is_64_bits:
             self.find_elf64_rela(base_address)
@@ -206,9 +220,7 @@ class KallsymsFinder:
             self.find_kallsyms_token_index()
             self.uncompressed_kallsyms = False
 
-        except (
-            KallsymsNotFoundException
-        ) as first_error:  # Maybe an OpenWRT kernel with an uncompressed kallsyms
+        except KallsymsNotFoundException as first_error:  # Maybe an OpenWRT kernel with an uncompressed kallsyms
             try:
                 self.find_kallsyms_names_uncompressed()
                 self.find_kallsyms_markers_uncompressed()
@@ -229,17 +241,29 @@ class KallsymsFinder:
         self.parse_symbol_table()
 
     def find_linux_kernel_version(self):
-        regex_match = search(rb"Linux version (\d+\.[\d.]*\d)[ -~]+", self.kernel_img)
+        regex_match = search(
+            rb'Linux version (\d+\.[\d.]*\d)[ -~]+', self.kernel_img
+        )
 
         if not regex_match:
-            raise ValueError("No version string found in this kernel")
+            raise ValueError('No version string found in this kernel')
 
-        self.version_string = regex_match.group(0).decode("ascii")
-        self.version_number = regex_match.group(1).decode("ascii")
+        self.version_string = regex_match.group(0).decode('ascii')
+        self.version_number = regex_match.group(1).decode('ascii')
 
-        logging.info("[+] Version string: {0:s}".format(self.version_string))
-        # logging.info('[+] Other related strings containing the version number: {0:s}'.format(findall(b'[ -~]*%s[ -~]*' % regex_match.group(1), self.kernel_img)))
-        # logging.info('[+] Architecture string: {0:s}'.format(search(b'mod_unload[ -~]+', self.kernel_img).group(0)))
+        logging.info('[+] Version string: {0:s}'.format(self.version_string))
+        logging.info(
+            '[+]   Other related strings containing the version number: %s'
+            % findall(
+                b'[ -~]*%s[ -~]*' % regex_match.group(1), self.kernel_img
+            )
+        )
+        arch_string = search(b'mod_unload[ -~]+', self.kernel_img)
+        if arch_string:
+            logging.info(
+                '[+]   Architecture string: %s'
+                % arch_string.group(0).decode('utf-8')
+            )
 
     def guess_architecture(self):
         try:
@@ -257,6 +281,125 @@ class KallsymsFinder:
                 self.is_64_bits = result.is_64_bit
             self.is_big_endian = result.is_big_endian
 
+    def extract_db_information(self, extra_info=True):
+        kernel_major = int(self.version_number.split('.')[0])
+        kernel_minor = int(self.version_number.split('.')[1])
+        version_partial = 'v%d.%d' % (kernel_major, kernel_minor)
+        if self.version_number.count('.') > 1:
+            kernel_sublevel = int(self.version_number.split('.')[2])
+            version_full = '%s.%d' % (version_partial, kernel_sublevel)
+        else:
+            kernel_sublevel = None
+            version_full = version_partial
+        kernel = next(
+            iter(
+                KernelVersion.select().where(
+                    KernelVersion.version_string == version_full
+                )
+            ),
+            None,
+        ) or next(
+            iter(
+                KernelVersion.select().where(
+                    KernelVersion.version_string == version_partial
+                )
+            ),
+            None,
+        )
+        if kernel:
+            logging.info('[+] Kernel found in database')
+            logging.info('[+]   Read kernel source: ' + kernel.browse_url)
+            logging.info('[+]   Download kernel: ' + kernel.download_url)
+            logging.info(
+                '[+]   Kernel release date: '
+                + kernel.release_date.strftime('%Y-%m-%d')
+            )
+            if self.elf_machine:
+                # if not extra_info:
+                #     logging.info(
+                #         '[+]   Use --extra-info or -e to print more interesting details'
+                #     )
+                if extra_info:
+                    logging.info('[+]   Interesting files:')
+                    for file in kernel.relevant_files.select().where(
+                        KernelRelevantFile.architecture_code == None
+                    ):
+                        if file.vcs_browser_url:
+                            logging.info(
+                                '[~]     - %s: %s'
+                                % (file.file_name, file.vcs_browser_url)
+                            )
+                        else:
+                            file.file_name
+                            logging.info('[~]     - ' + file.file_name)
+
+                e_machine = next(
+                    iter(
+                        EMachineValue.select().where(
+                            EMachineValue.elf_machine_int == self.elf_machine
+                        )
+                    ),
+                    None,
+                )
+                if e_machine:
+                    machine_name = e_machine.elf_machine_str
+                    for link in e_machine.arch_code_links:
+                        arch: KnownArchitecture = link.architecture
+                        arch_code: str = arch.architecture_code
+                        capacities = []
+                        if arch.has_32bit_class:
+                            capacities.append('32-bit')
+                        if arch.has_64bit_class:
+                            capacities.append('64-bit')
+                        if arch.has_msb_class:
+                            capacities.append('big-endian')
+                        if arch.has_lsb_class:
+                            capacities.append('little-endian')
+                        logging.info(
+                            '[+]   Architecture %s (%s) supports %s'
+                            % (arch_code, machine_name, ', '.join(capacities))
+                        )
+                        if extra_info:
+                            for file in kernel.relevant_files.select().where(
+                                KernelRelevantFile.architecture_code
+                                == arch_code
+                            ):
+                                if file.vcs_browser_url:
+                                    logging.info(
+                                        '[~]     - %s: %s'
+                                        % (
+                                            file.file_name,
+                                            file.vcs_browser_url,
+                                        )
+                                    )
+                                else:
+                                    file.file_name
+                                    logging.info('[~]     - ' + file.file_name)
+            if extra_info:
+                debian_version = next(
+                    iter(
+                        DebianRelease.select()
+                        .where(
+                            DebianRelease.debian_release_date
+                            <= kernel.release_date
+                        )
+                        .order_by(DebianRelease.debian_release_date.desc())
+                    ),
+                    None,
+                )
+                if debian_version:
+                    logging.info(
+                        '[+]   Suggested build environment: docker run -it %s (Debian %s "%s" released %s)'
+                        % (
+                            debian_version.docker_archive_name,
+                            debian_version.debian_version_number,
+                            debian_version.debian_version_name,
+                            debian_version.debian_release_date.strftime(
+                                '%Y-%m-%d'
+                            ),
+                        )
+                    )
+
     def find_elf64_rela(self, base_address: int = None) -> bool:
         """
         Find relocations table, return True if success, False
@@ -265,7 +408,7 @@ class KallsymsFinder:
 
         # FIX: architecture is not set when guess_architecture() wasn't called
         if (
-            not hasattr(self, "architecture")
+            not hasattr(self, 'architecture')
             or ArchitectureName.aarch64 != self.architecture
         ):
             # I've tested this only for ARM64
@@ -273,7 +416,9 @@ class KallsymsFinder:
 
         rela64_size = 24
         self.elf64_rela_start = len(self.kernel_img)
-        self.elf64_rela_start -= self.elf64_rela_start & 3  # align to pointer size
+        self.elf64_rela_start -= (
+            self.elf64_rela_start & 3
+        )  # align to pointer size
         R_AARCH64_RELATIVE = 0x403
         elf64_rela = []
         minimal_heuristic_count = 1000
@@ -286,7 +431,7 @@ class KallsymsFinder:
 
         while self.elf64_rela_start >= rela64_size:
             rela = unpack_from(
-                "<QQQ", self.kernel_img, self.elf64_rela_start - rela64_size
+                '<QQQ', self.kernel_img, self.elf64_rela_start - rela64_size
             )
             r_offset, r_info, r_addend = rela
             if (0 == r_offset) and (0 == r_info) and (0 == r_addend):
@@ -316,9 +461,11 @@ class KallsymsFinder:
 
                 possible_offset = self.elf64_rela_start - 1
 
-                while possible_offset % 8 != 0:  # Find a pointer-aligned r_info entry
+                while (
+                    possible_offset % 8 != 0
+                ):  # Find a pointer-aligned r_info entry
                     possible_offset = self.kernel_img.rfind(
-                        R_AARCH64_RELATIVE.to_bytes(8, "little"),
+                        R_AARCH64_RELATIVE.to_bytes(8, 'little'),
                         8,
                         possible_offset - rela64_size + 1,
                     )
@@ -335,7 +482,9 @@ class KallsymsFinder:
             if (0 == (r_addend & 0xFFF)) and (minimal_kernel_va <= r_addend):
                 if addend_candidate is None or r_addend < addend_candidate:
                     addend_candidate = r_addend
-            self.elf64_rela_start -= rela64_size  # move to one rela64 struct backward
+            self.elf64_rela_start -= (
+                rela64_size  # move to one rela64 struct backward
+            )
 
         count = len(elf64_rela)
 
@@ -345,7 +494,7 @@ class KallsymsFinder:
         self.elf64_rela = elf64_rela
         self.elf64_rela_end_excl = self.elf64_rela_start + count * rela64_size
         logging.info(
-            "[+] Found relocations table at file offset 0x%04x (count=%d)"
+            '[+] Found relocations table at file offset 0x%04x (count=%d)'
             % (self.elf64_rela_start, count)
         )
 
@@ -363,13 +512,13 @@ class KallsymsFinder:
         if base_address is not None:
             self.kernel_text_candidate = base_address
             logging.info(
-                "[+] Using supplied base address as kernel text candidate: 0x%08x"
+                '[+] Using supplied base address as kernel text candidate: 0x%08x'
                 % (self.kernel_text_candidate)
             )
         elif addend_candidate is not None and fits(addend_candidate):
             self.kernel_text_candidate = addend_candidate
             logging.info(
-                "[+] Found kernel text candidate from relocation addends: 0x%08x"
+                '[+] Found kernel text candidate from relocation addends: 0x%08x'
                 % (self.kernel_text_candidate)
             )
         elif base_low <= base_high:
@@ -380,20 +529,22 @@ class KallsymsFinder:
                 candidate = base_high & ~(ALIGN - 1)
             self.kernel_text_candidate = candidate
             logging.info(
-                "[+] Guessed kernel base from relocation offsets range 0x%08x-0x%08x -> 0x%08x"
+                '[+] Guessed kernel base from relocation offsets range 0x%08x-0x%08x -> 0x%08x'
                 % (base_low, base_high, self.kernel_text_candidate)
             )
         else:
             self.kernel_text_candidate = (
-                addend_candidate if addend_candidate is not None else base_address
+                addend_candidate
+                if addend_candidate is not None
+                else base_address
             )
             logging.info(
-                "[!] Could not derive a consistent base from relocations, keeping candidate 0x%08x"
+                '[!] Could not derive a consistent base from relocations, keeping candidate 0x%08x'
                 % (self.kernel_text_candidate)
             )
 
         logging.info(
-            "[+] Found relocations table at file offset 0x%04x (count=%d)"
+            '[+] Found relocations table at file offset 0x%04x (count=%d)'
             % (self.elf64_rela_start, count)
         )
         return True
@@ -418,13 +569,13 @@ class KallsymsFinder:
             offset = r_offset - kernel_base
 
             if offset < 0 or offset >= offset_max:
-                logging.warning("WARNING! bad rela offset %08x" % (r_offset))
+                logging.warning('WARNING! bad rela offset %08x' % (r_offset))
 
                 self.kernel_text_candidate = None
                 self.elf64_rela = None
                 return False  # Don't try more to apply relocations
 
-            (value,) = unpack_from("<Q", self.kernel_img, offset)
+            (value,) = unpack_from('<Q', self.kernel_img, offset)
             if value == r_addend:
                 # don't know why, but some relocations already initialized
 
@@ -437,11 +588,11 @@ class KallsymsFinder:
             value += r_addend
             value &= (1 << 64) - 1
 
-            img[offset : offset + 8] = pack("<Q", value)
+            img[offset : offset + 8] = pack('<Q', value)
             count += 1
 
         self.kernel_img = bytes(img)
-        logging.info("[+] Successfully applied %d relocations." % count)
+        logging.info('[+] Successfully applied %d relocations.' % count)
         return True
 
     def find_kallsyms_token_table(self):
@@ -464,9 +615,11 @@ class KallsymsFinder:
         candidates_offsets = []  # offsets at which sequence_to_find was found
         candidates_offsets_followed_with_ascii = []  # variant with an higher certainty
 
-        sequence_to_find = b"".join(b"%c\0" % i for i in range(ord("0"), ord("9") + 1))
+        sequence_to_find = b''.join(
+            b'%c\0' % i for i in range(ord('0'), ord('9') + 1)
+        )
 
-        sequences_to_avoid = [b":\0", b"\0\0", b"\0\1", b"\0\2", b"ASCII\0"]
+        sequences_to_avoid = [b':\0', b'\0\0', b'\0\1', b'\0\2', b'ASCII\0']
 
         while True:
             position = self.kernel_img.find(sequence_to_find, position + 1)
@@ -488,12 +641,12 @@ class KallsymsFinder:
                 candidates_offsets = candidates_offsets_followed_with_ascii
             elif len(candidates_offsets) == 0:
                 raise KallsymsNotFoundException(
-                    "%d candidates for kallsyms_token_table in kernel image"
+                    '%d candidates for kallsyms_token_table in kernel image'
                     % len(candidates_offsets)
                 )
             else:
                 raise ValueError(
-                    "%d candidates for kallsyms_token_table in kernel image"
+                    '%d candidates for kallsyms_token_table in kernel image'
                     % len(candidates_offsets)
                 )
 
@@ -501,7 +654,7 @@ class KallsymsFinder:
 
         # Get back to the beginning of the table
 
-        current_index_in_array = ord("0")
+        current_index_in_array = ord('0')
 
         position -= 1
         assert position >= 0 and self.kernel_img[position] == 0
@@ -514,13 +667,15 @@ class KallsymsFinder:
                 # (caveat: we may overlap on "kallsyms_markers" for the
                 # last entry, so also check for high-range characters)
 
-                if self.kernel_img[position] == 0 or self.kernel_img[position] > ord(
-                    "z"
-                ):
+                if self.kernel_img[position] == 0 or self.kernel_img[
+                    position
+                ] > ord('z'):
                     break
 
                 if chars_in_token_backwards >= 50 - 1:
-                    raise ValueError("This structure is not a kallsyms_token_table")
+                    raise ValueError(
+                        'This structure is not a kallsyms_token_table'
+                    )
 
         position += 1
         position += -position % 4
@@ -528,7 +683,7 @@ class KallsymsFinder:
         self.kallsyms_token_table__offset = position
 
         logging.info(
-            "[+] Found kallsyms_token_table at file offset 0x%08x"
+            '[+] Found kallsyms_token_table at file offset 0x%08x'
             % self.kallsyms_token_table__offset
         )
 
@@ -544,7 +699,9 @@ class KallsymsFinder:
         for tokens_forward in range(256):
             position += 1
 
-            all_token_offsets.append(position - self.kallsyms_token_table__offset)
+            all_token_offsets.append(
+                position - self.kallsyms_token_table__offset
+            )
 
             for chars_in_token_forward in range(50):
                 position += 1
@@ -553,7 +710,9 @@ class KallsymsFinder:
                     break
 
                 if chars_in_token_forward >= 50 - 1:
-                    raise ValueError("This structure is not a kallsyms_token_table")
+                    raise ValueError(
+                        'This structure is not a kallsyms_token_table'
+                    )
 
         # Find kallsyms_token_index through the offset through searching
         # the reconstructed structure, also use this to guess endianness
@@ -563,37 +722,47 @@ class KallsymsFinder:
 
         memory_to_search = bytes(
             self.kernel_img[
-                position : position + KALLSYMS_TOKEN_INDEX__SIZE + MAX_ALIGNMENT
+                position : position
+                + KALLSYMS_TOKEN_INDEX__SIZE
+                + MAX_ALIGNMENT
             ]
         )
 
         little_endian_offsets = pack(
-            "<%dH" % len(all_token_offsets), *all_token_offsets
+            '<%dH' % len(all_token_offsets), *all_token_offsets
         )
-        big_endian_offsets = pack(">%dH" % len(all_token_offsets), *all_token_offsets)
+        big_endian_offsets = pack(
+            '>%dH' % len(all_token_offsets), *all_token_offsets
+        )
 
-        found_position_for_le_value = memory_to_search.find(little_endian_offsets)
+        found_position_for_le_value = memory_to_search.find(
+            little_endian_offsets
+        )
         found_position_for_be_value = memory_to_search.find(big_endian_offsets)
 
         if found_position_for_le_value == found_position_for_be_value == -1:
-            raise ValueError("The value of kallsyms_token_index was not found")
+            raise ValueError('The value of kallsyms_token_index was not found')
 
         elif found_position_for_le_value > found_position_for_be_value:
             self.is_big_endian = False
 
-            self.kallsyms_token_index__offset = position + found_position_for_le_value
+            self.kallsyms_token_index__offset = (
+                position + found_position_for_le_value
+            )
 
         elif found_position_for_be_value > found_position_for_le_value:
             self.is_big_endian = True
 
-            self.kallsyms_token_index__offset = position + found_position_for_be_value
+            self.kallsyms_token_index__offset = (
+                position + found_position_for_be_value
+            )
 
-        self.kallsyms_token_index_end__offset = self.kallsyms_token_index__offset + len(
-            little_endian_offsets
+        self.kallsyms_token_index_end__offset = (
+            self.kallsyms_token_index__offset + len(little_endian_offsets)
         )
 
         logging.info(
-            "[+] Found kallsyms_token_index at file offset 0x%08x"
+            '[+] Found kallsyms_token_index at file offset 0x%08x'
             % self.kallsyms_token_index__offset
         )
 
@@ -606,12 +775,13 @@ class KallsymsFinder:
         # Find the length byte-separated symbol names
 
         ksymtab_match = search(
-            rb"(?:[\x05-\x23][TWtbBrRAdD][a-z0-9_.]{4,34}){14}", self.kernel_img
+            rb'(?:[\x05-\x23][TWtbBrRAdD][a-z0-9_.]{4,34}){14}',
+            self.kernel_img,
         )
 
         if not ksymtab_match:
             raise KallsymsNotFoundException(
-                "No embedded symbol table found in this kernel"
+                'No embedded symbol table found in this kernel'
             )
 
         self.kallsyms_names__offset = ksymtab_match.start(0)
@@ -626,7 +796,8 @@ class KallsymsFinder:
         while position + 1 < len(self.kernel_img):
             if (
                 self.kernel_img[position] < 2
-                or chr(self.kernel_img[position + 1]).lower() not in "abdrtvwginpcsu-?"
+                or chr(self.kernel_img[position + 1]).lower()
+                not in 'abdrtvwginpcsu-?'
             ):
                 break
 
@@ -634,7 +805,7 @@ class KallsymsFinder:
                 position + 1 : position + 1 + self.kernel_img[position]
             ]
 
-            if not match(rb"^[\x21-\x7e]+$", symbol_name_and_type):
+            if not match(rb'^[\x21-\x7e]+$', symbol_name_and_type):
                 break
 
             position += 1 + self.kernel_img[position]
@@ -642,16 +813,16 @@ class KallsymsFinder:
 
         if self.number_of_symbols < 100:
             raise KallsymsNotFoundException(
-                "No embedded symbol table found in this kernel"
+                'No embedded symbol table found in this kernel'
             )
 
         logging.info(
-            "[+] Kernel symbol names found at file offset 0x%08x"
+            '[+] Kernel symbol names found at file offset 0x%08x'
             % ksymtab_match.start(0)
         )
 
         logging.info(
-            "[+] Found %d uncompressed kernel symbols (end at 0x%08x)"
+            '[+] Found %d uncompressed kernel symbols (end at 0x%08x)'
             % (self.number_of_symbols, position)
         )
 
@@ -673,12 +844,15 @@ class KallsymsFinder:
         # Go just after the first chunk of non-null bytes
 
         while (
-            position + 1 < len(self.kernel_img) and self.kernel_img[position + 1] == 0
+            position + 1 < len(self.kernel_img)
+            and self.kernel_img[position + 1] == 0
         ):
             position += 1
 
         for null_separated_bytes_chunks in range(20):
-            num_non_null_bytes = 1  # we always start at a non-null byte in this loop
+            num_non_null_bytes = (
+                1  # we always start at a non-null byte in this loop
+            )
             num_null_bytes = 1  # we will at least encounter one null byte before the end of this loop
 
             while True:
@@ -709,7 +883,8 @@ class KallsymsFinder:
 
         if max_number_of_space_between_two_nulls not in (2, 4, 8):
             raise ValueError(
-                "Could not guess the architecture register " + "size for kernel"
+                'Could not guess the architecture register '
+                + 'size for kernel'
             )
 
         self.offset_table_element_size = max_number_of_space_between_two_nulls
@@ -722,7 +897,9 @@ class KallsymsFinder:
 
         # Go just at the first non-null byte
 
-        while position < len(self.kernel_img) and self.kernel_img[position] == 0:
+        while (
+            position < len(self.kernel_img) and self.kernel_img[position] == 0
+        ):
             position += 1
 
         likely_is_big_endian = position % self.offset_table_element_size > 1
@@ -741,7 +918,9 @@ class KallsymsFinder:
 
         self.kallsyms_markers__offset = position
 
-        logging.info("[+] Found kallsyms_markers at file offset 0x%08x" % position)
+        logging.info(
+            '[+] Found kallsyms_markers at file offset 0x%08x' % position
+        )
 
     def find_kallsyms_markers(self):
         """
@@ -757,17 +936,17 @@ class KallsymsFinder:
         # Try possible sizes for the table element (long type)
         for table_element_size in (8, 4, 2):
             position = self.kallsyms_token_table__offset
-            endianness_marker = ">" if self.is_big_endian else "<"
-            long_size_marker = {2: "H", 4: "I", 8: "Q"}[table_element_size]
+            endianness_marker = '>' if self.is_big_endian else '<'
+            long_size_marker = {2: 'H', 4: 'I', 8: 'Q'}[table_element_size]
 
             # Search for start of kallsyms_markers given first element is 0 and it is sorted
             for _ in range(32):
                 position = self.kernel_img.rfind(
-                    b"\x00" * table_element_size, 0, position
+                    b'\x00' * table_element_size, 0, position
                 )
                 position -= position % table_element_size
                 entries = unpack_from(
-                    endianness_marker + "4" + long_size_marker,
+                    endianness_marker + '4' + long_size_marker,
                     self.kernel_img,
                     position,
                 )
@@ -783,12 +962,13 @@ class KallsymsFinder:
                         break
                 else:
                     logging.info(
-                        "[+] Found kallsyms_markers at file offset 0x%08x" % position
+                        '[+] Found kallsyms_markers at file offset 0x%08x'
+                        % position
                     )
                     self.kallsyms_markers__offset = position
                     self.offset_table_element_size = table_element_size
                     return
-        raise ValueError("Could not find kallsyms_markers")
+        raise ValueError('Could not find kallsyms_markers')
 
     def find_kallsyms_names(self):
         position = self.kallsyms_markers__offset
@@ -797,9 +977,11 @@ class KallsymsFinder:
         # last entry of "kallsyms_markers" - we'll determine the
         # precise position in the next method
 
-        endianness_marker = ">" if self.is_big_endian else "<"
+        endianness_marker = '>' if self.is_big_endian else '<'
 
-        long_size_marker = {2: "H", 4: "I", 8: "Q"}[self.offset_table_element_size]
+        long_size_marker = {2: 'H', 4: 'I', 8: 'Q'}[
+            self.offset_table_element_size
+        ]
 
         # Estimate kallsyms_markers length. Limit to 3000 for kernels with kallsyms_seqs_of_names
         num_of_kallsyms_markers_entries = (
@@ -821,7 +1003,9 @@ class KallsymsFinder:
                 kallsyms_markers_entries = kallsyms_markers_entries[:i]
                 break
 
-        last_kallsyms_markers_entry = list(filter(None, kallsyms_markers_entries))[-1]
+        last_kallsyms_markers_entry = list(
+            filter(None, kallsyms_markers_entries)
+        )[-1]
 
         position -= last_kallsyms_markers_entry
 
@@ -854,18 +1038,21 @@ class KallsymsFinder:
             # found somewhere else than in the first entry.
 
             first_token_index_of_first_name = self.kernel_img[position + 1]
-            first_token_of_first_name = token_table[first_token_index_of_first_name]
+            first_token_of_first_name = token_table[
+                first_token_index_of_first_name
+            ]
 
             if (
                 not (
-                    first_token_of_first_name[0].lower() in "uvw"
+                    first_token_of_first_name[0].lower() in 'uvw'
                     and first_token_of_first_name[0] in possible_symbol_types
                 )
-                and first_token_of_first_name[0].upper() not in possible_symbol_types
+                and first_token_of_first_name[0].upper()
+                not in possible_symbol_types
             ):
                 self.kallsyms_names__offset -= 4
                 if self.kallsyms_names__offset < 0:
-                    raise ValueError("Could not find kallsyms_names")
+                    raise ValueError('Could not find kallsyms_names')
                 continue
 
             # Each entry in the symbol table starts with a u8 size followed by the contents.
@@ -875,13 +1062,20 @@ class KallsymsFinder:
             # If the table position is invalid, i.e. it reaches out of bounds, the length is marked as -1.
             # The loop ends with the number of symbols for the current position in the last entry of dp.
 
-            for i in range(len(dp), self.kallsyms_markers__offset - position + 1):
+            for i in range(
+                len(dp), self.kallsyms_markers__offset - position + 1
+            ):
                 curr = self.kernel_img[self.kallsyms_markers__offset - i]
                 if curr & 0x80:
                     # "Big" symbol
                     symbol_size = (
                         curr & 0x7F
-                        | (self.kernel_img[self.kallsyms_markers__offset - i + 1] << 7)
+                        | (
+                            self.kernel_img[
+                                self.kallsyms_markers__offset - i + 1
+                            ]
+                            << 7
+                        )
                     ) + 2
                 else:
                     symbol_size = curr + 1
@@ -899,7 +1093,7 @@ class KallsymsFinder:
             if num_symbols < 256:
                 self.kallsyms_names__offset -= 4
                 if self.kallsyms_names__offset < 0:
-                    raise ValueError("Could not find kallsyms_names")
+                    raise ValueError('Could not find kallsyms_names')
                 continue
 
             self.num_symbols = num_symbols
@@ -907,9 +1101,11 @@ class KallsymsFinder:
             # Find the long or PTR (it should be the same size as a kallsyms_marker
             # entry) encoding the number of symbols right before kallsyms_names
 
-            endianness_marker = ">" if self.is_big_endian else "<"
+            endianness_marker = '>' if self.is_big_endian else '<'
 
-            long_size_marker = {2: "H", 4: "I", 8: "Q"}[self.offset_table_element_size]
+            long_size_marker = {2: 'H', 4: 'I', 8: 'Q'}[
+                self.offset_table_element_size
+            ]
 
             MAX_ALIGNMENT = 256
 
@@ -928,10 +1124,10 @@ class KallsymsFinder:
             ):  # There may be no padding between kallsyms_names and kallsyms_num_syms, if the alignment is already correct: in this case: try other offsets for "kallsyms_names"
                 self.kallsyms_names__offset -= 4
                 if self.kallsyms_names__offset < 0:
-                    raise ValueError("Could not find kallsyms_names")
+                    raise ValueError('Could not find kallsyms_names')
 
         logging.info(
-            "[+] Found kallsyms_names at file offset 0x%08x (%d symbols)"
+            '[+] Found kallsyms_names at file offset 0x%08x (%d symbols)'
             % (self.kallsyms_names__offset, self.num_symbols)
         )
 
@@ -939,7 +1135,9 @@ class KallsymsFinder:
 
         self.kallsyms_num_syms__offset = position
 
-        logging.info("[+] Found kallsyms_num_syms at file offset 0x%08x" % position)
+        logging.info(
+            '[+] Found kallsyms_num_syms at file offset 0x%08x' % position
+        )
 
     """
         This method defines self.kallsyms_addresses_or_offsets__offset,
@@ -953,8 +1151,8 @@ class KallsymsFinder:
     def find_kallsyms_addresses_or_symbols(self):
         # --- New checks here
 
-        kernel_major = int(self.version_number.split(".")[0])
-        kernel_minor = int(self.version_number.split(".")[1])
+        kernel_major = int(self.version_number.split('.')[0])
+        kernel_minor = int(self.version_number.split('.')[1])
 
         # Is CONFIG_KALLSYMS_BASE_RELATIVE (https://github.com/torvalds/linux/blob/v5.4/init/Kconfig#L1609) likely enabled?
 
@@ -963,8 +1161,8 @@ class KallsymsFinder:
         if (
             kernel_major > 4
             or (kernel_major == 4 and kernel_minor >= 6)
-            and "ia64" not in self.version_string.lower()
-            and "itanium" not in self.version_string.lower()
+            and 'ia64' not in self.version_string.lower()
+            and 'itanium' not in self.version_string.lower()
         ):
             likely_has_base_relative = True
 
@@ -1021,11 +1219,15 @@ class KallsymsFinder:
             # Go right after the previous address. And we may skip some alignments.
 
             while True:
-                assert position > 0  # >= self.offset_table_element_size # Needed?
+                assert (
+                    position > 0
+                )  # >= self.offset_table_element_size # Needed?
 
-                previous_word = self.kernel_img[position - address_byte_size : position]
+                previous_word = self.kernel_img[
+                    position - address_byte_size : position
+                ]
 
-                if previous_word != address_byte_size * b"\x00":
+                if previous_word != address_byte_size * b'\x00':
                     break
                 position -= address_byte_size
 
@@ -1038,19 +1240,21 @@ class KallsymsFinder:
 
                 self.relative_base_address: int = int.from_bytes(
                     self.kernel_img[position : position + address_byte_size],
-                    "big" if self.is_big_endian else "little",
+                    'big' if self.is_big_endian else 'little',
                 )
 
                 # Go right after the previous offset
 
                 while True:
-                    assert position > 0  # >= self.offset_table_element_size # Needed?
+                    assert (
+                        position > 0
+                    )  # >= self.offset_table_element_size # Needed?
 
                     previous_word = self.kernel_img[
                         position - offset_byte_size : position
                     ]
 
-                    if previous_word != offset_byte_size * b"\x00":
+                    if previous_word != offset_byte_size * b'\x00':
                         break
                     position -= offset_byte_size
 
@@ -1065,20 +1269,22 @@ class KallsymsFinder:
 
             # Check the obtained values
 
-            endianness_marker = ">" if self.is_big_endian else "<"
+            endianness_marker = '>' if self.is_big_endian else '<'
 
             if self.has_base_relative:
-                long_size_marker = {2: "h", 4: "i"}[
+                long_size_marker = {2: 'h', 4: 'i'}[
                     offset_byte_size
                 ]  # Offsets may be negative, contrary to addresses
             else:
-                long_size_marker = {2: "H", 4: "I", 8: "Q"}[address_byte_size]
+                long_size_marker = {2: 'H', 4: 'I', 8: 'Q'}[address_byte_size]
 
             # Parse symbols addresses
 
             tentative_addresses_or_offsets = list(
                 unpack_from(
-                    endianness_marker + str(self.num_symbols) + long_size_marker,
+                    endianness_marker
+                    + str(self.num_symbols)
+                    + long_size_marker,
                     self.kernel_img,
                     self.kallsyms_addresses_or_offsets__offset,
                 )
@@ -1086,7 +1292,11 @@ class KallsymsFinder:
 
             if self.has_base_relative:
                 number_of_negative_items = len(
-                    [offset for offset in tentative_addresses_or_offsets if offset < 0]
+                    [
+                        offset
+                        for offset in tentative_addresses_or_offsets
+                        if offset < 0
+                    ]
                 )
 
                 # Many kernels put their addresses in the upper half of the
@@ -1109,7 +1319,8 @@ class KallsymsFinder:
                     [
                         offset
                         for offset in tentative_addresses_or_offsets
-                        if (offset & NEGATIVE_HEURISTIC_MASK) == NEGATIVE_HEURISTIC_MASK
+                        if (offset & NEGATIVE_HEURISTIC_MASK)
+                        == NEGATIVE_HEURISTIC_MASK
                     ]
                 )
                 heuristically_absolute = len(
@@ -1129,36 +1340,39 @@ class KallsymsFinder:
 
                 if heuristic_negative_percent < 0.5:
                     logging.warning(
-                        f"[!] WARNING: Less than half ({math.trunc(heuristic_negative_percent * 100)}%) of offsets are negative"
+                        f'[!] WARNING: Less than half ({math.trunc(heuristic_negative_percent * 100)}%) of offsets are negative'
                     )
                     logging.warning(
-                        "             You may want to re-run this utility, overriding the relative base"
+                        '             You may want to re-run this utility, overriding the relative base'
                     )
 
                 if heuristic_absolute_percent > 0.5:
                     logging.warning(
-                        f"[!] WARNING: More than half ({math.trunc(heuristic_absolute_percent * 100)}%) of offsets look like absolute addresses"
+                        f'[!] WARNING: More than half ({math.trunc(heuristic_absolute_percent * 100)}%) of offsets look like absolute addresses'
                     )
                     logging.warning(
-                        "[!]          You may want to re-run this utility, overriding the relative base"
+                        '[!]          You may want to re-run this utility, overriding the relative base'
                     )
 
-                if heuristic_absolute_percent > 0.5 or heuristic_negative_percent < 0.5:
+                if (
+                    heuristic_absolute_percent > 0.5
+                    or heuristic_negative_percent < 0.5
+                ):
                     logging.info(
-                        "[i] Note: sometimes there is junk at the beginning of the kernel, and the load address is not the guessed"
+                        '[i] Note: sometimes there is junk at the beginning of the kernel, and the load address is not the guessed'
                     )
                     logging.info(
-                        "          base address. You may need to play around with different load addresses to get everything"
+                        '          base address. You may need to play around with different load addresses to get everything'
                     )
                     logging.info(
-                        "          to line up. There may be some decent tables in the kernel with known patterns that could be"
+                        '          to line up. There may be some decent tables in the kernel with known patterns that could be'
                     )
                     logging.info(
-                        "          used to line things up heuristically, but this has not been explored this yet."
+                        '          used to line things up heuristically, but this has not been explored this yet.'
                     )
 
                 logging.info(
-                    "[i] Negative offsets overall: %g %%"
+                    '[i] Negative offsets overall: %g %%'
                     % (
                         number_of_negative_items
                         / len(tentative_addresses_or_offsets)
@@ -1167,7 +1381,8 @@ class KallsymsFinder:
                 )
 
                 if (
-                    number_of_negative_items / len(tentative_addresses_or_offsets)
+                    number_of_negative_items
+                    / len(tentative_addresses_or_offsets)
                     >= 0.5
                 ):  # Non-absolute symbols are negative with CONFIG_KALLSYMS_ABSOLUTE_PERCPU
                     self.has_absolute_percpu = True
@@ -1192,26 +1407,35 @@ class KallsymsFinder:
                 self.has_absolute_percpu = False
 
             number_of_null_items = len(
-                [address for address in tentative_addresses_or_offsets if address == 0]
+                [
+                    address
+                    for address in tentative_addresses_or_offsets
+                    if address == 0
+                ]
             )
 
             logging.info(
-                "[i] Null addresses overall: %g %%"
-                % (number_of_null_items / len(tentative_addresses_or_offsets) * 100)
+                '[i] Null addresses overall: %g %%'
+                % (
+                    number_of_null_items
+                    / len(tentative_addresses_or_offsets)
+                    * 100
+                )
             )
 
             if (
-                number_of_null_items / len(tentative_addresses_or_offsets) >= 0.2
+                number_of_null_items / len(tentative_addresses_or_offsets)
+                >= 0.2
             ):  # If there are too much null symbols we have likely tried to parse the wrong integer size
                 if can_skip:
                     continue
 
             logging.info(
-                "[+] Found %s at file offset 0x%08x"
+                '[+] Found %s at file offset 0x%08x'
                 % (
-                    "kallsyms_offsets"
+                    'kallsyms_offsets'
                     if self.has_base_relative
-                    else "kallsyms_addresses",
+                    else 'kallsyms_addresses',
                     position,
                 )
             )
@@ -1229,7 +1453,7 @@ class KallsymsFinder:
             position = self.kallsyms_token_table__offset
 
             for num_token in range(256):
-                token = ""
+                token = ''
 
                 while self.kernel_img[position]:
                     token += chr(self.kernel_img[position])
@@ -1254,7 +1478,7 @@ class KallsymsFinder:
         position = self.kallsyms_names__offset
 
         for num_symbol in range(self.num_symbols):
-            symbol_name = ""
+            symbol_name = ''
 
             length = self.kernel_img[position]
             position += 1
@@ -1285,7 +1509,7 @@ class KallsymsFinder:
 
             symbol.virtual_address = symbol_address
 
-            if symbol_name[0].lower() in "uvw":
+            if symbol_name[0].lower() in 'uvw':
                 symbol.symbol_type = KallsymsSymbolType(symbol_name[0])
                 symbol.is_global = True
 
@@ -1305,8 +1529,8 @@ class KallsymsFinder:
         for symbol_name in self.symbol_names:
             symbol_types.add(symbol_name[0])
 
-        logging.info("Symbol types => %r" % sorted(symbol_types))
-        logging.info("")
+        logging.info('Symbol types => %r' % sorted(symbol_types))
+        logging.info('')
 
         # Print symbols, in a fashion similar to /proc/kallsyms
 
@@ -1314,10 +1538,10 @@ class KallsymsFinder:
             self.kernel_addresses, self.symbol_names
         ):
             logging.info(
-                "{0:s} {1:s} {2:s}".format(
-                    "%016x" % symbol_address
+                '{0:s} {1:s} {2:s}'.format(
+                    '%016x' % symbol_address
                     if self.is_64_bits
-                    else "%08x" % symbol_address,
+                    else '%08x' % symbol_address,
                     symbol_name[0],  # The symbol type
                     symbol_name[1:],  # The symbol name itself
                 )

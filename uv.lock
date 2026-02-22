@@ -73,12 +73,22 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/9f/cf/70409b35fbd32f5456fe72f410bf5fb30e279d3226e8a2228f11daede5f7/minilzo-1.2.tar.gz", hash = "sha256:4cdcc0dc3e8558a29d8a6fed5c66a1ae3c8014e12d0a27554890c4248f76b141", size = 76563, upload-time = "2025-06-07T19:55:55.251Z" }
 
 [[package]]
+name = "peewee"
+version = "4.0.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/37/e3/98ed8ab20f26d429f61b3d5d455c52ac88ba343444fbcf7154374111eb3e/peewee-4.0.0.tar.gz", hash = "sha256:bc2722abf32a8074362c346fc8a95f2d34a9587873e81025b6429676c32044b6", size = 686951, upload-time = "2026-02-20T15:38:50.312Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/39/40/89664cce41f4bedab105d705885cbb152d7bd85ce0facbf0ec02e90eb02a/peewee-4.0.0-py3-none-any.whl", hash = "sha256:6de14ff11ab50c3152dc1d4e12628c1b28c1e03ff4e4213e463429bfcd7340b6", size = 139317, upload-time = "2026-02-20T15:38:48.519Z" },
+]
+
+[[package]]
 name = "vmlinux-to-elf"
 version = "1.0"
 source = { editable = "." }
 dependencies = [
     { name = "lz4" },
     { name = "minilzo" },
+    { name = "peewee" },
     { name = "zstandard" },
 ]
 
@@ -86,6 +96,7 @@ dependencies = [
 requires-dist = [
     { name = "lz4", specifier = ">=4.4.5" },
     { name = "minilzo", specifier = ">=1.2" },
+    { name = "peewee", specifier = ">=4.0.0" },
     { name = "zstandard", specifier = ">=0.25.0" },
 ]
 

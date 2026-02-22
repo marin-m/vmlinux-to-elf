@@ -18,11 +18,11 @@ def pretty_print_header(header_text):
     print()
     print()
 
-    print("+-%s-+" % ("-" * max_text_length))
+    print('+-%s-+' % ('-' * max_text_length))
 
-    print("| %s |" % header_text.ljust(max_text_length))
+    print('| %s |' % header_text.ljust(max_text_length))
 
-    print("+-%s-+" % ("-" * max_text_length))
+    print('+-%s-+' % ('-' * max_text_length))
 
 
 """
@@ -44,12 +44,12 @@ def structure_to_key_values_strings(ctypes_structure):
         # Turn "key_name" into "Key name"
 
         pretty_key = key[0].upper() + key[1:]
-        pretty_key = pretty_key.replace("_", " ")
+        pretty_key = pretty_key.replace('_', ' ')
 
         # Stringify the value
 
         if type(value) is bytes:  # Strings
-            key_values[pretty_key] = value.decode("ascii")
+            key_values[pretty_key] = value.decode('ascii')
 
         elif key in field_name_to_structure:  # Integer enums
             try:
@@ -58,10 +58,10 @@ def structure_to_key_values_strings(ctypes_structure):
                 key_values[pretty_key] = enum_field.name
 
             except ValueError:
-                key_values[pretty_key] = str(value) + " ?"
+                key_values[pretty_key] = str(value) + ' ?'
 
         elif type(value) is int:  # Integer
-            key_values[pretty_key] = "0x%08x" % value if value else "N/A"
+            key_values[pretty_key] = '0x%08x' % value if value else 'N/A'
 
     return key_values
 
@@ -110,27 +110,36 @@ def pretty_print_table(rows):
     number_of_columns = len(rows[0])
 
     column_to_max_length = [
-        max(len(row[column]) for row in rows) for column in range(number_of_columns)
+        max(len(row[column]) for row in rows)
+        for column in range(number_of_columns)
     ]
 
     # Do a nice table
 
     print()
 
-    print("+-%s-+" % "---".join("-" * max_len for max_len in column_to_max_length))
+    print(
+        '+-%s-+'
+        % '---'.join('-' * max_len for max_len in column_to_max_length)
+    )
 
     for row in rows:
         print(
-            "| %s |"
-            % " | ".join(
+            '| %s |'
+            % ' | '.join(
                 row[column].ljust(column_to_max_length[column])
                 for column in range(number_of_columns)
             )
         )
 
-        print("+-%s-+" % "---".join("-" * max_len for max_len in column_to_max_length))
+        print(
+            '+-%s-+'
+            % '---'.join('-' * max_len for max_len in column_to_max_length)
+        )
 
 
 field_name_to_structure = {
-    key.lower(): value for key, value in vars(elf).items() if "FLAGS" not in key
+    key.lower(): value
+    for key, value in vars(elf).items()
+    if 'FLAGS' not in key
 }

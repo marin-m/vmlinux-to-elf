@@ -18,7 +18,7 @@ from peewee import (
 )
 
 DB_FOLDER = dirname(realpath(__file__))
-DB_PATH = realpath(DB_FOLDER + "/database.sqlite3")
+DB_PATH = realpath(DB_FOLDER + '/database.sqlite3')
 
 db = SqliteDatabase(DB_PATH)
 
@@ -56,23 +56,25 @@ class KnownArchitecture(Base):
 
 
 class ArchitectureEMachineLink(Base):
-    architecture = ForeignKeyField(KnownArchitecture, backref="e_machine_links")
-    e_machine = ForeignKeyField(EMachineValue, backref="arch_code_links")
+    architecture = ForeignKeyField(
+        KnownArchitecture, backref='e_machine_links'
+    )
+    e_machine = ForeignKeyField(EMachineValue, backref='arch_code_links')
 
     class Meta:
-        primary_key = CompositeKey("architecture", "e_machine")
+        primary_key = CompositeKey('architecture', 'e_machine')
 
 
 class KernelSupportedArch(Base):
-    release = ForeignKeyField(KernelVersion, backref="supported_archs")
+    release = ForeignKeyField(KernelVersion, backref='supported_archs')
     architecture = ForeignKeyField(KnownArchitecture)
 
     class Meta:
-        primary_key = CompositeKey("release", "architecture")
+        primary_key = CompositeKey('release', 'architecture')
 
 
 class KernelRelevantFile(Base):
-    release = ForeignKeyField(KernelVersion, backref="relevant_files")
+    release = ForeignKeyField(KernelVersion, backref='relevant_files')
 
     file_name = TextField()
     # data = TextField()
@@ -83,8 +85,8 @@ class KernelRelevantFile(Base):
 class KernelVersionDependency(Base):
     # Parsed from the `Documentation/Changes` kernel files:
 
-    kernel_release = ForeignKeyField(KernelVersion, backref="dependencies")
-    source_file = ForeignKeyField(KernelRelevantFile, backref="extracted_info")
+    kernel_release = ForeignKeyField(KernelVersion, backref='dependencies')
+    source_file = ForeignKeyField(KernelRelevantFile, backref='extracted_info')
 
     dependency_name = TextField()
     minimal_version = TextField()
@@ -93,7 +95,7 @@ class KernelVersionDependency(Base):
     dependency_is_optional = BooleanField()
 
     class Meta:
-        primary_key = CompositeKey("kernel_release", "base_command")
+        primary_key = CompositeKey('kernel_release', 'base_command')
 
 
 class DebianRelease(Base):

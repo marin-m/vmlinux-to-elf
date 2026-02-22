@@ -49,22 +49,16 @@ from struct import unpack
 
 
 class Signature:
-    Compressed_GZIP = b"\x1f\x8b\x08"
-    Compressed_XZ = b"\xfd7zXZ\x00"
-    Compressed_LZMA = b"]\x00\x00"
-    Compressed_BZ2 = b"BZh"
-    Compressed_LZ4 = (
-        b'\x04"M\x18'  # https://github.com/lz4/lz4/blob/dev/doc/lz4_Frame_format.md
-    )
-    Compressed_LZ4_Legacy = b"\x02!L\x18"
-    Compressed_ZSTD = b"(\xb5/\xfd"
-    Compressed_LZO = b"\x89LZ"
-    DTB_Appended_Qualcomm = (
-        b"UNCOMPRESSED_IMG"  # https://www.google.com/search?q="PATCHED_KERNEL_MAGIC"
-    )
-    Android_Bootimg = (
-        b"ANDROID!"  # https://source.android.com/devices/bootloader/boot-image-header
-    )
+    Compressed_GZIP = b'\x1f\x8b\x08'
+    Compressed_XZ = b'\xfd7zXZ\x00'
+    Compressed_LZMA = b']\x00\x00'
+    Compressed_BZ2 = b'BZh'
+    Compressed_LZ4 = b'\x04"M\x18'  # https://github.com/lz4/lz4/blob/dev/doc/lz4_Frame_format.md
+    Compressed_LZ4_Legacy = b'\x02!L\x18'
+    Compressed_ZSTD = b'(\xb5/\xfd'
+    Compressed_LZO = b'\x89LZ'
+    DTB_Appended_Qualcomm = b'UNCOMPRESSED_IMG'  # https://www.google.com/search?q="PATCHED_KERNEL_MAGIC"
+    Android_Bootimg = b'ANDROID!'  # https://source.android.com/devices/bootloader/boot-image-header
 
     Compressed = [
         Compressed_GZIP,
@@ -134,9 +128,11 @@ def try_decompress_at(input_file: bytes, offset: int) -> bytes:
             input_file, offset, Signature.DTB_Appended_Qualcomm
         ):  # Merely unpack a Qualcomm kernel file containing a magic and DTB offset at the start (so that offsets aren't wrong)
             dtb_offset_le = int.from_bytes(
-                input_file[offset + 16 : offset + 20], "little"
+                input_file[offset + 16 : offset + 20], 'little'
             )
-            dtb_offset_be = int.from_bytes(input_file[offset + 16 : offset + 20], "big")
+            dtb_offset_be = int.from_bytes(
+                input_file[offset + 16 : offset + 20], 'big'
+            )
 
             decoded = input_file[
                 offset + 20 : offset + 20 + min(dtb_offset_le, dtb_offset_be)
@@ -153,40 +149,40 @@ def try_decompress_at(input_file: bytes, offset: int) -> bytes:
 
             header_version_raw = input_file[offset + 10 * 4 : offset + 11 * 4]
             assert header_version_raw in (
-                b"\0\0\0\0",
-                b"\0\0\0\1",
-                b"\1\0\0\0",
-                b"\0\0\0\2",
-                b"\2\0\0\0",
-                b"\0\0\0\3",
-                b"\3\0\0\0",
-                b"\0\0\0\4",
-                b"\4\0\0\0",
-            ), f"Unsupported Android bootimg version {header_version_raw}"
+                b'\0\0\0\0',
+                b'\0\0\0\1',
+                b'\1\0\0\0',
+                b'\0\0\0\2',
+                b'\2\0\0\0',
+                b'\0\0\0\3',
+                b'\3\0\0\0',
+                b'\0\0\0\4',
+                b'\4\0\0\0',
+            ), f'Unsupported Android bootimg version {header_version_raw}'
 
-            endianness = "little"
+            endianness = 'little'
 
             if header_version_raw in (
-                b"\0\0\0\3",
-                b"\3\0\0\0",
-                b"\0\0\0\4",
-                b"\4\0\0\0",
+                b'\0\0\0\3',
+                b'\3\0\0\0',
+                b'\0\0\0\4',
+                b'\4\0\0\0',
             ):
                 page_size = 4096
 
-                if header_version_raw in (b"\0\0\0\3", b"\0\0\0\4"):
-                    endianness = "big"
+                if header_version_raw in (b'\0\0\0\3', b'\0\0\0\4'):
+                    endianness = 'big'
 
             else:
                 page_size_raw = input_file[offset + 9 * 4 : offset + 10 * 4]
 
-                page_size_le = int.from_bytes(page_size_raw, "little")
-                page_size_be = int.from_bytes(page_size_raw, "big")
+                page_size_le = int.from_bytes(page_size_raw, 'little')
+                page_size_be = int.from_bytes(page_size_raw, 'big')
 
                 if page_size_le < page_size_be:
                     page_size = page_size_le
                 else:
-                    endianness = "big"
+                    endianness = 'big'
                     page_size = page_size_be
 
             kernel_size = int.from_bytes(
@@ -196,7 +192,9 @@ def try_decompress_at(input_file: bytes, offset: int) -> bytes:
             assert len(input_file) > kernel_size > 0x1000
             assert len(input_file) > page_size > 0x200
 
-            decoded = input_file[offset + page_size : offset + page_size + kernel_size]
+            decoded = input_file[
+                offset + page_size : offset + page_size + kernel_size
+            ]
 
             # Also try to re-unpack the output image in the case where the nested
             # kernel would start with a "UNCOMPRESSED_IMG" Qualcomm magic, for example
@@ -223,7 +221,7 @@ def try_decompress_at(input_file: bytes, offset: int) -> bytes:
             except Exception:
                 decoded = LZMADecompressor().decompress(
                     input_file[offset : offset + 5]
-                    + b"\xff" * 8
+                    + b'\xff' * 8
                     + input_file[offset + 5 :]
                 )  # pylzma format compatibility
 
@@ -237,11 +235,11 @@ def try_decompress_at(input_file: bytes, offset: int) -> bytes:
         elif Signature.check(
             input_file, offset, Signature.Compressed_LZ4
         ):  # LZ4 support
-            LZ4Decompressor = importlib.import_module("lz4.frame")
+            LZ4Decompressor = importlib.import_module('lz4.frame')
 
             context = LZ4Decompressor.create_decompression_context()
-            decoded, bytes_read, end_of_frame = LZ4Decompressor.decompress_chunk(
-                context, input_file[offset:]
+            decoded, bytes_read, end_of_frame = (
+                LZ4Decompressor.decompress_chunk(context, input_file[offset:])
             )
 
         elif Signature.check(
@@ -265,15 +263,15 @@ def try_decompress_at(input_file: bytes, offset: int) -> bytes:
             import minilzo
 
             buf = BytesIO(input_file[offset:])
-            decoded = minilzo.LzoFile(fileobj=buf, mode="rb").read()
+            decoded = minilzo.LzoFile(fileobj=buf, mode='rb').read()
     except Exception:
         pass
 
     if decoded and 0 in decoded[:32] and len(decoded) > 0x1000:
         logging.info(
             (
-                "[+] Kernel successfully decompressed in-memory (the offsets that "
-                + "follow will be given relative to the decompressed binary)"
+                '[+] Kernel successfully decompressed in-memory (the offsets that '
+                + 'follow will be given relative to the decompressed binary)'
             )
         )
 
@@ -295,9 +293,11 @@ def obtain_raw_kernel_from_file(input_file: bytes) -> bytes:
 
     possible_offsets: set[int] = set([0])
 
-    for possible_endianness in "<>":
+    for possible_endianness in '<>':
         possible_offsets |= set(
-            unpack(possible_endianness + "20I", input_file[file_size - 4 * 20 :])
+            unpack(
+                possible_endianness + '20I', input_file[file_size - 4 * 20 :]
+            )
         )
 
     for possible_offset in sorted(possible_offsets):
@@ -305,13 +305,15 @@ def obtain_raw_kernel_from_file(input_file: bytes) -> bytes:
         if decompressed_data:
             return decompressed_data
 
-    if not input_file.startswith(b"\x7fELF"):
+    if not input_file.startswith(b'\x7fELF'):
         # If not successful, scan for compression signatures in the whole document
         for possible_signature in Signature.Compressed:
             possible_offset = input_file.find(possible_signature)
 
             while possible_offset > -1:
-                decompressed_data = try_decompress_at(input_file, possible_offset)
+                decompressed_data = try_decompress_at(
+                    input_file, possible_offset
+                )
                 if decompressed_data:
                     return decompressed_data
                 possible_offset = input_file.find(

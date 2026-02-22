@@ -85,12 +85,12 @@ class VariableEndiannessAndWordsizeStructure:
                 **{
                     name: getattr(cls, name)
                     for name in dir(cls)
-                    if "__" not in name or name == "__init__"
+                    if '__' not in name or name == '__init__'
                 },
-                "is_big_endian": is_big_endian,
-                "is_64_bits": is_64_bits,
-                "_pack_": True,
-                "_fields_": [
+                'is_big_endian': is_big_endian,
+                'is_64_bits': is_64_bits,
+                '_pack_': True,
+                '_fields_': [
                     (
                         field[0],
                         field[1]
@@ -142,9 +142,10 @@ class ElfFile:
             file_header[E_IDENT_INDEXES.EI_CLASS]
         ]
 
-        is_big_endian = {EI_DATA.ELFDATA2LSB: False, EI_DATA.ELFDATA2MSB: True}[
-            file_header[E_IDENT_INDEXES.EI_DATA]
-        ]
+        is_big_endian = {
+            EI_DATA.ELFDATA2LSB: False,
+            EI_DATA.ELFDATA2MSB: True,
+        }[file_header[E_IDENT_INDEXES.EI_DATA]]
 
         obj = cls(is_big_endian, is_64_bits)
 
@@ -160,7 +161,8 @@ class ElfFile:
 
         for num_section in range(self.file_header.e_shnum):
             data.seek(
-                self.file_header.e_shoff + self.file_header.e_shentsize * num_section
+                self.file_header.e_shoff
+                + self.file_header.e_shentsize * num_section
             )
 
             self.sections.append(ElfSection.from_bytes(data, self))
@@ -178,7 +180,8 @@ class ElfFile:
 
         for num_segment in range(self.file_header.e_phnum):
             data.seek(
-                self.file_header.e_phoff + self.file_header.e_phentsize * num_segment
+                self.file_header.e_phoff
+                + self.file_header.e_phentsize * num_segment
             )
 
             segment_class = (
@@ -197,14 +200,16 @@ class ElfFile:
         # Filter out .gnu.version not to confuse readelf for now TODO
         self.sections = list(
             filter(
-                lambda section: ".gnu.version" not in section.section_name,
+                lambda section: '.gnu.version' not in section.section_name,
                 self.sections,
             )
         )
 
         self.file_header.e_ehsize = memoryview(self.file_header).nbytes
 
-        self.file_header.e_shstrndx = self.sections.index(self.section_string_table)
+        self.file_header.e_shstrndx = self.sections.index(
+            self.section_string_table
+        )
 
         self.file_header.e_shoff = self.file_header.e_ehsize
 
@@ -221,7 +226,8 @@ class ElfFile:
 
         for num_section, section in enumerate(self.sections):
             data.seek(
-                self.file_header.e_shoff + self.file_header.e_shentsize * num_section
+                self.file_header.e_shoff
+                + self.file_header.e_shentsize * num_section
             )
 
             section.serialize(data)
@@ -269,7 +275,7 @@ class ElfFile:
 
         if not self.segments:
             raise ValueError(
-                "This ELF object does not have a section with SH_ALLOC flag"
+                'This ELF object does not have a section with SH_ALLOC flag'
             )
 
         # Write the segment headers
@@ -284,7 +290,8 @@ class ElfFile:
 
         for num_segment, segment in enumerate(self.segments):
             data.seek(
-                self.file_header.e_phoff + self.file_header.e_phentsize * num_segment
+                self.file_header.e_phoff
+                + self.file_header.e_phentsize * num_segment
             )
 
             segment.serialize(data)
@@ -339,19 +346,19 @@ class SH_FLAGS(IntEnum):
 
 class ElfSectionHeader(VariableEndiannessAndWordsizeStructure):
     _fields_ = [
-        ("sh_name", Elf64_Word),  # Section name, index in string table
-        ("sh_type", Elf64_Word),  # Type of section
-        ("sh_flags", Elf64_Xword),  # Miscellaneous section attributes
-        ("sh_addr", Elf64_Addr),  # Section virtual addr at execution
-        ("sh_offset", Elf64_Off),  # Section file offset
-        ("sh_size", Elf64_Xword),  # Size of section in bytes
+        ('sh_name', Elf64_Word),  # Section name, index in string table
+        ('sh_type', Elf64_Word),  # Type of section
+        ('sh_flags', Elf64_Xword),  # Miscellaneous section attributes
+        ('sh_addr', Elf64_Addr),  # Section virtual addr at execution
+        ('sh_offset', Elf64_Off),  # Section file offset
+        ('sh_size', Elf64_Xword),  # Size of section in bytes
         (
-            "sh_link",
+            'sh_link',
             Elf64_Word,
         ),  # Index of another section -> REL(A)|HASH->SYMTAB, SYMTAB->STRTAB, DYNAMIC|DYMSYM->DYNSTR
-        ("sh_info", Elf64_Word),  # Additional section information
-        ("sh_addralign", Elf64_Xword),  # Section alignment
-        ("sh_entsize", Elf64_Xword),  # Entry size if section holds table
+        ('sh_info', Elf64_Word),  # Additional section information
+        ('sh_addralign', Elf64_Xword),  # Section alignment
+        ('sh_entsize', Elf64_Xword),  # Entry size if section holds table
     ]
 
     # The library will set sh_name and sh_offset when serializing, as well
@@ -359,7 +366,9 @@ class ElfSectionHeader(VariableEndiannessAndWordsizeStructure):
 
 
 class ElfSection:
-    section_name: str = None  # will be written to section_string_table when serializing
+    section_name: str = (
+        None  # will be written to section_string_table when serializing
+    )
 
     section_table: list = None  # reference to the ElfFile.sections list
     elf_file: ElfFile = None
@@ -373,7 +382,9 @@ class ElfSection:
         self.is_big_endian = elf_file.is_big_endian
         self.is_64_bits = elf_file.is_64_bits
 
-        self.section_header = ElfSectionHeader(self.is_big_endian, self.is_64_bits)
+        self.section_header = ElfSectionHeader(
+            self.is_big_endian, self.is_64_bits
+        )
 
         if self.__class__ in SECTION_CLASS_TO_TYPE:
             self.section_header.sh_type = SECTION_CLASS_TO_TYPE[self.__class__]
@@ -433,8 +444,10 @@ class ElfSection:
             self.elf_file.file_header.e_shstrndx
         ]
 
-        self.section_header.sh_name = section_string_table.add_string_and_return_offset(
-            self.section_name
+        self.section_header.sh_name = (
+            section_string_table.add_string_and_return_offset(
+                self.section_name
+            )
         )
 
     def serialize(self, data: BytesIO):
@@ -451,14 +464,17 @@ class ElfSection:
 
         start_of_contents = self.elf_file.file_header.e_shoff
         start_of_contents += (
-            self.elf_file.file_header.e_shentsize * self.elf_file.file_header.e_shnum
+            self.elf_file.file_header.e_shentsize
+            * self.elf_file.file_header.e_shnum
         )
 
         data.seek(0, SEEK_END)
         start_of_contents = max(data.tell(), start_of_contents)
 
         if self.section_header.sh_addralign:
-            start_of_contents += -start_of_contents % self.section_header.sh_addralign
+            start_of_contents += (
+                -start_of_contents % self.section_header.sh_addralign
+            )
 
         # b) Write our section contents
 
@@ -541,15 +557,17 @@ class SPECIAL_SECTION_INDEX(IntEnum):
     SHN_HIRESERVE = 0xFFFF
 
 
-class Elf32LittleEndianSymbolTableEntry(VariableEndiannessAndWordsizeStructure):
+class Elf32LittleEndianSymbolTableEntry(
+    VariableEndiannessAndWordsizeStructure
+):
     _fields_ = [
-        ("st_name", Elf32_Word),  # Symbol name, index in string tbl
-        ("st_value", Elf32_Addr),  # Value of the symbol
-        ("st_size", Elf32_Word),  # Associated symbol size
-        ("st_info_type", c_uint8, 4),  # Type and binding attributes
-        ("st_info_binding", c_uint8, 4),
-        ("st_other", c_uint8),  # No defined meaning, 0
-        ("st_shndx", Elf32_Half),  # Associated section index
+        ('st_name', Elf32_Word),  # Symbol name, index in string tbl
+        ('st_value', Elf32_Addr),  # Value of the symbol
+        ('st_size', Elf32_Word),  # Associated symbol size
+        ('st_info_type', c_uint8, 4),  # Type and binding attributes
+        ('st_info_binding', c_uint8, 4),
+        ('st_other', c_uint8),  # No defined meaning, 0
+        ('st_shndx', Elf32_Half),  # Associated section index
     ]
 
     symbol_name: str = None
@@ -561,37 +579,37 @@ class Elf32LittleEndianSymbolTableEntry(VariableEndiannessAndWordsizeStructure):
 
 class Elf32BigEndianSymbolTableEntry(Elf32LittleEndianSymbolTableEntry):
     _fields_ = [
-        ("st_name", Elf32_Word),  # Symbol name, index in string tbl
-        ("st_value", Elf32_Addr),  # Value of the symbol
-        ("st_size", Elf32_Word),  # Associated symbol size
-        ("st_info_binding", c_uint8, 4),  # Type and binding attributes
-        ("st_info_type", c_uint8, 4),
-        ("st_other", c_uint8),  # No defined meaning, 0
-        ("st_shndx", Elf32_Half),  # Associated section index
+        ('st_name', Elf32_Word),  # Symbol name, index in string tbl
+        ('st_value', Elf32_Addr),  # Value of the symbol
+        ('st_size', Elf32_Word),  # Associated symbol size
+        ('st_info_binding', c_uint8, 4),  # Type and binding attributes
+        ('st_info_type', c_uint8, 4),
+        ('st_other', c_uint8),  # No defined meaning, 0
+        ('st_shndx', Elf32_Half),  # Associated section index
     ]
 
 
 class Elf64LittleEndianSymbolTableEntry(Elf32LittleEndianSymbolTableEntry):
     _fields_ = [
-        ("st_name", Elf64_Word),  # Symbol name, index in string tbl
-        ("st_info_type", c_uint8, 4),  # Type and binding attributes
-        ("st_info_binding", c_uint8, 4),
-        ("st_other", c_uint8),  # No defined meaning, 0
-        ("st_shndx", Elf64_Half),  # Associated section index
-        ("st_value", Elf64_Addr),  # Value of the symbol
-        ("st_size", Elf64_Xword),  # Associated symbol size
+        ('st_name', Elf64_Word),  # Symbol name, index in string tbl
+        ('st_info_type', c_uint8, 4),  # Type and binding attributes
+        ('st_info_binding', c_uint8, 4),
+        ('st_other', c_uint8),  # No defined meaning, 0
+        ('st_shndx', Elf64_Half),  # Associated section index
+        ('st_value', Elf64_Addr),  # Value of the symbol
+        ('st_size', Elf64_Xword),  # Associated symbol size
     ]
 
 
 class Elf64BigEndianSymbolTableEntry(Elf64LittleEndianSymbolTableEntry):
     _fields_ = [
-        ("st_name", Elf64_Word),  # Symbol name, index in string tbl
-        ("st_info_binding", c_uint8, 4),  # Type and binding attributes
-        ("st_info_type", c_uint8, 4),
-        ("st_other", c_uint8),  # No defined meaning, 0
-        ("st_shndx", Elf64_Half),  # Associated section index
-        ("st_value", Elf64_Addr),  # Value of the symbol
-        ("st_size", Elf64_Xword),  # Associated symbol size
+        ('st_name', Elf64_Word),  # Symbol name, index in string tbl
+        ('st_info_binding', c_uint8, 4),  # Type and binding attributes
+        ('st_info_type', c_uint8, 4),
+        ('st_other', c_uint8),  # No defined meaning, 0
+        ('st_shndx', Elf64_Half),  # Associated section index
+        ('st_value', Elf64_Addr),  # Value of the symbol
+        ('st_size', Elf64_Xword),  # Associated symbol size
     ]
 
 
@@ -647,16 +665,25 @@ class ElfSymtab(ElfSection):
             # In addition to strings, add a reference to
             # the associated section
 
-            if symbol.st_shndx not in SPECIAL_SECTION_INDEX.__members__.values():
-                symbol.associated_section = self.elf_file.sections[symbol.st_shndx]
+            if (
+                symbol.st_shndx
+                not in SPECIAL_SECTION_INDEX.__members__.values()
+            ):
+                symbol.associated_section = self.elf_file.sections[
+                    symbol.st_shndx
+                ]
 
             else:
-                symbol.associated_section = SPECIAL_SECTION_INDEX(symbol.st_shndx)
+                symbol.associated_section = SPECIAL_SECTION_INDEX(
+                    symbol.st_shndx
+                )
 
     def pre_serialize(self):
         super().pre_serialize()
 
-        self.section_header.sh_link = self.elf_file.sections.index(self.string_table)
+        self.section_header.sh_link = self.elf_file.sections.index(
+            self.string_table
+        )
 
         for symbol in self.symbol_table:
             symbol.st_name = self.string_table.add_string_and_return_offset(
@@ -670,7 +697,9 @@ class ElfSymtab(ElfSection):
                     symbol.associated_section
                 )
 
-        self.section_header.sh_entsize = memoryview(self.symbol_table[0]).nbytes
+        self.section_header.sh_entsize = memoryview(
+            self.symbol_table[0]
+        ).nbytes
 
     def _serialize_contents(self, data: BytesIO):
         local_symbols_first = lambda symbol: (
@@ -701,8 +730,8 @@ class ElfStrtab(ElfSection):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._cache = {}
-        self._raw_string_table = b""
-        self.add_string_and_return_offset("")
+        self._raw_string_table = b''
+        self.add_string_and_return_offset('')
 
     def _unserialize_contents(self, data: BytesIO):
         self._raw_string_table = data.read(self.section_header.sh_size)
@@ -720,23 +749,25 @@ class ElfStrtab(ElfSection):
 
     def return_string_from_offset(self, offset):
         return self._raw_string_table[
-            offset : self._raw_string_table.find(b"\x00", offset)
-        ].decode("ascii")
+            offset : self._raw_string_table.find(b'\x00', offset)
+        ].decode('ascii')
 
     def add_string_and_return_offset(self, string):
         if string in self._cache:
             return self._cache[string]
 
         self._cache[string] = string_offset = len(self._raw_string_table)
-        self._raw_string_table += string.encode("ascii") + b"\x00"
+        self._raw_string_table += string.encode('ascii') + b'\x00'
         return string_offset
 
 
-class Elf32LittleEndianRelocationTableEntry(VariableEndiannessAndWordsizeStructure):
+class Elf32LittleEndianRelocationTableEntry(
+    VariableEndiannessAndWordsizeStructure
+):
     _fields_ = [
-        ("r_offset", Elf32_Addr),  # Location at which to apply the relocaction
-        ("r_info_type", Elf32_Word, 8),  # index and type of relocation
-        ("r_info_sym", Elf32_Word, 24),
+        ('r_offset', Elf32_Addr),  # Location at which to apply the relocaction
+        ('r_info_type', Elf32_Word, 8),  # index and type of relocation
+        ('r_info_sym', Elf32_Word, 24),
     ]
 
     # symbol_name : str = None
@@ -744,27 +775,33 @@ class Elf32LittleEndianRelocationTableEntry(VariableEndiannessAndWordsizeStructu
     associated_symbol: Elf32LittleEndianSymbolTableEntry = None
 
 
-class Elf32BigEndianRelocationTableEntry(Elf32LittleEndianRelocationTableEntry):
+class Elf32BigEndianRelocationTableEntry(
+    Elf32LittleEndianRelocationTableEntry
+):
     _fields_ = [
-        ("r_offset", Elf32_Addr),  # Location at which to apply the relocaction
-        ("r_info_sym", Elf32_Word, 24),  # index and type of relocation
-        ("r_info_type", Elf32_Word, 8),
+        ('r_offset', Elf32_Addr),  # Location at which to apply the relocaction
+        ('r_info_sym', Elf32_Word, 24),  # index and type of relocation
+        ('r_info_type', Elf32_Word, 8),
     ]
 
 
-class Elf64LittleEndianRelocationTableEntry(Elf32LittleEndianRelocationTableEntry):
+class Elf64LittleEndianRelocationTableEntry(
+    Elf32LittleEndianRelocationTableEntry
+):
     _fields_ = [
-        ("r_offset", Elf64_Addr),  # Location at which to apply the action
-        ("r_info_type", Elf64_Xword, 32),  # index and type of relocation
-        ("r_info_sym", Elf64_Xword, 32),
+        ('r_offset', Elf64_Addr),  # Location at which to apply the action
+        ('r_info_type', Elf64_Xword, 32),  # index and type of relocation
+        ('r_info_sym', Elf64_Xword, 32),
     ]
 
 
-class Elf64BigEndianRelocationTableEntry(Elf64LittleEndianRelocationTableEntry):
+class Elf64BigEndianRelocationTableEntry(
+    Elf64LittleEndianRelocationTableEntry
+):
     _fields_ = [
-        ("r_offset", Elf64_Addr),  # Location at which to apply the action
-        ("r_info_sym", Elf64_Xword, 32),  # index and type of relocation
-        ("r_info_type", Elf64_Xword, 32),
+        ('r_offset', Elf64_Addr),  # Location at which to apply the action
+        ('r_info_sym', Elf64_Xword, 32),  # index and type of relocation
+        ('r_info_type', Elf64_Xword, 32),
     ]
 
 
@@ -773,7 +810,7 @@ class Elf32LittleEndianRelocationWithAddendTableEntry(
 ):
     _fields_ = [
         *Elf32LittleEndianRelocationTableEntry._fields_,
-        ("r_addend", Elf32_Sword),  # Constant addend used to compute value
+        ('r_addend', Elf32_Sword),  # Constant addend used to compute value
     ]
 
 
@@ -782,7 +819,7 @@ class Elf32BigEndianRelocationWithAddendTableEntry(
 ):
     _fields_ = [
         *Elf32BigEndianRelocationTableEntry._fields_,
-        ("r_addend", Elf32_Sword),  # Constant addend used to compute value
+        ('r_addend', Elf32_Sword),  # Constant addend used to compute value
     ]
 
 
@@ -791,7 +828,7 @@ class Elf64LittleEndianRelocationWithAddendTableEntry(
 ):
     _fields_ = [
         *Elf64LittleEndianRelocationTableEntry._fields_,
-        ("r_addend", Elf64_Sxword),  # Constant addend used to compute value
+        ('r_addend', Elf64_Sxword),  # Constant addend used to compute value
     ]
 
 
@@ -800,7 +837,7 @@ class Elf64BigEndianRelocationWithAddendTableEntry(
 ):
     _fields_ = [
         *Elf64BigEndianRelocationTableEntry._fields_,
-        ("r_addend", Elf64_Sxword),  # Constant addend used to compute value
+        ('r_addend', Elf64_Sxword),  # Constant addend used to compute value
     ]
 
 
@@ -829,7 +866,9 @@ class ElfRel(ElfSection):
     def post_unserialize(self):
         super().post_unserialize()
 
-        self.symtab_section = self.elf_file.sections[self.section_header.sh_link]
+        self.symtab_section = self.elf_file.sections[
+            self.section_header.sh_link
+        ]
 
         for relocation in self.relocation_table:
             relocation.associated_symbol = self.symtab_section.symbol_table[
@@ -850,7 +889,9 @@ class ElfRel(ElfSection):
                 relocation.associated_symbol
             )
 
-        self.section_header.sh_entsize = memoryview(self.relocation_table[0]).nbytes
+        self.section_header.sh_entsize = memoryview(
+            self.relocation_table[0]
+        ).nbytes
 
     def _serialize_contents(self, data: BytesIO):
         for relocation in self.relocation_table:
@@ -858,7 +899,9 @@ class ElfRel(ElfSection):
 
 
 class ElfRela(ElfSection):
-    relocation_table: list[Elf32LittleEndianRelocationWithAddendTableEntry] = None
+    relocation_table: list[Elf32LittleEndianRelocationWithAddendTableEntry] = (
+        None
+    )
 
     def unserialize(self, data: BytesIO):
         super().unserialize(data)
@@ -871,7 +914,10 @@ class ElfRela(ElfSection):
             self.section_header.sh_size // self.section_header.sh_entsize
         ):
             relocation_class = {
-                (False, False): Elf32LittleEndianRelocationWithAddendTableEntry,
+                (
+                    False,
+                    False,
+                ): Elf32LittleEndianRelocationWithAddendTableEntry,
                 (True, False): Elf32BigEndianRelocationWithAddendTableEntry,
                 (False, True): Elf64LittleEndianRelocationWithAddendTableEntry,
                 (True, True): Elf64BigEndianRelocationWithAddendTableEntry,
@@ -886,12 +932,16 @@ class ElfRela(ElfSection):
     def post_unserialize(self):
         super().post_unserialize()
 
-        self.symtab_section = self.elf_file.sections[self.section_header.sh_link]
+        self.symtab_section = self.elf_file.sections[
+            self.section_header.sh_link
+        ]
 
     def pre_serialize(self):
         super().pre_serialize()
 
-        self.section_header.sh_entsize = memoryview(self.relocation_table[0]).nbytes
+        self.section_header.sh_entsize = memoryview(
+            self.relocation_table[0]
+        ).nbytes
 
     def _serialize_contents(self, data: BytesIO):
         for relocation in self.relocation_table:
@@ -973,34 +1023,35 @@ class E_TYPE(IntEnum):
 
 class ElfFileHeader(VariableEndiannessAndWordsizeStructure):
     _fields_ = [
-        ("EI_MAG", c_char * 4),  # ELF "magic number"
-        ("EI_CLASS", c_uint8),  # File class
-        ("EI_DATA", c_uint8),  # Data encoding
-        ("EI_VERSION", c_uint8),  # File version
-        ("EI_OSABI", c_uint8),  # OS/ABI identification
-        ("EI_ABIVERSION", c_uint8),  # ABI version
-        ("EI_PAD", c_uint8 * 7),
-        ("e_type", Elf64_Half),
-        ("e_machine", Elf64_Half),
-        ("e_version", Elf64_Word),
-        ("e_entry", Elf64_Addr),  # Entry point virtual address
-        ("e_phoff", Elf64_Off),  # Program header table file offset
-        ("e_shoff", Elf64_Off),  # Section header table file offset
-        ("e_flags", Elf64_Word),
-        ("e_ehsize", Elf64_Half),
-        ("e_phentsize", Elf64_Half),
-        ("e_phnum", Elf64_Half),
-        ("e_shentsize", Elf64_Half),
-        ("e_shnum", Elf64_Half),
-        ("e_shstrndx", Elf64_Half),
+        ('EI_MAG', c_char * 4),  # ELF "magic number"
+        ('EI_CLASS', c_uint8),  # File class
+        ('EI_DATA', c_uint8),  # Data encoding
+        ('EI_VERSION', c_uint8),  # File version
+        ('EI_OSABI', c_uint8),  # OS/ABI identification
+        ('EI_ABIVERSION', c_uint8),  # ABI version
+        ('EI_PAD', c_uint8 * 7),
+        ('e_type', Elf64_Half),
+        ('e_machine', Elf64_Half),
+        ('e_version', Elf64_Word),
+        ('e_entry', Elf64_Addr),  # Entry point virtual address
+        ('e_phoff', Elf64_Off),  # Program header table file offset
+        ('e_shoff', Elf64_Off),  # Section header table file offset
+        ('e_flags', Elf64_Word),
+        ('e_ehsize', Elf64_Half),
+        ('e_phentsize', Elf64_Half),
+        ('e_phnum', Elf64_Half),
+        ('e_shentsize', Elf64_Half),
+        ('e_shnum', Elf64_Half),
+        ('e_shstrndx', Elf64_Half),
     ]
 
     def __init__(self):
-        self.EI_MAG = b"\x7fELF"
+        self.EI_MAG = b'\x7fELF'
 
-        self.EI_CLASS = {False: EI_CLASS.ELFCLASS32, True: EI_CLASS.ELFCLASS64}[
-            self.is_64_bits
-        ]
+        self.EI_CLASS = {
+            False: EI_CLASS.ELFCLASS32,
+            True: EI_CLASS.ELFCLASS64,
+        }[self.is_64_bits]
 
         self.EI_DATA = {False: EI_DATA.ELFDATA2LSB, True: EI_DATA.ELFDATA2MSB}[
             self.is_big_endian
@@ -1031,25 +1082,25 @@ class P_FLAGS:  # PROGRAM_HEADER_FLAGS
 
 class Elf32ProgramHeaderEntry(VariableEndiannessAndWordsizeStructure):
     _fields_ = [
-        ("p_type", Elf32_Word),
-        ("p_offset", Elf32_Off),  # Segment file offset
-        ("p_vaddr", Elf32_Addr),  # Segment virtual address
-        ("p_paddr", Elf32_Addr),  # Segment physical address
-        ("p_filesz", Elf32_Word),  # Segment size in file
-        ("p_memsz", Elf32_Word),  # Segment size in memory
-        ("p_flags", Elf32_Word),
-        ("p_align", Elf32_Word),  # Segment alignment, file & memory
+        ('p_type', Elf32_Word),
+        ('p_offset', Elf32_Off),  # Segment file offset
+        ('p_vaddr', Elf32_Addr),  # Segment virtual address
+        ('p_paddr', Elf32_Addr),  # Segment physical address
+        ('p_filesz', Elf32_Word),  # Segment size in file
+        ('p_memsz', Elf32_Word),  # Segment size in memory
+        ('p_flags', Elf32_Word),
+        ('p_align', Elf32_Word),  # Segment alignment, file & memory
     ]
 
 
 class Elf64ProgramHeaderEntry(Elf32ProgramHeaderEntry):
     _fields_ = [
-        ("p_type", Elf64_Word),
-        ("p_flags", Elf64_Word),
-        ("p_offset", Elf64_Off),  # Segment file offset
-        ("p_vaddr", Elf64_Addr),  # Segment virtual address
-        ("p_paddr", Elf64_Addr),  # Segment physical address
-        ("p_filesz", Elf64_Xword),  # Segment size in file
-        ("p_memsz", Elf64_Xword),  # Segment size in memory
-        ("p_align", Elf64_Xword),  # Segment alignment, file & memory
+        ('p_type', Elf64_Word),
+        ('p_flags', Elf64_Word),
+        ('p_offset', Elf64_Off),  # Segment file offset
+        ('p_vaddr', Elf64_Addr),  # Segment virtual address
+        ('p_paddr', Elf64_Addr),  # Segment physical address
+        ('p_filesz', Elf64_Xword),  # Segment size in file
+        ('p_memsz', Elf64_Xword),  # Segment size in memory
+        ('p_align', Elf64_Xword),  # Segment alignment, file & memory
     ]

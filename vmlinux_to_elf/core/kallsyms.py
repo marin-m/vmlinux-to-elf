@@ -238,10 +238,15 @@ class KallsymsFinder:
         self.version_number = regex_match.group(1).decode("ascii")
 
         logging.info("[+] Version string: {0:s}".format(self.version_string))
-        logging.info('[+]   Other related strings containing the version number: %s' % findall(b'[ -~]*%s[ -~]*' % regex_match.group(1), self.kernel_img))
-        arch_string = search(b'mod_unload[ -~]+', self.kernel_img)
+        logging.info(
+            "[+]   Other related strings containing the version number: %s"
+            % findall(b"[ -~]*%s[ -~]*" % regex_match.group(1), self.kernel_img)
+        )
+        arch_string = search(b"mod_unload[ -~]+", self.kernel_img)
         if arch_string:
-            logging.info('[+]   Architecture string: %s' % arch_string.group(0).decode('utf-8'))
+            logging.info(
+                "[+]   Architecture string: %s" % arch_string.group(0).decode("utf-8")
+            )
 
     def guess_architecture(self):
         try:

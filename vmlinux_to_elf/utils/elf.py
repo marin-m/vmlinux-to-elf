@@ -673,8 +673,8 @@ class ElfSymtab(ElfSection):
         self.section_header.sh_entsize = memoryview(self.symbol_table[0]).nbytes
 
     def _serialize_contents(self, data: BytesIO):
-        local_symbols_first = (
-            lambda symbol: symbol.st_info_binding != ST_INFO_BINDING.STB_LOCAL
+        local_symbols_first = lambda symbol: (
+            symbol.st_info_binding != ST_INFO_BINDING.STB_LOCAL
         )
 
         found_a_non_local_symbol = False

@@ -106,7 +106,7 @@ class LinuxARM64EFIStub(LittleEndianStructure):
         # .Loptional_header - offset 0x58 = decimal 88
         (
             'pe32plus_magic',
-            c_char * 2,
+            c_uint16,
         ),  # PE_OPT_MAGIC_PE32PLUS - PE32+ format - 0B 02
         ('major_linker_version', c_uint8),  # MajorLinkerVersion - 0x02
         ('minor_linker_version', c_uint8),  # MinorLinkerVersion - 0x14

@@ -49,7 +49,10 @@ def structure_to_key_values_strings(ctypes_structure):
         # Stringify the value
 
         if type(value) is bytes:  # Strings
-            key_values[pretty_key] = value.decode('ascii')
+            try:
+                key_values[pretty_key] = value.decode('ascii')
+            except UnicodeDecodeError:
+                key_values[pretty_key] = repr(value)
 
         elif key in field_name_to_structure:  # Integer enums
             try:

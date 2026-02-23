@@ -151,6 +151,9 @@ class LinuxARM64EFIStub(LittleEndianStructure):
         ('base_relocation_table', c_uint64),  # BaseRelocationTable - 0
     ]
 
+    _layout_ = 'ms'
+    _pack_ = 1
+
     def pretty_print(self):
         vmlinux_to_elf.utils.pretty_print.pretty_print_structure(self)
 

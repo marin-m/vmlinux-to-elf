@@ -89,7 +89,8 @@ class VariableEndiannessAndWordsizeStructure:
                 },
                 'is_big_endian': is_big_endian,
                 'is_64_bits': is_64_bits,
-                '_pack_': True,
+                '_layout_': 'ms',
+                '_pack_': 1,
                 '_fields_': [
                     (
                         field[0],

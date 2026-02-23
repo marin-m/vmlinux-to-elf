@@ -11,10 +11,11 @@ from ctypes import (
     c_uint32,
     c_uint64,
 )
+from argparse import ArgumentParser
 from enum import IntEnum
 from io import BytesIO
 
-from vmlinux_to_elf.utils.pretty_print import pretty_print_structure
+import vmlinux_to_elf.utils.pretty_print
 
 """
     This file contains a wrapper for parsing ARM64 PE/EFI boot stub files.
@@ -83,16 +84,20 @@ class LinuxARM64EFIStub(LittleEndianStructure):
         # __EFI_PE_HEADER - .Lpe_header_offset - offset 0x40 = decimal 64
         # See: https://learn.microsoft.com/en-us/windows/win32/debug/pe-format#signature-image-only
         ('pe_magic', c_char * 4),  # PE_MAGIC - "PE\0\0" - 50 45 00 00
-        ('pe_machine', c_uint16)(  # IMAGE_FILE_MACHINE_ARM64 - 0xaa64 - 64 AA
-            'pe_section_count', c_uint16
-        )(  # NumberOfSections - .Lsection_count - 2
-            'pe_date_timestamp', c_uint32
-        )(  # TimeDateStamp - fixed 0
-            'pe_pointer_to_symbol_table', c_uint32
-        )(  # PointerToSymbolTable - fixed 0
-            'pe_number_of_symbols', c_uint32
-        )(  # NumberOfSymbols - fixed 0
-            'pe_size_of_optional_header', c_uint16
+        ('pe_machine', c_uint16),  # IMAGE_FILE_MACHINE_ARM64 - 0xaa64 - 64 AA
+        (
+            'pe_section_count',
+            c_uint16,
+        ),  # NumberOfSections - .Lsection_count - 2
+        ('pe_date_timestamp', c_uint32),  # TimeDateStamp - fixed 0
+        (
+            'pe_pointer_to_symbol_table',
+            c_uint32,
+        ),  # PointerToSymbolTable - fixed 0
+        ('pe_number_of_symbols', c_uint32),  # NumberOfSymbols - fixed 0
+        (
+            'pe_size_of_optional_header',
+            c_uint16,
         ),  # SizeOfOptionalHeader: here 0xA0
         ('pe_characteristics', c_uint16),  # Characteristics:
         # IMAGE_FILE_DEBUG_STRIPPED (0x0200) |
@@ -145,3 +150,21 @@ class LinuxARM64EFIStub(LittleEndianStructure):
         ('certification_table', c_uint64),  # CertificationTable - 0
         ('base_relocation_table', c_uint64),  # BaseRelocationTable - 0
     ]
+
+    def pretty_print(self):
+        vmlinux_to_elf.utils.pretty_print.pretty_print_structure(self)
+
+
+def main():
+    args = ArgumentParser()
+    args.add_argument('input_file', help='Test file')
+    args = args.parse_args()
+
+    struct = LinuxARM64EFIStub()
+    with open(args.input_file, 'rb') as fd:
+        fd.readinto(struct)
+    struct.pretty_print()
+
+
+if __name__ == '__main__':
+    main()

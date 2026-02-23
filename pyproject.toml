@@ -31,6 +31,8 @@ Issues = "https://github.com/marin-m/vmlinux-to-elf/issues"
 [project.scripts]
 kallsyms-finder = "vmlinux_to_elf.scripts.kallsyms_finder:main"
 vmlinux-to-elf = "vmlinux_to_elf.scripts.vmlinux_to_elf:main"
+# Development scripts
+vte-tests-pe = "vmlinux_to_elf.utils.arm64_efi:main"
 
 [tool.ruff]
 line-length = 79

@@ -3,7 +3,7 @@
 
 from collections import OrderedDict
 
-import vmlinux_to_elf.utils.elf
+from vmlinux_to_elf.utils import elf
 
 """
     Pretty print a file name in an ASCII rectangle.
@@ -140,9 +140,8 @@ def pretty_print_table(rows):
             % '---'.join('-' * max_len for max_len in column_to_max_length)
         )
 
-
 field_name_to_structure = {
     key.lower(): value
-    for key, value in vars(vmlinux_to_elf.utils.elf).items()
+    for key, value in vars(elf).items()
     if 'FLAGS' not in key
 }

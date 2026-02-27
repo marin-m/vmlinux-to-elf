@@ -543,10 +543,6 @@ class KallsymsFinder:
                 % (self.kernel_text_candidate)
             )
 
-        logging.info(
-            '[+] Found relocations table at file offset 0x%04x (count=%d)'
-            % (self.elf64_rela_start, count)
-        )
         return True
 
     def apply_elf64_rela(self) -> bool:

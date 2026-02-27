@@ -11,25 +11,35 @@ Because the concerned symbol table is originally compressed, it should recover s
 It produces an .ELF file that you can analyze using IDA Pro and Ghidra. This tool is hence useful for embedded systems reverse engineering.
 
 Usage:
-
 ```bash
-./vmlinux-to-elf <input_kernel.bin> <output_kernel.elf>
+vmlinux-to-elf <input_kernel.bin> <output_kernel.elf>
 ```
 
-System-wide installation:
-
+Installation:
 ```bash
+# Dependencies for the GTK-4 GUI
+sudo apt install libgirepository-2.0-dev libgtk-4-dev gir1.2-adw-1 gir1.2-gtk-4.0 python3-dev
+
+# Installation with uv
+sudo snap install astral-uv
+uv tool install vmlinux-to-elf
+
+# Or with pipx
 sudo apt install pipx
-sudo pipx install git+https://github.com/marin-m/vmlinux-to-elf
+pipx install vmlinux-to-elf
 ```
 
-Local use and dependencies installation:
-
+Local development environment setup:
 ```bash
-sudo apt install python3-pip git
-sudo pip3 install --upgrade lz4 zstandard minilzo
 git clone git@github.com:marin-m/vmlinux-to-elf.git
 cd vmlinux-to-elf
+# With uv (creates ".venv", call "source .venv/bin/activate" to set up)
+uv sync
+# With uv, vmlinux-to-elf is callable system-wide (creates a symlink
+# to the source in "~/.local/bin")
+uv tool install -e .
+# Or with pipx (vmlinux-to-elf is callable system wide)
+pipx install -e .
 ```
 
 ## Features
@@ -45,11 +55,11 @@ cd vmlinux-to-elf
 
 ## How does it work, really?
 
-A brief history of the "kallsyms" symbol table can be found at the top of the "[kallsyms.py](vmlinux_to_elf/kallsyms.py)" file. Briefly, this was introduced circa 2004 in the Linux kernel in its current form and is used to print the "Kernel oops" messages, among other things.
+A brief history of the "kallsyms" symbol table can be found at the top of the "[kallsyms.py](vmlinux_to_elf/core/kallsyms.py)" file. Briefly, this was introduced circa 2004 in the Linux kernel in its current form and is used to print the "Kernel oops" messages, among other things.
 
 It contains tuples of "symbol name", "symbol address", "symbol type" (symbol types being designated with a single letter in a fashion similar to the [`nm`](http://man7.org/linux/man-pages/man1/nm.1p.html) utility), this information being tightly packed with a simple compression algorithm.
 
-The schema below displays how this information is serialized into the kernel, the offset of each respective structure being detected by `vmlinux-to-elf` through [heuristics](vmlinux_to_elf/kallsyms.py):
+The schema below displays how this information is serialized into the kernel, the offset of each respective structure being detected by `vmlinux-to-elf` through [heuristics](vmlinux_to_elf/core/kallsyms.py):
 
 | Array name | Description | Sample contents |
 | ---------- | ----------- | --------------- |

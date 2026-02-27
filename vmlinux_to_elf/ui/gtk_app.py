@@ -59,6 +59,10 @@ class MyApp(Adw.Application):
             self
         )  # Application will close once it no longer has active windows attached to it
 
+        # Connect UI actions
+
+        self.connect_actions()
+
         # TODO Remove the singleton behavior later?
 
         self.win.present()
@@ -72,6 +76,18 @@ class MyApp(Adw.Application):
 
         # TODO set up callbacks for syncing interface elements between them
         # + a correct model object?
+
+    def connect_actions(self):
+
+        def show_about(*args, **kwargs):
+            self.builder.get_object('about_dialog').present()
+
+        self.add_simple_action('show-about', show_about)
+
+    def add_simple_action(self, name, callback):
+        action = Gio.SimpleAction.new(name, None)
+        action.connect('activate', callback)
+        self.win.add_action(action)
 
     def init_arch_list(self):
 

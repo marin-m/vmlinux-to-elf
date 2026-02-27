@@ -15,6 +15,7 @@ dependencies = [
     "zstandard>=0.25.0",
     "minilzo>=1.2",
     "peewee>=4.0.0",
+    # TODO make the GUI dependency an option?
     "pygobject>=3.54.5",
 ]
 requires-python = ">=3.9"

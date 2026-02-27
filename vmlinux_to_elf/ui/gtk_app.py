@@ -35,30 +35,6 @@ class MyApp(Adw.Application):
     def update_state(self):
         pass  # XX
 
-    def connect_signals(self):
-
-        self.file_picker_button: Adw.ActionRow = self.builder.get_object(
-            'file_picker_button'
-        )
-        self.file_picker_button.connect('activated', self.pick_file)
-
-        # TODO set up callbacks for syncing interface elements between them
-        # + a correct model object?
-
-    def init_arch_list(self):
-
-        self.arch_combo: Adw.ComboRow = self.builder.get_object(
-            'architecture_combo'
-        )
-
-        arch_model = Gtk.StringList()
-
-        arch_model.append('x86')
-        arch_model.append('ARM')
-        # WIP add all supported architectures
-
-        self.arch_combo.set_model(arch_model)
-
     def on_activate(self, app):
         # Create a Builder object, in order
         # to parse the Cambalache-produced UI file
@@ -86,6 +62,30 @@ class MyApp(Adw.Application):
         # TODO Remove the singleton behavior later?
 
         self.win.present()
+
+    def connect_signals(self):
+
+        self.file_picker_button: Adw.ActionRow = self.builder.get_object(
+            'file_picker_button'
+        )
+        self.file_picker_button.connect('activated', self.pick_file)
+
+        # TODO set up callbacks for syncing interface elements between them
+        # + a correct model object?
+
+    def init_arch_list(self):
+
+        self.arch_combo: Adw.ComboRow = self.builder.get_object(
+            'architecture_combo'
+        )
+
+        arch_model = Gtk.StringList()
+
+        arch_model.append('x86')
+        arch_model.append('ARM')
+        # WIP add all supported architectures
+
+        self.arch_combo.set_model(arch_model)
 
     def pick_file(self, button: Adw.ActionRow):
         file_picker = Gtk.FileDialog()

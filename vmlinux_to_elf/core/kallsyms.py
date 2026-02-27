@@ -549,6 +549,11 @@ class KallsymsFinder:
         """
         Apply relocations table, return True if success, False
         otherwise
+
+        TODO: Use the __relocate_kernel symbol and parse instructions
+          instead of making this wild guess?
+
+        TODO: Move to a dedicated file?
         """
         if self.elf64_rela is None or self.kernel_text_candidate is None:
             return False

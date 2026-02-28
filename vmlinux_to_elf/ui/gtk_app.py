@@ -29,7 +29,7 @@ from vmlinux_to_elf.core.kallsyms import KallsymsFinder
 from vmlinux_to_elf.core.architecture_detecter import (
     ArchitectureGuessError,
     ElfMachine,
-    architecture_to_readable_name
+    architecture_to_readable_name,
 )
 
 
@@ -187,16 +187,52 @@ class MyApp(Adw.Application):
                     # xx set and show metadata
 
                     def update_ui_cb(*args):
+                        # Display the kernel version string
+
                         kernel_string_row = self.builder.get_object(
                             'kernel_string_row'
                         )
                         kernel_string_row.set_visible(True)
                         kernel_string_row.set_subtitle(kallsyms.version_string)
 
+                        # Display the "Analysis options" UI block
+
                         analysis_options = self.builder.get_object(
                             'analysis_options'
                         )
                         analysis_options.set_visible(True)
+
+                        # Show guessed architecture
+
+                        key = architecture_to_readable_name[
+                            kallsyms.architecture
+                        ]
+
+                        architecture_combo = self.builder.get_object(
+                            'architecture_combo'
+                        )
+                        architecture_combo.set_title(
+                            architecture_combo.get_title().replace('$$', key)
+                        )
+                        architecture_combo.set_selected(
+                            architecture_combo.get_model().find(key)
+                        )
+
+                        # Show guessed ELF Machine
+
+                        key = ElfMachine(kallsyms.elf_machine).name
+
+                        e_machine_combo = self.builder.get_object(
+                            'e_machine_combo'
+                        )
+                        e_machine_combo.set_title(
+                            e_machine_combo.get_title().replace('$$', key)
+                        )
+                        e_machine_combo.set_selected(
+                            e_machine_combo.get_model().find(key)
+                        )
+
+                        # Show "Detect symbols button" pointing to view #2
 
                         detect_symbols_bar = self.builder.get_object(
                             'detect_symbols_bar'

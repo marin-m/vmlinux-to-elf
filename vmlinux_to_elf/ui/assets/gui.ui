@@ -71,12 +71,12 @@
                         <property name="visible">False</property>
                         <child>
                           <object class="AdwComboRow" id="architecture_combo">
-                            <property name="title">Architecture preset (auto-detect: XX)</property>
+                            <property name="title">Architecture preset (auto-detect: $$)</property>
                           </object>
                         </child>
                         <child>
                           <object class="AdwComboRow" id="e_machine_combo">
-                            <property name="title">ELF machine (auto-detect: XX)</property>
+                            <property name="title">ELF machine (auto-detect: $$)</property>
                           </object>
                         </child>
                         <child>

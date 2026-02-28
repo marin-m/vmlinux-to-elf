@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- encoding: Utf-8 -*-
 from os.path import dirname, realpath
+from threading import Thread
 from typing import Optional
 
 SCRIPT_DIR = dirname(realpath(__file__))
@@ -69,10 +70,20 @@ class MyApp(Adw.Application):
 
     def connect_signals(self):
 
+        def pick_file(button: Adw.ActionRow):
+
+            def file_picked(file_dialog: Gtk.FileDialog, task: Gio.Task):
+                result: Gio.File = file_dialog.open_finish(task)
+                self.update_kernel_path(result.get_path())
+
+            file_picker = Gtk.FileDialog()
+            file_picker.set_filters(Gio.ListStore())
+            file_picker.open(self.win, callback=file_picked)
+
         self.file_picker_button: Adw.ActionRow = self.builder.get_object(
             'file_picker_button'
         )
-        self.file_picker_button.connect('activated', self.pick_file)
+        self.file_picker_button.connect('activated', pick_file)
 
         # TODO set up callbacks for syncing interface elements between them
         # + a correct model object?
@@ -85,6 +96,7 @@ class MyApp(Adw.Application):
         self.add_simple_action('show-about', show_about)
 
     def add_simple_action(self, name, callback):
+
         action = Gio.SimpleAction.new(name, None)
         action.connect('activate', callback)
         self.win.add_action(action)
@@ -103,52 +115,56 @@ class MyApp(Adw.Application):
 
         self.arch_combo.set_model(arch_model)
 
-    def pick_file(self, button: Adw.ActionRow):
-        file_picker = Gtk.FileDialog()
-        file_picker.set_filters(Gio.ListStore())
-        file_picker.open(self.win, callback=self.file_picked)
-
-    def file_picked(self, file_dialog: Gtk.FileDialog, task: Gio.Task):
-        result: Gio.File = file_dialog.open_finish(task)
-        self.update_kernel_path(result.get_path())
-
     def update_kernel_path(self, path: Optional[str]):
         if path:
             self.kernel_path = path
             self.file_picker_button.set_title('Kernel blob')
             self.file_picker_button.set_subtitle(path)
 
-            # TODO use parallel thread (!! SEE .ODT)
+            # xx show spinner
 
-            with open(path, 'rb') as kernel_bin:
-                bit_size = None  # TODO add widget
-                override_relative = False  # TODO add widget
+            def detection_thread():
 
-                try:
-                    kallsyms = KallsymsFinder(
-                        obtain_raw_kernel_from_file(kernel_bin.read()),
-                        bit_size,
-                        override_relative,
+                with open(path, 'rb') as kernel_bin:
+                    bit_size = None  # TODO add widget
+                    override_relative = False  # TODO add widget
+
+                    try:
+                        kallsyms = KallsymsFinder(
+                            obtain_raw_kernel_from_file(kernel_bin.read()),
+                            bit_size,
+                            override_relative,
+                        )
+
+                    except ArchitectureGuessError:
+                        print(
+                            '[!] The architecture of your kernel could not be guessed '
+                            + 'successfully. Please specify the --bit-size argument manually '
+                            + '(use --help for its precise specification).'
+                        )
+                        # TODO Do actual error handling
+                        return
+
+                    except Exception:
+                        # TODO Do actual error handling (for all Python exceptions too?
+                        # show a popup when wrong?)
+                        return
+                    
+                    # GLib.idle_add(xx) <-- call back the main thread for safety?
+
+                    # xx hide spinner
+
+                    # xx set and show metadata
+
+                    kernel_string_row = self.builder.get_object(
+                        'kernel_string_row'
                     )
-
-                except ArchitectureGuessError:
-                    print(
-                        '[!] The architecture of your kernel could not be guessed '
-                        + 'successfully. Please specify the --bit-size argument manually '
-                        + '(use --help for its precise specification).'
-                    )
-                    # TODO Do actual error handling
-                    return
-
-                except Exception:
-                    # TODO Do actual error handling (for all Python exceptions too?
-                    # show a popup when wrong?)
-                    return
-                kernel_string_row = self.builder.get_object(
-                    'kernel_string_row'
-                )
-                kernel_string_row.set_visible(True)
-                kernel_string_row.set_subtitle(kallsyms.version_string)
+                    kernel_string_row.set_visible(True)
+                    kernel_string_row.set_subtitle(kallsyms.version_string)
+            
+            thread = Thread(target = detection_thread)
+            thread.daemon = True
+            thread.start()
 
 
 def main():

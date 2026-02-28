@@ -118,7 +118,8 @@
                   </object>
                 </child>
                 <child type="bottom">
-                  <object class="GtkActionBar">
+                  <object class="GtkActionBar" id="detect_symbols_bar">
+                    <property name="revealed">False</property>
                     <child type="end">
                       <object class="GtkButton" id="detect_symbols">
                         <property name="action-name">navigation.push</property>
@@ -127,6 +128,7 @@
                         <property name="label">Detect symbols</property>
                         <property name="sensitive">False</property>
                         <property name="valign">center</property>
+                        <property name="visible">False</property>
                         <style>
                           <class name="pill"/>
                           <class name="suggested-action"/>
@@ -207,14 +209,18 @@
     </property>
     <property name="default-height">600</property>
     <property name="default-width">800</property>
+    <property name="icon-name">re.fossplant.vmlinux-to-elf</property>
+    <property name="startup-id">re.fossplant.vmlinux-to-elf</property>
   </object>
   <menu id="application_menu">
     <item>
       <attribute name="action">win.show-about</attribute>
+      <attribute name="icon">preferences-system-linux</attribute>
       <attribute name="label">_About...</attribute>
     </item>
   </menu>
   <object class="AdwAboutDialog" id="about_dialog">
+    <property name="application-icon">re.fossplant.vmlinux-to-elf</property>
     <property name="application-name">vmlinux-to-elf</property>
     <property name="developers">Marin Moulinier https://fossplant.re/</property>
     <property name="issue-url">https://github.com/marin-m/vmlinux-to-elf/issues</property>

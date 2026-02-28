@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+  <gresource prefix="/re/fossplant/vmlinux-to-elf/">
+    <file compressed="true" preprocess="xml-stripblanks">gui.ui</file>
+    <!--file compressed="true">style.css</file-->
+    <file compressed="true" alias="re.fossplant.vmlinux-to-elf.svg">preferences-system-linux.svg</file>
+    <file compressed="true" alias="256x256/apps/re.fossplant.vmlinux-to-elf.svg">preferences-system-linux.svg</file>
+    <!--file compressed="true" preprocess="xml-stripblanks" alias="re.fossplant.songrec.svg">custom_icon.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks" alias="scalable/apps/re.fossplant.songrec.svg">custom_icon.svg</file>
+    <file compressed="true" preprocess="xml-stripblanks">custom_icon.svg</file>
+    <file compressed="true" alias="re.fossplant.songrec.png">custom_icon.png</file>
+    <file compressed="true" alias="256x256/apps/re.fossplant.songrec.png">custom_icon.png</file>
+    <file compressed="true">custom_icon.png</file>
+    <file compressed="true" alias="search-symbolic.png">search-symbolic.png</file>
+    <file compressed="true" alias="actions/128/search-symbolic.png">search-symbolic.png</file-->
+  </gresource>
+</gresources>

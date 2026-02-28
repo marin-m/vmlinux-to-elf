@@ -5,6 +5,8 @@ from threading import Thread
 from typing import Optional
 
 SCRIPT_DIR = dirname(realpath(__file__))
+ASSETS_DIR = realpath(SCRIPT_DIR + '/assets')
+RESOURCES_PATH = realpath(ASSETS_DIR + '/vmlinux-to-elf.gresource')
 
 # Based on https://github.com/Taiko2k/GTK4PythonTutorial?tab=readme-ov-file#ui-from-graphical-designer
 
@@ -12,8 +14,9 @@ import sys
 import gi
 
 gi.require_version('Gtk', '4.0')
+gi.require_version('Gdk', '4.0')
 gi.require_version('Adw', '1')
-from gi.repository import Gtk, Adw, Gio
+from gi.repository import Gtk, Gdk, Adw, Gio
 
 from vmlinux_to_elf.core.vmlinuz_decompressor import (
     obtain_raw_kernel_from_file,
@@ -31,17 +34,18 @@ class MyApp(Adw.Application):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.connect('activate', self.on_activate)
 
-    def update_state(self):
-        pass  # XX
+        theme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default())
+        theme.add_resource_path('/re/fossplant/vmlinux-to-elf/')
+
+        self.connect('activate', self.on_activate)
 
     def on_activate(self, app):
         # Create a Builder object, in order
         # to parse the Cambalache-produced UI file
 
         self.builder = Gtk.Builder()
-        self.builder.add_from_file(SCRIPT_DIR + '/gui.ui')
+        self.builder.add_from_resource('/re/fossplant/vmlinux-to-elf/gui.ui')
 
         # Connect UI signals
 
@@ -168,6 +172,10 @@ class MyApp(Adw.Application):
 
 
 def main():
+
+    Gio.resources_register(
+        Gio.resource_load(RESOURCES_PATH)
+    )
 
     app = MyApp(application_id='re.fossplant.vmlinux-to-elf')
     app.run(sys.argv)

@@ -82,20 +82,7 @@ class MyApp(Adw.Application):
 
     def connect_signals(self):
 
-        def pick_file(button: Adw.ActionRow):
-
-            def file_picked(file_dialog: Gtk.FileDialog, task: Gio.Task):
-                result: Gio.File = file_dialog.open_finish(task)
-                self.update_kernel_path(result.get_path())
-
-            file_picker = Gtk.FileDialog()
-            file_picker.set_filters(Gio.ListStore())
-            file_picker.open(self.win, callback=file_picked)
-
-        self.file_picker_button: Adw.ActionRow = self.builder.get_object(
-            'file_picker_button'
-        )
-        self.file_picker_button.connect('activated', pick_file)
+        pass
 
         # TODO set up callbacks for syncing interface elements between them
         # + a correct model object?
@@ -106,6 +93,23 @@ class MyApp(Adw.Application):
             self.builder.get_object('about_dialog').present()
 
         self.add_simple_action('show-about', show_about)
+
+        def pick_file(*args):
+
+            def file_picked(file_dialog: Gtk.FileDialog, task: Gio.Task):
+                try:
+                    result: Gio.File = file_dialog.open_finish(task)
+                except GLib.GError as err: # Dismissed by user
+                    if err.message != 'Dismissed by user':
+                        raise
+                else:
+                    self.update_kernel_path(result.get_path())
+
+            file_picker = Gtk.FileDialog()
+            file_picker.set_filters(Gio.ListStore())
+            file_picker.open(self.win, callback=file_picked)
+
+        self.add_simple_action('pick-file', pick_file)
 
     def add_simple_action(self, name, callback):
 
@@ -149,6 +153,10 @@ class MyApp(Adw.Application):
 
         if path:
             self.kernel_path = path
+
+            self.file_picker_button: Adw.ActionRow = self.builder.get_object(
+                'file_picker_button'
+            )
             self.file_picker_button.set_title('Kernel blob')
             self.file_picker_button.set_subtitle(path)
 

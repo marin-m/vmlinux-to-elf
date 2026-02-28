@@ -35,6 +35,7 @@
                             <property name="title">Select a file...</property>
                             <child>
                               <object class="GtkButton" id="file_picker_icon">
+                                <property name="action-name">win.pick-file</property>
                                 <property name="icon-name">document-open</property>
                                 <style>
                                   <class name="flat"/>

@@ -19,7 +19,7 @@ import gi
 gi.require_version('Gtk', '4.0')
 gi.require_version('Gdk', '4.0')
 gi.require_version('Adw', '1')
-from gi.repository import Gtk, Gdk, Adw, Gio
+from gi.repository import Gtk, GLib, Gdk, Adw, Gio
 
 from vmlinux_to_elf.core.vmlinuz_decompressor import (
     obtain_raw_kernel_from_file,
@@ -175,7 +175,10 @@ class MyApp(Adw.Application):
 def main():
 
     if access(RESOURCES_PATH, W_OK) and which('glib-compile-resources'):
-        run(['glib-compile-resources', RESOURCES_PATH + '.xml'])
+        run(['glib-compile-resources', RESOURCES_PATH + '.xml'],
+            cwd = ASSETS_DIR)
+
+    GLib.set_prgname('re.fossplant.vmlinux-to-elf')
 
     Gio.resources_register(
         Gio.resource_load(RESOURCES_PATH)

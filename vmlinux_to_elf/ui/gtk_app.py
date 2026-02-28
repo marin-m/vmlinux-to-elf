@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- encoding: Utf-8 -*-
+from os import stat, scandir, access, W_OK
 from os.path import dirname, realpath
 from threading import Thread
-from os import access, W_OK
 from typing import Optional
 from subprocess import run
 from shutil import which
@@ -198,7 +198,12 @@ class MyApp(Adw.Application):
 
 def main():
 
-    if access(RESOURCES_PATH, W_OK) and which('glib-compile-resources'):
+    if (
+        access(RESOURCES_PATH, W_OK)
+        and which('glib-compile-resources')
+        and max(meta.stat().st_mtime for meta in scandir(ASSETS_DIR))
+        > stat(RESOURCES_PATH).st_mtime
+    ):
         run(
             ['glib-compile-resources', RESOURCES_PATH + '.xml'], cwd=ASSETS_DIR
         )

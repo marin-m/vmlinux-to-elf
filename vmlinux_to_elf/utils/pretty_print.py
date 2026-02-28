@@ -140,6 +140,7 @@ def pretty_print_table(rows):
             % '---'.join('-' * max_len for max_len in column_to_max_length)
         )
 
+
 field_name_to_structure = {
     key.lower(): value
     for key, value in vars(elf).items()

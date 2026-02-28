@@ -6,6 +6,7 @@ from os import access, W_OK
 from typing import Optional
 from subprocess import run
 from shutil import which
+import logging
 
 SCRIPT_DIR = dirname(realpath(__file__))
 ASSETS_DIR = realpath(SCRIPT_DIR + '/assets')
@@ -67,7 +68,7 @@ class MyApp(Adw.Application):
             self
         )  # Application will close once it no longer has active windows attached to it
 
-        # Connect UI actions
+        # Connect UI actions
 
         self.connect_actions()
 
@@ -126,7 +127,10 @@ class MyApp(Adw.Application):
             self.file_picker_button.set_title('Kernel blob')
             self.file_picker_button.set_subtitle(path)
 
-            # xx show spinner
+            selection_spinner_row = self.builder.get_object(
+                'selection_spinner_row'
+            )
+            selection_spinner_row.set_visible(True)
 
             def detection_thread():
 
@@ -142,7 +146,7 @@ class MyApp(Adw.Application):
                         )
 
                     except ArchitectureGuessError:
-                        print(
+                        logging.error(
                             '[!] The architecture of your kernel could not be guessed '
                             + 'successfully. Please specify the --bit-size argument manually '
                             + '(use --help for its precise specification).'
@@ -153,21 +157,41 @@ class MyApp(Adw.Application):
                     except Exception:
                         # TODO Do actual error handling (for all Python exceptions too?
                         # show a popup when wrong?)
-                        return
-                    
-                    # GLib.idle_add(xx) <-- call back the main thread for safety?
 
-                    # xx hide spinner
+                        return
+
+                    finally:
+                        def hide_spinner_cb(*args):
+                            selection_spinner_row = self.builder.get_object(
+                                'selection_spinner_row'
+                            )
+                            selection_spinner_row.set_visible(False)
+                        GLib.idle_add(hide_spinner_cb)
+
+                    # GLib.idle_add(xx) <-- call back the main thread for safety?
 
                     # xx set and show metadata
 
-                    kernel_string_row = self.builder.get_object(
-                        'kernel_string_row'
-                    )
-                    kernel_string_row.set_visible(True)
-                    kernel_string_row.set_subtitle(kallsyms.version_string)
-            
-            thread = Thread(target = detection_thread)
+                    def update_ui_cb(*args):
+                        kernel_string_row = self.builder.get_object(
+                            'kernel_string_row'
+                        )
+                        kernel_string_row.set_visible(True)
+                        kernel_string_row.set_subtitle(kallsyms.version_string)
+
+                        analysis_options = self.builder.get_object(
+                            'analysis_options'
+                        )
+                        analysis_options.set_visible(True)
+
+                        detect_symbols_bar = self.builder.get_object(
+                            'detect_symbols_bar'
+                        )
+                        detect_symbols_bar.set_revealed(True)
+                    
+                    GLib.idle_add(update_ui_cb)
+
+            thread = Thread(target=detection_thread)
             thread.daemon = True
             thread.start()
 
@@ -175,18 +199,17 @@ class MyApp(Adw.Application):
 def main():
 
     if access(RESOURCES_PATH, W_OK) and which('glib-compile-resources'):
-        run(['glib-compile-resources', RESOURCES_PATH + '.xml'],
-            cwd = ASSETS_DIR)
+        run(
+            ['glib-compile-resources', RESOURCES_PATH + '.xml'], cwd=ASSETS_DIR
+        )
 
     GLib.set_prgname('re.fossplant.vmlinux-to-elf')
 
-    Gio.resources_register(
-        Gio.resource_load(RESOURCES_PATH)
-    )
+    Gio.resources_register(Gio.resource_load(RESOURCES_PATH))
 
     app = MyApp(
         application_id='re.fossplant.vmlinux-to-elf',
-        flags=Gio.ApplicationFlags.NON_UNIQUE
+        flags=Gio.ApplicationFlags.NON_UNIQUE,
     )
     app.run(sys.argv)
 

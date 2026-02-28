@@ -44,6 +44,18 @@
                           </object>
                         </child>
                         <child>
+                          <object class="AdwPreferencesRow" id="selection_spinner_row">
+                            <property name="visible">False</property>
+                            <child>
+                              <object class="GtkSpinner">
+                                <property name="margin-bottom">7</property>
+                                <property name="margin-top">7</property>
+                                <property name="spinning">True</property>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                        <child>
                           <object class="AdwActionRow" id="kernel_string_row">
                             <property name="title">Detected kernel string</property>
                             <property name="visible">False</property>
@@ -128,7 +140,6 @@
                         <property name="label">Detect symbols</property>
                         <property name="sensitive">False</property>
                         <property name="valign">center</property>
-                        <property name="visible">False</property>
                         <style>
                           <class name="pill"/>
                           <class name="suggested-action"/>

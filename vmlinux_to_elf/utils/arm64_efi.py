@@ -157,6 +157,7 @@ class LinuxARM64EFIStub(LittleEndianStructure):
     def pretty_print(self):
         vmlinux_to_elf.utils.pretty_print.pretty_print_structure(self)
 
+
 class SectionTableEntry(LittleEndianStructure):
     # See:
     # - https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/tree/arch/arm64/kernel/efi-header.S?id=v5.13
@@ -168,11 +169,11 @@ class SectionTableEntry(LittleEndianStructure):
         ('virtual_address', c_uint32),
         ('size_of_raw_data', c_uint32),
         ('pointer_to_raw_data', c_uint32),
-        ('pointer_to_relocations', c_uint32), # 0
-        ('pointer_to_line_numbers', c_uint32), # 0
-        ('number_of_relocations', c_uint16), # 0
-        ('number_of_line_numbers', c_uint16), # 0
-        ('characteristics', c_uint32), # Bit flag
+        ('pointer_to_relocations', c_uint32),  # 0
+        ('pointer_to_line_numbers', c_uint32),  # 0
+        ('number_of_relocations', c_uint16),  # 0
+        ('number_of_line_numbers', c_uint16),  # 0
+        ('characteristics', c_uint32),  # Bit flag
     ]
 
     _layout_ = 'ms'
@@ -190,8 +191,8 @@ def main():
     with open(args.input_file, 'rb') as fd:
         struct = LinuxARM64EFIStub()
         fd.readinto(struct)
-        assert struct.code0 == b"MZ@\xFA"
-        assert struct.magic == b"ARM\x64"
+        assert struct.code0 == b'MZ@\xfa'
+        assert struct.magic == b'ARM\x64'
         struct.pretty_print()
         fd.seek(0x58 + struct.pe_size_of_optional_header)
 

@@ -67,11 +67,12 @@ def main():
             )
 
         except ArchitectureGuessError:
-            exit(
+            logging.critical(
                 '[!] The architecture of your kernel could not be guessed '
                 + 'successfully. Please specify the --bit-size argument manually '
                 + '(use --help for its precise specification).'
             )
+            raise
 
         kallsyms.print_symbols_debug()
 

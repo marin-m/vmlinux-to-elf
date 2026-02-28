@@ -43,7 +43,7 @@ if __name__ == '__main__':
     )
 
     if not exists(TEST_KERNELS_PATH):
-        exit(
+        logging.critical(
             (
                 '[!] In order to use this script, please '
                 + 'create a file at %s, containing to path '
@@ -51,6 +51,8 @@ if __name__ == '__main__':
             )
             % (TEST_KERNELS_PATH)
         )
+
+        exit()
 
     makedirs(ELF_KERNELS_OUTPUT_PATH, exist_ok=True)
 

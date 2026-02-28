@@ -26,7 +26,10 @@ from gi.repository import Gtk, GLib, Gdk, Adw, Gio
 from vmlinux_to_elf.core.vmlinuz_decompressor import (
     obtain_raw_kernel_from_file,
 )
-from vmlinux_to_elf.core.kallsyms import KallsymsFinder
+from vmlinux_to_elf.core.kallsyms import (
+    KallsymsFinder,
+    KallsymsNotFoundException
+)
 from vmlinux_to_elf.core.architecture_detecter import (
     ArchitectureGuessError,
     ArchitectureName,
@@ -178,6 +181,9 @@ class MyApp(Adw.Application):
                             override_relative,
                         )
 
+                    except (ValueError, KallsymsNotFoundException):
+                        raise
+
                     except ArchitectureGuessError:
                         logging.error(
                             '[!] The architecture of your kernel could not be guessed '
@@ -185,13 +191,13 @@ class MyApp(Adw.Application):
                             + '(use --help for its precise specification).'
                         )
                         # TODO Do actual error handling
-                        return
+                        raise
 
                     except Exception:
                         # TODO Do actual error handling (for all Python exceptions too?
                         # show a popup when wrong?)
 
-                        return
+                        raise
 
                     finally:
 
@@ -258,6 +264,10 @@ class MyApp(Adw.Application):
                         e_machine_combo.set_selected(
                             e_machine_combo.get_model().find(key)
                         )
+
+                        # Show guessed bitness
+
+                        is_64_bits = kallsyms.is_64_bits
 
                         # Show "Detect symbols button" pointing to view #2
 

@@ -91,7 +91,7 @@ def main():
     if (args.e_machine is not None and args.bit_size is None) or (
         args.e_machine is None and args.bit_size is not None
     ):
-        logging.error(
+        logging.critical(
             '[!] Please specify both an addressing bit size '
             + 'and the ELF "e_machine" field, or neither for '
             + 'auto-detection'
@@ -114,11 +114,13 @@ def main():
             )
 
         except ArchitectureGuessError:
-            exit(
+            logging.critical(
                 '[!] The architecture of your kernel could not be guessed '
                 + 'successfully. Please specify the --e-machine and --bit-size '
                 + 'arguments manually (use --help for their precise specification).'
             )
+
+            exit()
 
 
 if __name__ == '__main__':

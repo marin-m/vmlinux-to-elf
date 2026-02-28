@@ -199,8 +199,8 @@ class KallsymsFinder:
 
         if bit_size:
             if bit_size not in (64, 32):
-                exit(
-                    '[!] Please specify a register bit size of either 32 or 64 bits'
+                raise ArchitectureGuessError(
+                    'Please specify a register bit size of either 32 or 64 bits'
                 )
             else:
                 self.is_64_bits = bit_size == 64

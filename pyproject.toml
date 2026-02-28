@@ -15,8 +15,6 @@ dependencies = [
     "zstandard>=0.25.0",
     "minilzo>=1.2",
     "peewee>=4.0.0",
-    # TODO make the GUI dependency an option?
-    "pygobject>=3.54.5",
 ]
 requires-python = ">=3.9"
 authors = [{ name = "Marin Moulinier" }]
@@ -24,6 +22,9 @@ description = "A tool to recover a fully analyzable .ELF from a raw kernel, thro
 readme = "README.md"
 license = "GPL-3.0-or-later"
 license-files = ["LICENSE"]
+
+[project.optional-dependencies]
+gui = ["pygobject>=3.54.5"]
 
 [project.urls]
 Homepage = "https://github.com/marin-m/vmlinux-to-elf"

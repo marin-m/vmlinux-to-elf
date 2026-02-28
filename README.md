@@ -12,7 +12,11 @@ It produces an .ELF file that you can analyze using IDA Pro and Ghidra. This too
 
 Usage:
 ```bash
+# Command line:
 vmlinux-to-elf <input_kernel.bin> <output_kernel.elf>
+
+# Graphical:
+vmlinux-to-elf-gui
 ```
 
 Installation:
@@ -22,11 +26,11 @@ sudo apt install libgirepository-2.0-dev libgtk-4-dev gir1.2-adw-1 gir1.2-gtk-4.
 
 # Installation with uv
 sudo snap install astral-uv
-uv tool install vmlinux-to-elf
+uv tool install vmlinux-to-elf[gui]
 
 # Or with pipx
 sudo apt install pipx
-pipx install vmlinux-to-elf
+pipx install vmlinux-to-elf[gui]
 ```
 
 Local development environment setup:
@@ -34,12 +38,12 @@ Local development environment setup:
 git clone git@github.com:marin-m/vmlinux-to-elf.git
 cd vmlinux-to-elf
 # With uv (creates ".venv", call "source .venv/bin/activate" to set up)
-uv sync
+uv sync --extra gui
 # With uv, vmlinux-to-elf is callable system-wide (creates a symlink
 # to the source in "~/.local/bin")
-uv tool install -e .
+uv tool install -e .[gui]
 # Or with pipx (vmlinux-to-elf is callable system wide)
-pipx install -e .
+pipx install -e .[gui]
 ```
 
 ## Features

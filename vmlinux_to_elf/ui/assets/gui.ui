@@ -81,25 +81,25 @@
                           </object>
                         </child>
                         <child>
-                          <object class="AdwSwitchRow">
+                          <object class="AdwSwitchRow" id="bitness_switch">
                             <property name="title">64-bit (auto-detect: Unknown)</property>
                           </object>
                         </child>
                         <child>
-                          <object class="AdwEntryRow">
-                            <property name="text">Testt</property>
-                            <property name="title">File offset (auto-detect: FFXXFF)</property>
+                          <object class="AdwEntryRow" id="file_offset_entry">
+                            <property name="text">0</property>
+                            <property name="title">File offset, hexadecimal</property>
                           </object>
                         </child>
                         <child>
-                          <object class="AdwEntryRow">
+                          <object class="AdwEntryRow" id="base_address_entry">
                             <property name="name">Test 2</property>
-                            <property name="text">Testt</property>
-                            <property name="title">Base address (auto-detect: FFXXFF)</property>
+                            <property name="text">0</property>
+                            <property name="title">Base address, hexadecimal (auto-detect: Unknown)</property>
                           </object>
                         </child>
                         <child>
-                          <object class="AdwSpinRow">
+                          <object class="AdwSpinRow" id="bss_size_entry">
                             <property name="adjustment">
                               <object class="GtkAdjustment">
                                 <property name="page-increment">1.0</property>
@@ -113,9 +113,9 @@
                           </object>
                         </child>
                         <child>
-                          <object class="AdwSwitchRow">
-                            <property name="subtitle">ℹ️ Remind to toggle this if the addresses previewed below do not look good</property>
-                            <property name="title">Use absolute base address</property>
+                          <object class="AdwSwitchRow" id="force_absolute_base_switch">
+                            <property name="subtitle">ℹ️ Remind to toggle this if the previewed addresses do not look good</property>
+                            <property name="title">Force using absolute base address</property>
                           </object>
                         </child>
                       </object>

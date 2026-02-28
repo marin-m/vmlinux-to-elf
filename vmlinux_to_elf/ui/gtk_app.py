@@ -269,6 +269,35 @@ class MyApp(Adw.Application):
 
                         is_64_bits = kallsyms.is_64_bits
 
+                        bitness_switch = self.builder.get_object(
+                            'bitness_switch'
+                        )
+                        bitness_switch.set_title(
+                            sub(
+                                r': .+?\)',
+                                ': %s)' % ('yes' if is_64_bits else 'no'),
+                                bitness_switch.get_title()
+                            )
+                        )
+                        bitness_switch.set_active(is_64_bits)
+
+                        # Show guessed base address
+
+                        if kallsyms.kernel_text_candidate:
+                            base_address_entry = self.builder.get_object(
+                                'base_address_entry'
+                            )
+                            base_address_entry.set_title(
+                                sub(
+                                    r': .+?\)',
+                                    ': %08x)' % kallsyms.kernel_text_candidate,
+                                    base_address_entry.get_title()
+                                )
+                            )
+                            base_address_entry.set_text(
+                                '%08x' % kallsyms.kernel_text_candidate
+                            )
+
                         # Show "Detect symbols button" pointing to view #2
 
                         detect_symbols_bar = self.builder.get_object(

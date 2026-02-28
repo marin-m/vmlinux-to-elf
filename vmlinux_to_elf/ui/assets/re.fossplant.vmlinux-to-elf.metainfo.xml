@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>re.fossplant.vmlinux-to-elf</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0+</project_license>
+  <name>vmlinux-to-elf</name>
+  <branding>
+    <color type="primary" scheme_preference="light">#DCB3E7</color>
+    <color type="primary" scheme_preference="dark">#664D96</color>
+  </branding>
+  <summary>Convert raw Linux kernel blobs to ELF files</summary>
+  <description>
+    <p>vmlinux-to-elf is A tool to recover a fully analyzable .ELF from a raw kernel, through extracting the kernel symbol table (kallsyms)</p>
+    <p>Features:</p>
+    <p>- Recognize audio from an arbitrary audio file.</p>
+    <p>- Recognize audio from the microphone.</p>
+    <p>- Usage from both GUI and command line (for the file recognition part).</p>
+    <p>- Provide an history of the recognized songs on the GUI, exportable to CSV.</p>
+    <p>- Continuous song detection from the microphone, with the ability to choose your input device.</p>
+    <p>- Ability to recognize songs from your speakers rather than your microphone (on compatible PulseAudio setups).</p>
+  </description>
+  <screenshots>
+    <!--screenshot type="default">
+      <image type="source" scale="2">https://raw.githubusercontent.com/marin-m/SongRec/57bfe25/packaging/Screenshot_hires_light.png</image>
+      <caption>SongRec's main window</caption>
+    </screenshot>
+    <screenshot>
+      <image type="source" scale="2">https://raw.githubusercontent.com/marin-m/SongRec/57bfe25/packaging/Screenshot_favourites_light.png</image>
+      <caption>SongRec's favourites window</caption>
+    </screenshot>
+    <screenshot environment="gnome:dark">
+      <image type="source" scale="2">https://raw.githubusercontent.com/marin-m/SongRec/57bfe25/packaging/Screenshot_hires_dark.png</image>
+      <caption>SongRec's main window, on GNOME in dark mode</caption>
+    </screenshot-->
+  </screenshots>
+  <translation type="gettext">vmlinux-to-elf</translation>
+  <supports>
+    <control>keyboard</control>
+    <control>pointing</control>
+    <control>touch</control>
+  </supports>
+  <recommends>
+    <display_length compare="ge">360</display_length>
+  </recommends>
+  <url type="bugtracker">https://github.com/marin-m/vmlinux-to-elf/issues</url>
+  <url type="homepage">https://github.com/marin-m/vmlinux-to-elf</url>
+  <url type="contact">https://matrix.to/#/#vmlinux-to-elf:matrix.org</url>
+  <url type="faq">https://github.com/marin-m/vmlinux-to-elf#readme</url>
+  <!--url type="translate">https://github.com/marin-m/SongRec/tree/main/translations#readme</url-->
+  <url type="vcs-browser">https://github.com/marin-m/vmlinux-to-elf</url>
+<!--
+Open Age Rating Service
+https://hughsie.github.io/oars/index.html
+-->
+  <content_rating type="oars-1.1" />
+  <releases>
+    <release version="2.0.0" date="2026-01-01">
+      <description>
+        <p></p>
+      </description>
+    </release>
+  </releases>
+  <developer id="re.fossplant">
+    <name>Marin M. - Fossplant.re</name>
+  </developer>
+  <update_contact>marin-m@users.noreply.github.com</update_contact>
+
+  <launchable type="desktop-id">re.fossplant.vmlinux-to-elf.desktop</launchable>
+  <provides>
+    <dbus type="user">re.fossplant.vmlinux-to-elf</dbus>
+    <binary>vmlinux-to-elf</binary>
+    <binary>kallsyms-finder</binary>
+    <binary>vmlinux-to-elf-gui</binary>
+    <mediatype>application/x-pie-executable</mediatype>
+    <mediatype>application/x-executable</mediatype>
+    <mediatype>application/x-sharedlib</mediatype>
+    <mediatype>application/vnd.microsoft.portable-executable</mediatype>
+    <mediatype>application/octet-stream</mediatype>
+  </provides>
+</component>

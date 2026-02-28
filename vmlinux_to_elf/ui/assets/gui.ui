@@ -57,6 +57,7 @@
                         </child>
                         <child>
                           <object class="AdwActionRow" id="kernel_string_row">
+                            <property name="subtitle-selectable">True</property>
                             <property name="title">Detected kernel string</property>
                             <property name="visible">False</property>
                           </object>

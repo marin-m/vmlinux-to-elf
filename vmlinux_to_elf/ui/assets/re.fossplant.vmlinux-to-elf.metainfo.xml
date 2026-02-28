@@ -10,7 +10,7 @@
   </branding>
   <summary>Convert raw Linux kernel blobs to ELF files</summary>
   <description>
-    <p>vmlinux-to-elf is A tool to recover a fully analyzable .ELF from a raw kernel, through extracting the kernel symbol table (kallsyms)</p>
+    <p>vmlinux-to-elf is a tool to recover a fully analyzable .ELF from a raw kernel, through extracting the kernel symbol table (kallsyms)</p>
     <p>Features:</p>
     <p>- Take a raw binary blob or ELF kernel file as an input.</p>
     <p>- Automatically detect and unpack the main compression formats used for the Linux kernel.</p>
@@ -18,7 +18,7 @@
     <p>- Infer the instruction set architecture, endianness, bit size, relying upon other things on common function prologue signatures.</p>
     <p>- Infer the entry point of the kernel from the symbols contained in the kallsyms table.</p>
     <p>- Provide basic inference for the kernel base address.</p>
-    <p>- Unpack certain types of Android `boot.img` files, starting with an "ANDROID!" or "UNCOMPRESSED_IMG" magic.</p>
+    <p>- Unpack certain types of Android boot.img files, starting with an "ANDROID!" or "UNCOMPRESSED_IMG" magic.</p>
     <p>- Produce an .ELF file fully analyzable with IDA Pro or Ghidra as an output.</p>
   </description>
   <screenshots>

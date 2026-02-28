@@ -26,7 +26,11 @@ from vmlinux_to_elf.core.vmlinuz_decompressor import (
     obtain_raw_kernel_from_file,
 )
 from vmlinux_to_elf.core.kallsyms import KallsymsFinder
-from vmlinux_to_elf.core.architecture_detecter import ArchitectureGuessError
+from vmlinux_to_elf.core.architecture_detecter import (
+    ArchitectureGuessError,
+    ElfMachine,
+    architecture_to_readable_name
+)
 
 
 class AppStateMachine:
@@ -115,11 +119,21 @@ class MyApp(Adw.Application):
 
         arch_model = Gtk.StringList()
 
-        arch_model.append('x86')
-        arch_model.append('ARM')
-        # WIP add all supported architectures from core.architecture_detecter.architecture_to_readable_name
+        for arch, readable_name in architecture_to_readable_name.items():
+            arch_model.append(readable_name)
 
         self.arch_combo.set_model(arch_model)
+
+        self.e_machine_combo: Adw.ComboRow = self.builder.get_object(
+            'e_machine_combo'
+        )
+
+        e_machine_model = Gtk.StringList()
+
+        for e_machine in ElfMachine:
+            e_machine_model.append(e_machine.name)
+
+        self.e_machine_combo.set_model(e_machine_model)
 
     def update_kernel_path(self, path: Optional[str]):
         if path:

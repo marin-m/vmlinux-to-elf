@@ -18,7 +18,7 @@ vmlinux-to-elf <input_kernel.bin> <output_kernel.elf>
 Installation:
 ```bash
 # Dependencies for the GTK-4 GUI
-sudo apt install libgirepository-2.0-dev libgtk-4-dev gir1.2-adw-1 gir1.2-gtk-4.0 python3-dev
+sudo apt install libgirepository-2.0-dev libgtk-4-dev gir1.2-adw-1 gir1.2-gtk-4.0 python3-dev glib-compile-resources
 
 # Installation with uv
 sudo snap install astral-uv

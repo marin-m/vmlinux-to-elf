@@ -2,7 +2,10 @@
 # -*- encoding: Utf-8 -*-
 from os.path import dirname, realpath
 from threading import Thread
+from os import access, W_OK
 from typing import Optional
+from subprocess import run
+from shutil import which
 
 SCRIPT_DIR = dirname(realpath(__file__))
 ASSETS_DIR = realpath(SCRIPT_DIR + '/assets')
@@ -67,8 +70,6 @@ class MyApp(Adw.Application):
         # Connect UI actions
 
         self.connect_actions()
-
-        # TODO Remove the singleton behavior later?
 
         self.win.present()
 
@@ -173,11 +174,17 @@ class MyApp(Adw.Application):
 
 def main():
 
+    if access(RESOURCES_PATH, W_OK) and which('glib-compile-resources'):
+        run(['glib-compile-resources', RESOURCES_PATH + '.xml'])
+
     Gio.resources_register(
         Gio.resource_load(RESOURCES_PATH)
     )
 
-    app = MyApp(application_id='re.fossplant.vmlinux-to-elf')
+    app = MyApp(
+        application_id='re.fossplant.vmlinux-to-elf',
+        flags=Gio.ApplicationFlags.NON_UNIQUE
+    )
     app.run(sys.argv)
 
 

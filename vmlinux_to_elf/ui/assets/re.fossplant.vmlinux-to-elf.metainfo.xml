@@ -12,12 +12,14 @@
   <description>
     <p>vmlinux-to-elf is A tool to recover a fully analyzable .ELF from a raw kernel, through extracting the kernel symbol table (kallsyms)</p>
     <p>Features:</p>
-    <p>- Recognize audio from an arbitrary audio file.</p>
-    <p>- Recognize audio from the microphone.</p>
-    <p>- Usage from both GUI and command line (for the file recognition part).</p>
-    <p>- Provide an history of the recognized songs on the GUI, exportable to CSV.</p>
-    <p>- Continuous song detection from the microphone, with the ability to choose your input device.</p>
-    <p>- Ability to recognize songs from your speakers rather than your microphone (on compatible PulseAudio setups).</p>
+    <p>- Take a raw binary blob or ELF kernel file as an input.</p>
+    <p>- Automatically detect and unpack the main compression formats used for the Linux kernel.</p>
+    <p>- Find and extract the embedded kernel symbols table (kallsyms) from the input file.</p>
+    <p>- Infer the instruction set architecture, endianness, bit size, relying upon other things on common function prologue signatures.</p>
+    <p>- Infer the entry point of the kernel from the symbols contained in the kallsyms table.</p>
+    <p>- Provide basic inference for the kernel base address.</p>
+    <p>- Unpack certain types of Android `boot.img` files, starting with an "ANDROID!" or "UNCOMPRESSED_IMG" magic.</p>
+    <p>- Produce an .ELF file fully analyzable with IDA Pro or Ghidra as an output.</p>
   </description>
   <screenshots>
     <!--screenshot type="default">

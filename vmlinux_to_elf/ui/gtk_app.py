@@ -117,7 +117,7 @@ class MyApp(Adw.Application):
 
         arch_model.append('x86')
         arch_model.append('ARM')
-        # WIP add all supported architectures
+        # WIP add all supported architectures from core.architecture_detecter.architecture_to_readable_name
 
         self.arch_combo.set_model(arch_model)
 
@@ -161,14 +161,14 @@ class MyApp(Adw.Application):
                         return
 
                     finally:
+
                         def hide_spinner_cb(*args):
                             selection_spinner_row = self.builder.get_object(
                                 'selection_spinner_row'
                             )
                             selection_spinner_row.set_visible(False)
-                        GLib.idle_add(hide_spinner_cb)
 
-                    # GLib.idle_add(xx) <-- call back the main thread for safety?
+                        GLib.idle_add(hide_spinner_cb)
 
                     # xx set and show metadata
 
@@ -188,7 +188,7 @@ class MyApp(Adw.Application):
                             'detect_symbols_bar'
                         )
                         detect_symbols_bar.set_revealed(True)
-                    
+
                     GLib.idle_add(update_ui_cb)
 
             thread = Thread(target=detection_thread)

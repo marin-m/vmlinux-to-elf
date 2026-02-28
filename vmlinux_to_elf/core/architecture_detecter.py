@@ -45,6 +45,26 @@ class ArchitectureName(IntEnum):
 
 
 # Prologues taken from the binwalk file linked above
+architecture_to_readable_name: dict[ArchitectureName, str] = {
+    ArchitectureName.x86_64: '64-bit x86',
+    ArchitectureName.x86: '32-bit x86',
+    ArchitectureName.armle: 'Little-endian ARM',
+    ArchitectureName.armbe: 'Big-endian ARM',
+    ArchitectureName.aarch64: 'Little-endian ARM64',
+    ArchitectureName.mipsle: 'Little-endian MIPS',
+    ArchitectureName.mipsbe: 'Big-endian MIPS',
+    ArchitectureName.mips64be: 'Big-endian MIPS64',
+    ArchitectureName.mips64le: 'Little-endian MIPS64',
+    ArchitectureName.mips16e: 'Big-endian MIPS16e',
+    ArchitectureName.powerpcbe: 'Big-endian PowerPC',
+    ArchitectureName.powerpcle: 'Little-endian PowerPC',
+    ArchitectureName.superhle: 'Little-endian SuperH',
+    ArchitectureName.superhbe: 'Big-endian SuperH',
+    ArchitectureName.sparc: 'SPARC',
+    ArchitectureName.arcompact: 'ARCompact',
+}
+
+# Prologues taken from the binwalk file linked above
 architecture_to_prologue_regex: dict[ArchitectureName, bytes] = {
     ArchitectureName.mipsle: rb'.\xFF\xBD\x27..[\xA0-\xBF]\xAF',
     ArchitectureName.mipsbe: rb'\x27\xBD\xFF.\xAF[\xA0-\xBF]..',

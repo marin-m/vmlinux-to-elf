@@ -79,7 +79,7 @@ class MyApp(Adw.Application):
 
     def connect_actions(self):
 
-        def show_about(*args, **kwargs):
+        def show_about(*args):
             self.builder.get_object('about_dialog').present()
 
         self.add_simple_action('show-about', show_about)

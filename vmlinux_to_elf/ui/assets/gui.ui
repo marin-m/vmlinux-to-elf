@@ -229,6 +229,9 @@
     <property name="startup-id">re.fossplant.vmlinux-to-elf</property>
   </object>
   <menu id="application_menu">
+    <submenu>
+      <attribute name="label">_Recent files..</attribute>
+    </submenu>
     <item>
       <attribute name="action">win.show-about</attribute>
       <attribute name="icon">preferences-system-linux</attribute>

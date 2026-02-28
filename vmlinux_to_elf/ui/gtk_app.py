@@ -6,6 +6,7 @@ from threading import Thread
 from typing import Optional
 from subprocess import run
 from shutil import which
+from re import sub
 import logging
 
 SCRIPT_DIR = dirname(realpath(__file__))
@@ -28,6 +29,7 @@ from vmlinux_to_elf.core.vmlinuz_decompressor import (
 from vmlinux_to_elf.core.kallsyms import KallsymsFinder
 from vmlinux_to_elf.core.architecture_detecter import (
     ArchitectureGuessError,
+    ArchitectureName,
     ElfMachine,
     architecture_to_readable_name,
 )
@@ -135,7 +137,16 @@ class MyApp(Adw.Application):
 
         self.e_machine_combo.set_model(e_machine_model)
 
-    def update_kernel_path(self, path: Optional[str]):
+    def update_kernel_path(
+        self,
+        path: Optional[str],
+        is_64_bits : Optional[bool] = None,
+        manual_preset : Optional[ArchitectureName] = None
+    ):
+
+        # TODO : Do re-entrance to this function with
+        # combo box setting callbacks
+
         if path:
             self.kernel_path = path
             self.file_picker_button.set_title('Kernel blob')
@@ -212,7 +223,11 @@ class MyApp(Adw.Application):
                             'architecture_combo'
                         )
                         architecture_combo.set_title(
-                            architecture_combo.get_title().replace('$$', key)
+                            sub(
+                                r': .+?\)',
+                                ': %s)' % key,
+                                architecture_combo.get_title()
+                            )
                         )
                         architecture_combo.set_selected(
                             architecture_combo.get_model().find(key)
@@ -226,7 +241,11 @@ class MyApp(Adw.Application):
                             'e_machine_combo'
                         )
                         e_machine_combo.set_title(
-                            e_machine_combo.get_title().replace('$$', key)
+                            sub(
+                                r': .+?\)',
+                                ': %s)' % key,
+                                e_machine_combo.get_title()
+                            )
                         )
                         e_machine_combo.set_selected(
                             e_machine_combo.get_model().find(key)

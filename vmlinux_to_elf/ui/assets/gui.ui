@@ -71,17 +71,17 @@
                         <property name="visible">False</property>
                         <child>
                           <object class="AdwComboRow" id="architecture_combo">
-                            <property name="title">Architecture preset (auto-detect: $$)</property>
+                            <property name="title">Architecture preset (auto-detect: Unknown)</property>
                           </object>
                         </child>
                         <child>
                           <object class="AdwComboRow" id="e_machine_combo">
-                            <property name="title">ELF machine (auto-detect: $$)</property>
+                            <property name="title">ELF machine (auto-detect: Unknown)</property>
                           </object>
                         </child>
                         <child>
                           <object class="AdwSwitchRow">
-                            <property name="title">64-bit (auto-detect: XX)</property>
+                            <property name="title">64-bit (auto-detect: Unknown)</property>
                           </object>
                         </child>
                         <child>

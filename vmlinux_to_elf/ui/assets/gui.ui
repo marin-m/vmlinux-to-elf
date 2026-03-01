@@ -161,7 +161,6 @@
           <object class="AdwNavigationPage" id="offsets_page">
             <property name="child">
               <object class="AdwMultiLayoutView">
-                <property name="layout-name">offsets_page_layout</property>
                 <child>
                   <object class="AdwLayout" id="offsets_page_layout">
                     <property name="content">
@@ -207,6 +206,7 @@
                                     <property name="title">Symbol table offset detection</property>
                                     <child>
                                       <object class="GtkScrolledWindow">
+                                        <property name="height-request">200</property>
                                         <child>
                                           <object class="GtkColumnView">
                                             <property name="model">
@@ -249,11 +249,10 @@
                                         <property name="buffer">
                                           <object class="GtkTextBuffer" id="hex_buffer">
                                             <property name="enable-undo">False</property>
-                                            <property name="text">test
+                                            <property name="text">
+Hex dump at address %s
 
-data
-
-here</property>
+%s</property>
                                           </object>
                                         </property>
                                         <property name="cursor-visible">False</property>

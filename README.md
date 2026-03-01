@@ -30,7 +30,7 @@ sudo apt install pipx
 pipx install vmlinux-to-elf
 ```
 
-Installation (full):
+Installation (full, requires `libadwaita` 1.6+ available on Ubuntu 24.10+):
 ```bash
 # Dependencies for the GTK-4 GUI
 sudo apt install libgirepository-2.0-dev libgtk-4-dev gir1.2-adw-1 gir1.2-gtk-4.0 python3-dev glib-compile-resources

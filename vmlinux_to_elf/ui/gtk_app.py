@@ -157,15 +157,37 @@ class MyWindow(Adw.ApplicationWindow):
 
             def file_picked(file_dialog: Gtk.FileDialog, task: Gio.Task):
                 try:
-                    result: Gio.File = file_dialog.open_finish(task)
-                except GLib.GError as err:  # Dismissed by user
+                    open_result: Gio.File = file_dialog.open_finish(task)
+
+                    def load_bytes_cb(source, result, *args):
+                        try:
+                            data: bytes = open_result.load_bytes_finish(
+                                result
+                            )[0].get_data()
+                        except GLib.GError as err:
+                            dialog = Adw.AlertDialog.new(
+                                'Could not read file', err.message
+                            )
+                            dialog.add_response('ok', 'Ok')
+                            dialog.set_default_response('ok')
+                            dialog.set_close_response('ok')
+                            dialog.choose(self, None, None)
+                        else:
+                            self.update_kernel_path(
+                                open_result.get_path(),
+                                data,
+                            )
+                except GLib.GError as err:
                     if err.message != 'Dismissed by user':
-                        raise
+                        dialog = Adw.AlertDialog.new(
+                            'Could not open file', err.message
+                        )
+                        dialog.add_response('ok', 'Ok')
+                        dialog.set_default_response('ok')
+                        dialog.set_close_response('ok')
+                        dialog.choose(self, None, None)
                 else:
-                    self.update_kernel_path(
-                        result.get_path(),
-                        result.load_bytes(None)[0].get_data(),
-                    )
+                    open_result.load_bytes_async(None, load_bytes_cb)
 
             file_picker = Gtk.FileDialog()
             # file_picker.set_filters(Gio.ListStore())
@@ -200,14 +222,19 @@ class MyWindow(Adw.ApplicationWindow):
         )
 
         def generate_elf_file(*args):
-            print('TODO Implement generate_elf_file', args)
 
             def file_picked(file_dialog: Gtk.FileDialog, task: Gio.Task):
                 try:
-                    result: Gio.File = file_dialog.save_finish(task)
-                except GLib.GError as err:  # Dismissed by user
+                    open_result: Gio.File = file_dialog.save_finish(task)
+                except GLib.GError as err:
                     if err.message != 'Dismissed by user':
-                        raise
+                        dialog = Adw.AlertDialog.new(
+                            'Could not open file', err.message
+                        )
+                        dialog.add_response('ok', 'Ok')
+                        dialog.set_default_response('ok')
+                        dialog.set_close_response('ok')
+                        dialog.choose(self, None, None)
                 else:
                     self.navigation.push_by_tag('loading_page')
 
@@ -223,25 +250,30 @@ class MyWindow(Adw.ApplicationWindow):
 
                         def processing_done(*args):
 
-                            result.replace_contents(
-                                data.getvalue(),
-                                None,
-                                False,
-                                Gio.FileCreateFlags.NONE,
-                                None,
-                            )
-
                             if (
                                 self.navigation.get_visible_page_tag()
                                 == 'loading_page'
                             ):
                                 self.navigation.pop()
 
-                            # TODO popup if success or error
+                            try:
+                                open_result.replace_contents(
+                                    data.getvalue(),
+                                    None,
+                                    False,
+                                    Gio.FileCreateFlags.NONE,
+                                    None,
+                                )
 
-                            dialog = Adw.AlertDialog.new(
-                                'Kernel successfully wrote', None
-                            )
+                            except GLib.GError as err:
+                                dialog = Adw.AlertDialog.new(
+                                    'Could not write file', err.message
+                                )
+
+                            else:
+                                dialog = Adw.AlertDialog.new(
+                                    'Kernel successfully wrote', None
+                                )
                             dialog.add_response('ok', 'Ok')
                             dialog.set_default_response('ok')
                             dialog.set_close_response('ok')

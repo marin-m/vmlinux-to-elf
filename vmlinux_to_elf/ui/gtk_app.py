@@ -157,17 +157,6 @@ class MyApp(Adw.Application):
 
     def init_arch_list(self):
 
-        self.arch_combo: Adw.ComboRow = self.builder.get_object(
-            'architecture_combo'
-        )
-
-        arch_model = Gtk.StringList()
-
-        for arch, readable_name in architecture_to_readable_name.items():
-            arch_model.append(readable_name)
-
-        self.arch_combo.set_model(arch_model)
-
         self.e_machine_combo: Adw.ComboRow = self.builder.get_object(
             'e_machine_combo'
         )
@@ -314,6 +303,7 @@ class MyApp(Adw.Application):
 
                             # Show guessed architecture
 
+                            """
                             key = (
                                 architecture_to_readable_name[
                                     kallsyms.architecture
@@ -331,6 +321,7 @@ class MyApp(Adw.Application):
                             key = architecture_combo.get_model().find(key)
                             if key is not None:
                                 architecture_combo.set_selected(key)
+                            """
 
                             # Show guessed ELF Machine
 
@@ -344,7 +335,7 @@ class MyApp(Adw.Application):
                                 'e_machine_combo'
                             )
                             e_machine_combo.set_title(
-                                'ELF preset (auto-detect: %s)' % key
+                                'ELF machine (auto-detect: %s)' % key
                             )
                             key = e_machine_combo.get_model().find(key)
                             if key is not None:

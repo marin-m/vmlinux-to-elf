@@ -71,11 +71,6 @@
                         <property name="title">Analysis options</property>
                         <property name="visible">False</property>
                         <child>
-                          <object class="AdwComboRow" id="architecture_combo">
-                            <property name="title">Architecture preset (auto-detect: %s)</property>
-                          </object>
-                        </child>
-                        <child>
                           <object class="AdwComboRow" id="e_machine_combo">
                             <property name="title">ELF machine (auto-detect: %s)</property>
                           </object>

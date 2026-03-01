@@ -72,17 +72,17 @@
                         <property name="visible">False</property>
                         <child>
                           <object class="AdwComboRow" id="architecture_combo">
-                            <property name="title">Architecture preset (auto-detect: Unknown)</property>
+                            <property name="title">Architecture preset (auto-detect: %s)</property>
                           </object>
                         </child>
                         <child>
                           <object class="AdwComboRow" id="e_machine_combo">
-                            <property name="title">ELF machine (auto-detect: Unknown)</property>
+                            <property name="title">ELF machine (auto-detect: %s)</property>
                           </object>
                         </child>
                         <child>
                           <object class="AdwSwitchRow" id="bitness_switch">
-                            <property name="title">64-bit (auto-detect: Unknown)</property>
+                            <property name="title">64-bit (auto-detect: %s)</property>
                           </object>
                         </child>
                         <child>
@@ -95,7 +95,7 @@
                           <object class="AdwEntryRow" id="base_address_entry">
                             <property name="name">Test 2</property>
                             <property name="text">0</property>
-                            <property name="title">Base address, hexadecimal (auto-detect: Unknown)</property>
+                            <property name="title">Base address, hexadecimal (auto-detect: %s)</property>
                           </object>
                         </child>
                         <child>

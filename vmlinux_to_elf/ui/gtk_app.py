@@ -7,7 +7,6 @@ from typing import Optional
 from subprocess import run
 from shutil import which
 from sys import stderr
-from re import sub
 import logging
 
 SCRIPT_DIR = dirname(realpath(__file__))
@@ -40,7 +39,6 @@ from vmlinux_to_elf.core.architecture_detecter import (
 
 
 class KallsymsLogHandler(logging.Handler):
-
     def __init__(self, text_buffer: Gtk.TextBuffer):
         logging.Handler.__init__(self)
         self.text_buffer = text_buffer
@@ -48,14 +46,18 @@ class KallsymsLogHandler(logging.Handler):
 
     def emit(self, record: logging.LogRecord):
         self.raw_log += self.format(record) + '\n'
+
         def cb():
             self.text_buffer.set_text(self.raw_log)
+
         GLib.idle_add(cb)
 
     def flush(self):
         self.raw_log = ''
+
         def cb():
             self.text_buffer.set_text(self.raw_log)
+
         GLib.idle_add(cb)
 
 
@@ -84,7 +86,9 @@ class MyApp(Adw.Application):
 
         logger = logging.getLogger()
 
-        self.handler = KallsymsLogHandler(self.builder.get_object('kallsyms_debug_buffer'))
+        self.handler = KallsymsLogHandler(
+            self.builder.get_object('kallsyms_debug_buffer')
+        )
         self.handler.setLevel(logging.INFO)
         logger.addHandler(self.handler)
 
@@ -310,41 +314,41 @@ class MyApp(Adw.Application):
 
                             # Show guessed architecture
 
-                            key = architecture_to_readable_name[
-                                kallsyms.architecture
-                            ]
+                            key = (
+                                architecture_to_readable_name[
+                                    kallsyms.architecture
+                                ]
+                                if kallsyms.architecture
+                                else 'Unknown'
+                            )
 
                             architecture_combo = self.builder.get_object(
                                 'architecture_combo'
                             )
                             architecture_combo.set_title(
-                                sub(
-                                    r': .+?\)',
-                                    ': %s)' % key,
-                                    architecture_combo.get_title(),
-                                )
+                                'Architecture preset (auto-detect: %s)' % key
                             )
-                            architecture_combo.set_selected(
-                                architecture_combo.get_model().find(key)
-                            )
+                            key = architecture_combo.get_model().find(key)
+                            if key is not None:
+                                architecture_combo.set_selected(key)
 
                             # Show guessed ELF Machine
 
-                            key = ElfMachine(kallsyms.elf_machine).name
+                            key = (
+                                ElfMachine(kallsyms.elf_machine).name
+                                if kallsyms.elf_machine
+                                else 'Unknown'
+                            )
 
                             e_machine_combo = self.builder.get_object(
                                 'e_machine_combo'
                             )
                             e_machine_combo.set_title(
-                                sub(
-                                    r': .+?\)',
-                                    ': %s)' % key,
-                                    e_machine_combo.get_title(),
-                                )
+                                'ELF preset (auto-detect: %s)' % key
                             )
-                            e_machine_combo.set_selected(
-                                e_machine_combo.get_model().find(key)
-                            )
+                            key = e_machine_combo.get_model().find(key)
+                            if key is not None:
+                                e_machine_combo.set_selected(key)
 
                             # Show guessed bitness
 
@@ -354,11 +358,8 @@ class MyApp(Adw.Application):
                                 'bitness_switch'
                             )
                             bitness_switch.set_title(
-                                sub(
-                                    r': .+?\)',
-                                    ': %s)' % ('yes' if is_64_bits else 'no'),
-                                    bitness_switch.get_title(),
-                                )
+                                '64-bit (auto-detect: %s)'
+                                % ('yes' if is_64_bits else 'no')
                             )
                             bitness_switch.set_active(is_64_bits)
 
@@ -377,13 +378,10 @@ class MyApp(Adw.Application):
                                 'base_address_entry'
                             )
                             base_address_entry.set_title(
-                                sub(
-                                    r': .+?\)',
-                                    ': %s)' % default_value,
-                                    base_address_entry.get_title(),
-                                )
+                                'Base address, hexadecimal (auto-detect: %s)'
+                                % default_value
                             )
-                            base_address_entry.set_text('%s' % default_value)
+                            base_address_entry.set_text(default_value)
 
                             # Show "Detect symbols button" pointing to view #2
 

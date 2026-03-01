@@ -381,6 +381,18 @@ class MyApp(Adw.Application):
                             )
                             detect_symbols_bar.set_revealed(True)
 
+                            # Display detected offsets in view #2
+
+                            # XX TODO
+
+                            # Display hex dump reacting to clicking offsets in view #2
+
+                            # XX TODO
+
+                            # Display address in view #3
+
+                            # XX WIP
+
                         GLib.idle_add(update_ui_cb)
 
                     finally:

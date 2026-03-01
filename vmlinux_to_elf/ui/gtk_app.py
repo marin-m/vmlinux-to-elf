@@ -39,8 +39,24 @@ from vmlinux_to_elf.core.architecture_detecter import (
 )
 
 
-class AppStateMachine:
-    pass  # XX
+class KallsymsLogHandler(logging.Handler):
+
+    def __init__(self, text_buffer: Gtk.TextBuffer):
+        logging.Handler.__init__(self)
+        self.text_buffer = text_buffer
+        self.raw_log = ''
+
+    def emit(self, record: logging.LogRecord):
+        self.raw_log += self.format(record) + '\n'
+        def cb():
+            self.text_buffer.set_text(self.raw_log)
+        GLib.idle_add(cb)
+
+    def flush(self):
+        self.raw_log = ''
+        def cb():
+            self.text_buffer.set_text(self.raw_log)
+        GLib.idle_add(cb)
 
 
 class MyApp(Adw.Application):
@@ -48,6 +64,8 @@ class MyApp(Adw.Application):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
+        # See: https://lazka.github.io/pgi-docs/#Gtk-4.0/classes/TextBuffer.html#Gtk.TextBuffer
 
         theme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default())
         theme.add_resource_path('/re/fossplant/vmlinux-to-elf/')
@@ -60,6 +78,15 @@ class MyApp(Adw.Application):
 
         self.builder = Gtk.Builder()
         self.builder.add_from_resource('/re/fossplant/vmlinux-to-elf/gui.ui')
+
+        # WIP: Log info to display in the Gtk.TextBuffer
+        # present in UI flow screen #2:
+
+        logger = logging.getLogger()
+
+        self.handler = KallsymsLogHandler(self.builder.get_object('kallsyms_debug_buffer'))
+        self.handler.setLevel(logging.INFO)
+        logger.addHandler(self.handler)
 
         # Connect UI signals
 
@@ -97,7 +124,7 @@ class MyApp(Adw.Application):
     def connect_actions(self):
 
         def show_about(*args):
-            self.builder.get_object('about_dialog').present()
+            self.builder.get_object('about_dialog').present(self.win)
 
         self.add_simple_action('show-about', show_about)
 
@@ -176,6 +203,7 @@ class MyApp(Adw.Application):
                     if is_64_bits is not None:
                         bit_size = 64 if is_64_bits else 32
 
+                    self.handler.flush()
                     try:
                         kallsyms = KallsymsFinder(
                             obtain_raw_kernel_from_file(kernel_bin.read()),

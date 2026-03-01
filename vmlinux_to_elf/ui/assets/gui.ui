@@ -167,20 +167,26 @@
                       <object class="AdwPreferencesGroup" id="analysis_notes">
                         <property name="title">Analysis notes</property>
                         <child>
-                          <object class="GtkTextView" id="kallsyms_debug_viewport">
-                            <property name="bottom-margin">4</property>
-                            <property name="buffer">
-                              <object class="GtkTextBuffer" id="kallsyms_debug_buffer">
-                                <property name="text">test</property>
+                          <object class="GtkScrolledWindow">
+                            <property name="child">
+                              <object class="GtkTextView" id="kallsyms_debug_viewport">
+                                <property name="bottom-margin">4</property>
+                                <property name="buffer">
+                                  <object class="GtkTextBuffer" id="kallsyms_debug_buffer">
+                                    <property name="enable-undo">False</property>
+                                  </object>
+                                </property>
+                                <property name="cursor-visible">False</property>
+                                <property name="editable">False</property>
+                                <property name="height-request">190</property>
+                                <property name="left-margin">4</property>
+                                <property name="monospace">True</property>
+                                <property name="right-margin">4</property>
+                                <property name="top-margin">4</property>
+                                <property name="wrap-mode">word-char</property>
                               </object>
                             </property>
-                            <property name="cursor-visible">False</property>
-                            <property name="editable">False</property>
                             <property name="height-request">190</property>
-                            <property name="left-margin">4</property>
-                            <property name="monospace">True</property>
-                            <property name="right-margin">4</property>
-                            <property name="top-margin">4</property>
                           </object>
                         </child>
                       </object>

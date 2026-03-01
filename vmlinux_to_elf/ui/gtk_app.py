@@ -265,9 +265,18 @@ class MyWindow(Adw.ApplicationWindow):
         text_buffer = '\nData for "%s" at %s:\n\n' % (item.token, item.offset)
         fd = BytesIO(self.raw_kernel)
         fd.seek(int(item.offset, 16))
+
+        subst_chars = ''.join(j if j.isprintable() else '.' for j in bytes(range(256)).decode('ibm850'))
+
         for i in range(100):
-            for i in range(8):
-                text_buffer += fd.read(1).hex() + ('\n' if i == 7 else ' ')
+            buf = fd.read(8)
+            for char in buf:
+                text_buffer += ('%02x' % char) + ' '
+            text_buffer += ' '
+            for char in buf:
+                text_buffer += subst_chars[char]
+            text_buffer += '\n'
+            
         self.hex_buffer.set_text(text_buffer)
         self.offset_selection_split_view.set_show_sidebar(True)
 

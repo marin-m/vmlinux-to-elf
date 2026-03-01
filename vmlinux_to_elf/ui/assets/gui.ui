@@ -4,7 +4,7 @@
   <!-- interface-name gui.ui -->
   <requires lib="gio" version="2.0"/>
   <requires lib="gtk" version="4.12"/>
-  <requires lib="libadwaita" version="1.5"/>
+  <requires lib="libadwaita" version="1.6"/>
   <object class="AdwApplicationWindow" id="main_window">
     <property name="content">
       <object class="AdwNavigationView" id="navigation">
@@ -160,86 +160,145 @@
         <child>
           <object class="AdwNavigationPage" id="offsets_page">
             <property name="child">
-              <object class="AdwToolbarView">
-                <property name="content">
-                  <object class="AdwPreferencesPage">
-                    <child>
-                      <object class="AdwPreferencesGroup" id="analysis_notes">
-                        <property name="title">Analysis notes</property>
+              <object class="AdwMultiLayoutView">
+                <property name="layout-name">offsets_page_layout</property>
+                <child>
+                  <object class="AdwLayout" id="offsets_page_layout">
+                    <property name="content">
+                      <object class="AdwToolbarView">
+                        <child type="top">
+                          <object class="AdwHeaderBar"/>
+                        </child>
                         <child>
-                          <object class="GtkScrolledWindow">
-                            <property name="child">
-                              <object class="GtkTextView" id="kallsyms_debug_viewport">
-                                <property name="bottom-margin">4</property>
-                                <property name="buffer">
-                                  <object class="GtkTextBuffer" id="kallsyms_debug_buffer">
-                                    <property name="enable-undo">False</property>
+                          <object class="AdwOverlaySplitView">
+                            <property name="content">
+                              <object class="AdwPreferencesPage">
+                                <child>
+                                  <object class="AdwPreferencesGroup" id="analysis_notes">
+                                    <property name="title">Analysis notes</property>
+                                    <child>
+                                      <object class="GtkScrolledWindow">
+                                        <property name="child">
+                                          <object class="GtkTextView" id="kallsyms_debug_viewport">
+                                            <property name="bottom-margin">4</property>
+                                            <property name="buffer">
+                                              <object class="GtkTextBuffer" id="kallsyms_debug_buffer">
+                                                <property name="enable-undo">False</property>
+                                              </object>
+                                            </property>
+                                            <property name="cursor-visible">False</property>
+                                            <property name="editable">False</property>
+                                            <property name="height-request">190</property>
+                                            <property name="left-margin">4</property>
+                                            <property name="monospace">True</property>
+                                            <property name="right-margin">4</property>
+                                            <property name="top-margin">4</property>
+                                            <property name="wrap-mode">word-char</property>
+                                          </object>
+                                        </property>
+                                        <property name="height-request">190</property>
+                                      </object>
+                                    </child>
                                   </object>
-                                </property>
-                                <property name="cursor-visible">False</property>
-                                <property name="editable">False</property>
-                                <property name="height-request">190</property>
-                                <property name="left-margin">4</property>
-                                <property name="monospace">True</property>
-                                <property name="right-margin">4</property>
-                                <property name="top-margin">4</property>
-                                <property name="wrap-mode">word-char</property>
+                                </child>
+                                <child>
+                                  <object class="AdwPreferencesGroup" id="offset_detection">
+                                    <property name="description">Information auto-detected by vmlinux-to-elf - click an address to display in the lateral hex view pane </property>
+                                    <property name="title">Symbol table offset detection</property>
+                                    <child>
+                                      <object class="GtkScrolledWindow">
+                                        <child>
+                                          <object class="GtkColumnView">
+                                            <property name="model">
+                                              <object class="GtkNoSelection"/>
+                                            </property>
+                                            <child>
+                                              <object class="GtkColumnViewColumn" id="token_column">
+                                                <property name="factory">
+                                                  <object class="GtkBuilderListItemFactory"/>
+                                                </property>
+                                                <property name="title">Token</property>
+                                              </object>
+                                            </child>
+                                            <child>
+                                              <object class="GtkColumnViewColumn" id="offset_column">
+                                                <property name="factory">
+                                                  <object class="GtkBuilderListItemFactory"/>
+                                                </property>
+                                                <property name="title">Offset</property>
+                                              </object>
+                                            </child>
+                                          </object>
+                                        </child>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
                               </object>
                             </property>
-                            <property name="height-request">190</property>
+                            <property name="sidebar">
+                              <object class="GtkBox">
+                                <property name="orientation">vertical</property>
+                                <child>
+                                  <object class="GtkScrolledWindow">
+                                    <property name="vexpand">True</property>
+                                    <property name="vexpand-set">True</property>
+                                    <child>
+                                      <object class="GtkTextView" id="hex_viewport">
+                                        <property name="bottom-margin">4</property>
+                                        <property name="buffer">
+                                          <object class="GtkTextBuffer" id="hex_buffer">
+                                            <property name="enable-undo">False</property>
+                                            <property name="text">test
+
+data
+
+here</property>
+                                          </object>
+                                        </property>
+                                        <property name="cursor-visible">False</property>
+                                        <property name="editable">False</property>
+                                        <property name="left-margin">4</property>
+                                        <property name="monospace">True</property>
+                                        <property name="right-margin">4</property>
+                                        <property name="top-margin">4</property>
+                                        <property name="wrap-mode">word-char</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                </child>
+                              </object>
+                            </property>
                           </object>
                         </child>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="AdwPreferencesGroup" id="offset_detection">
-                        <property name="description">Information auto-detected by vmlinux-to-elf - click an address to display in the lateral hex view pane </property>
-                        <property name="title">Symbol table offset detection</property>
-                        <child>
-                          <object class="GtkScrolledWindow">
-                            <child>
-                              <object class="GtkColumnView">
-                                <property name="model">
-                                  <object class="GtkNoSelection"/>
-                                </property>
-                                <child>
-                                  <object class="GtkColumnViewColumn" id="token_column">
-                                    <property name="factory">
-                                      <object class="GtkBuilderListItemFactory"/>
-                                    </property>
-                                    <property name="title">Token</property>
-                                  </object>
-                                </child>
-                                <child>
-                                  <object class="GtkColumnViewColumn" id="offset_column">
-                                    <property name="factory">
-                                      <object class="GtkBuilderListItemFactory"/>
-                                    </property>
-                                    <property name="title">Offset</property>
-                                  </object>
-                                </child>
+                        <child type="bottom">
+                          <object class="GtkActionBar">
+                            <child type="end">
+                              <object class="GtkButton" id="detect_symbols">
+                                <property name="action-name">navigation.push</property>
+                                <property name="action-target">'preview_page'</property>
+                                <property name="label">Detect symbols</property>
+                                <style>
+                                  <class name="pill"/>
+                                  <class name="suggested-action"/>
+                                </style>
                               </object>
                             </child>
                           </object>
                         </child>
                       </object>
-                    </child>
+                    </property>
+                    <property name="name">offsets_page_layout</property>
                   </object>
-                </property>
-                <child type="top">
-                  <object class="AdwHeaderBar"/>
                 </child>
-                <child type="bottom">
-                  <object class="GtkActionBar">
-                    <child type="end">
-                      <object class="GtkButton" id="detect_symbols">
-                        <property name="action-name">navigation.push</property>
-                        <property name="action-target">'preview_page'</property>
-                        <property name="label">Detect symbols</property>
-                        <style>
-                          <class name="pill"/>
-                          <class name="suggested-action"/>
-                        </style>
+                <child>
+                  <object class="AdwLayout" id="offsets_page_wait_layout">
+                    <property name="name">offsets_page_wait_layout</property>
+                    <child>
+                      <object class="AdwStatusPage">
+                        <property name="child">
+                          <object class="AdwSpinner"/>
+                        </property>
                       </object>
                     </child>
                   </object>
@@ -355,4 +414,5 @@
     <property name="version">2.0.0</property>
     <property name="website">https://github.com/marin-m/vmlinux-to-elf</property>
   </object>
+  <object class="AdwSpinnerPaintable"/>
 </interface>

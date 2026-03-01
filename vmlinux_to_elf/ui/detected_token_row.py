@@ -4,15 +4,17 @@ from gi.repository import GObject
 
 
 class DetectedTokenRow(GObject.Object):
+    __gtype_name__ = 'DetectedTokenRow'
+
     def __init__(self, token: str, offset: str):
         super().__init__()
-        self.token = token
-        self.offset = type
+        self._token = token
+        self._offset = offset
 
     @GObject.Property(type=str)
-    def prop_token(self):
-        return self.token
+    def token(self):
+        return self._token
 
     @GObject.Property(type=str)
-    def prop_offset(self):
-        return self.offset
+    def offset(self):
+        return self._offset

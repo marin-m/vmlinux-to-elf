@@ -23,6 +23,8 @@ gi.require_version('Gdk', '4.0')
 gi.require_version('Adw', '1')
 from gi.repository import Gtk, GLib, Gdk, Adw, Gio
 
+from vmlinux_to_elf.ui.recovered_symbol_row import RecoveredSymbolRow
+from vmlinux_to_elf.ui.detected_token_row import DetectedTokenRow
 from vmlinux_to_elf.core.vmlinuz_decompressor import (
     obtain_raw_kernel_from_file,
 )
@@ -383,15 +385,65 @@ class MyApp(Adw.Application):
 
                             # Display detected offsets in view #2
 
-                            # XX TODO
+                            data = {
+                                'kallsyms_addresses_or_offsets': kallsyms.kallsyms_addresses_or_offsets__offset,
+                                'kallsyms_num_syms': kallsyms.kallsyms_num_syms__offset,
+                                'kallsyms_names': kallsyms.kallsyms_names__offset,
+                                'kallsyms_markers': kallsyms.kallsyms_markers__offset,
+                                'kallsyms_token_table': kallsyms.kallsyms_token_table__offset,
+                                'kallsyms_token_index': kallsyms.kallsyms_token_index__offset,
+                                'kallsyms_token_index_end': kallsyms.kallsyms_token_index_end__offset,
+                                'elf64_rela_start': kallsyms.elf64_rela_start,
+                                'elf64_rela_end_excl': kallsyms.elf64_rela_end_excl
+                            }
 
-                            # Display hex dump reacting to clicking offsets in view #2
+                            selection_model = self.builder.get_object(
+                                'offset_list_selection_model'
+                            )
 
-                            # XX TODO
+                            list_store = selection_model.get_model()
+                            selection_model.set_model(None)
+                            list_store.remove_all()
+
+                            fmt = '%16x' if is_64_bits else '%08x'
+
+                            for key, value in data.items():
+                                if value is not None:
+                                    list_store.append(
+                                        DetectedTokenRow(
+                                            token=key,
+                                            offset=fmt % value,
+                                        )
+                                    )
+
+                            selection_model.set_model(list_store)
+
+                            # Display hex dump reacting to clicking offsets in view #2
+
+                            # XX TODO
 
                             # Display address in view #3
 
-                            # XX WIP
+                            selection_model = self.builder.get_object(
+                                'symbol_table_selection_model'
+                            )
+
+                            list_store = selection_model.get_model()
+                            selection_model.set_model(None)
+                            list_store.remove_all()
+
+                            fmt = '%16x' if is_64_bits else '%08x'
+
+                            for symbol in kallsyms.symbols:
+                                list_store.append(
+                                    RecoveredSymbolRow(
+                                        name=symbol.name,
+                                        type=symbol.symbol_type.name,
+                                        address=fmt % symbol.virtual_address,
+                                    )
+                                )
+
+                            selection_model.set_model(list_store)
 
                         GLib.idle_add(update_ui_cb)
 

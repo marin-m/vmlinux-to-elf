@@ -4,20 +4,22 @@ from gi.repository import GObject
 
 
 class RecoveredSymbolRow(GObject.Object):
+    __gtype_name__ = 'RecoveredSymbolRow'
+
     def __init__(self, name: str, type: str, address: str):
         super().__init__()
-        self.name = name
-        self.type = type
-        self.address = address
+        self._name = name
+        self._type = type
+        self._address = address
 
     @GObject.Property(type=str)
-    def prop_name(self):
-        return self.name
+    def name(self):
+        return self._name
 
     @GObject.Property(type=str)
-    def prop_type(self):
-        return self.type
+    def type(self):
+        return self._type
 
     @GObject.Property(type=str)
-    def prop_address(self):
-        return self.address
+    def address(self):
+        return self._address

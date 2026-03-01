@@ -205,7 +205,7 @@
                                         <child>
                                           <object class="GtkColumnView">
                                             <property name="model">
-                                              <object class="GtkNoSelection">
+                                              <object class="GtkSingleSelection" id="offset_list_selection_model">
                                                 <property name="model">
                                                   <object class="GListStore" id="offset_list_model"/>
                                                 </property>
@@ -243,8 +243,8 @@
     <property name="child">
       <object class="GtkLabel">
         <property name="xalign">0</property>
-        <binding name="offset">
-          <lookup name="token" type="DetectedTokenRow">
+        <binding name="label">
+          <lookup name="offset" type="DetectedTokenRow">
             <lookup name="item">GtkColumnViewCell</lookup>
           </lookup>
         </binding>
@@ -348,10 +348,13 @@ Hex dump at address %s
                         <property name="title">Symbol table preview</property>
                         <child>
                           <object class="GtkScrolledWindow">
+                            <property name="vexpand">True</property>
+                            <property name="vexpand-set">True</property>
                             <child>
                               <object class="GtkColumnView" id="symbol_table">
+                                <property name="height-request">200</property>
                                 <property name="model">
-                                  <object class="GtkSingleSelection">
+                                  <object class="GtkSingleSelection" id="symbol_table_selection_model">
                                     <property name="model">
                                       <object class="GListStore" id="symbol_table_model"/>
                                     </property>
@@ -366,7 +369,7 @@ Hex dump at address %s
     <property name="child">
       <object class="GtkLabel">
         <property name="xalign">0</property>
-        <binding name="offset">
+        <binding name="label">
           <lookup name="name" type="RecoveredSymbolRow">
             <lookup name="item">GtkColumnViewCell</lookup>
           </lookup>
@@ -389,7 +392,7 @@ Hex dump at address %s
     <property name="child">
       <object class="GtkLabel">
         <property name="xalign">0</property>
-        <binding name="offset">
+        <binding name="label">
           <lookup name="type" type="RecoveredSymbolRow">
             <lookup name="item">GtkColumnViewCell</lookup>
           </lookup>
@@ -412,7 +415,7 @@ Hex dump at address %s
     <property name="child">
       <object class="GtkLabel">
         <property name="xalign">0</property>
-        <binding name="offset">
+        <binding name="label">
           <lookup name="address" type="RecoveredSymbolRow">
             <lookup name="item">GtkColumnViewCell</lookup>
           </lookup>

@@ -73,12 +73,44 @@ class MyApp(Adw.Application):
         theme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default())
         theme.add_resource_path('/re/fossplant/vmlinux-to-elf/')
 
+        self.connect('open', self.on_open)
+        self.connect('startup', self.on_startup)
         self.connect('activate', self.on_activate)
 
-    def on_activate(self, app):
+    def on_open(self, app, files, *args):
+        if len(files) >= 1:
+
+            def load_bytes_cb(source, result, *args):
+                try:
+                    data: bytes = (
+                        files[0].load_bytes_finish(result)[0].get_data()
+                    )
+                except GLib.GError as err:
+                    dialog = Adw.AlertDialog.new(
+                        'Could not read file', err.message
+                    )
+                    dialog.add_response('ok', 'Ok')
+                    dialog.set_default_response('ok')
+                    dialog.set_close_response('ok')
+                    dialog.choose(self, None, None)
+                else:
+                    self.window.update_kernel_path(
+                        files[0].get_path(),
+                        data,
+                    )
+
+            files[0].load_bytes_async(None, load_bytes_cb)
+
+    def on_startup(self, app, *args):
+        self.window = MyWindow()
+        self.window.set_application(self)
+
         # Application will close once it no longer has active windows attached to it
 
-        MyWindow().set_application(self)
+        self.window.present()
+
+    def on_activate(self, app):
+        self.window.present()
 
 
 # Create a templated window object, in order
@@ -140,11 +172,7 @@ class MyWindow(Adw.ApplicationWindow):
         # Connect UI actions
 
         self.connect_actions()
-
-        # Show the main window
-
         self.detect_symbols_bar.set_revealed(False)
-        self.present()
 
     def connect_actions(self):
 
@@ -386,7 +414,7 @@ class MyWindow(Adw.ApplicationWindow):
 
                 def update_ui_unknown_arch_cb(*args):
 
-                    def bitness_pick_cb(source_obj, res, *data):
+                    def bitness_pick_cb(source_obj, res, *args):
                         if dialog.choose_finish(res) == '32-bit':
                             self.update_kernel_path(path, None, False)
                         else:
@@ -618,11 +646,10 @@ def main():
 
     GLib.set_prgname('re.fossplant.vmlinux-to-elf')
 
-    # TODO handle file open
-
     app = MyApp(
         application_id='re.fossplant.vmlinux-to-elf',
-        flags=Gio.ApplicationFlags.NON_UNIQUE,
+        flags=Gio.ApplicationFlags.NON_UNIQUE
+        | Gio.ApplicationFlags.HANDLES_OPEN,
     )
     app.run(argv)
 

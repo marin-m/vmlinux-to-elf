@@ -82,6 +82,9 @@ class MyApp(Adw.Application):
 
         self.connect_actions()
 
+        detect_symbols_bar = self.builder.get_object('detect_symbols_bar')
+        detect_symbols_bar.set_revealed(False)
+
         self.win.present()
 
     def connect_signals(self):
@@ -149,11 +152,8 @@ class MyApp(Adw.Application):
         self,
         path: Optional[str],
         is_64_bits: Optional[bool] = None,
-        manual_preset: Optional[ArchitectureName] = None,
+        # manual_preset: Optional[ArchitectureName] = None,
     ):
-
-        # TODO : Do re-entrance to this function with
-        # combo box setting callbacks
 
         if path:
             self.kernel_path = path
@@ -175,13 +175,11 @@ class MyApp(Adw.Application):
                     bit_size = None
                     if is_64_bits is not None:
                         bit_size = 64 if is_64_bits else 32
-                    override_relative = False  # TODO add widget
 
                     try:
                         kallsyms = KallsymsFinder(
                             obtain_raw_kernel_from_file(kernel_bin.read()),
                             bit_size,
-                            override_relative,
                         )
 
                     except ArchitectureGuessError:
@@ -218,7 +216,7 @@ class MyApp(Adw.Application):
                         KallsymsNotFoundException,
                         Exception,
                     ) as err:
-                        # TODO Do actual error handling (for all Python exceptions too?)
+                        # TODO Do actual error handling for all Python exceptions too?
 
                         def update_ui_invalid_file_cb(err):
 

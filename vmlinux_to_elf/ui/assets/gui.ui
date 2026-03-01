@@ -138,7 +138,6 @@
                 </child>
                 <child type="bottom">
                   <object class="GtkActionBar" id="detect_symbols_bar">
-                    <property name="revealed">False</property>
                     <child type="end">
                       <object class="GtkButton" id="detect_symbols">
                         <property name="action-name">navigation.push</property>

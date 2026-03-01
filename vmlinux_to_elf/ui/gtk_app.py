@@ -113,8 +113,8 @@ class MyWindow(Adw.ApplicationWindow):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        # WIP: Log info to display in the Gtk.TextBuffer
-        # present in UI flow screen #2:
+        # Log info to display in the Gtk.TextBuffer present in UI flow
+        # screen #2
 
         logger = logging.getLogger()
 
@@ -122,11 +122,8 @@ class MyWindow(Adw.ApplicationWindow):
         self.handler.setLevel(logging.INFO)
         logger.addHandler(self.handler)
 
-        # Connect UI signals
-
-        # self.connect_signals()
-
-        # WIP set the architecture ListModel+ListItemFactory into the Adw.ComboRow for the architecture list
+        # Set the architecture ListModel into the Adw.ComboRow for the
+        # architecture list
 
         self.init_arch_list()
 
@@ -163,6 +160,16 @@ class MyWindow(Adw.ApplicationWindow):
 
         self.add_simple_action('pick-file', pick_file)
 
+        def generate_elf_file(*args):
+            print('TODO Implement generate_elf_file', args)
+
+        self.add_simple_action('generate-elf-file', generate_elf_file)
+
+        def export_symbols(*args):
+            print('TODO Implement export_symbols', args)
+
+        self.add_simple_action('export-symbols', export_symbols)
+
     def add_simple_action(self, name, callback):
 
         action = Gio.SimpleAction.new(name, None)
@@ -177,12 +184,19 @@ class MyWindow(Adw.ApplicationWindow):
             e_machine_model.append(e_machine.name)
 
         self.e_machine_combo.set_model(e_machine_model)
+    
+    @Gtk.Template.Callback()
+    def token_row_activated(self, *args):
+        print('TODO handle token_row_activated:', args)
+    
+    @Gtk.Template.Callback()
+    def symbol_row_activated(self, *args):
+        print('TODO handle symbol_row_activated:', args)
 
     def update_kernel_path(
         self,
         path: Optional[str],
         is_64_bits: Optional[bool] = None,
-        # manual_preset: Optional[ArchitectureName] = None,
     ):
 
         if path:

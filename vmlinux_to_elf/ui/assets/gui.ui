@@ -207,9 +207,12 @@
                                           <object class="GtkColumnView">
                                             <property name="model">
                                               <object class="GtkSingleSelection" id="offset_list_selection_model">
+                                                <property name="autoselect">False</property>
+                                                <property name="can-unselect">True</property>
                                                 <property name="model">
                                                   <object class="GListStore" id="offset_list_model"/>
                                                 </property>
+                                                <signal name="selection-changed" handler="token_row_activated"/>
                                               </object>
                                             </property>
                                             <child>
@@ -232,11 +235,13 @@
 </interface>]]></property>
                                                   </object>
                                                 </property>
+                                                <property name="resizable">True</property>
                                                 <property name="title">Token</property>
                                               </object>
                                             </child>
                                             <child>
                                               <object class="GtkColumnViewColumn" id="offset_column">
+                                                <property name="expand">True</property>
                                                 <property name="factory">
                                                   <object class="GtkBuilderListItemFactory">
                                                     <property name="bytes"><![CDATA[<interface>
@@ -255,6 +260,7 @@
 </interface>]]></property>
                                                   </object>
                                                 </property>
+                                                <property name="resizable">True</property>
                                                 <property name="title">Offset</property>
                                               </object>
                                             </child>
@@ -356,9 +362,12 @@ Hex dump at address %s
                                 <property name="height-request">200</property>
                                 <property name="model">
                                   <object class="GtkSingleSelection" id="symbol_table_selection_model">
+                                    <property name="autoselect">False</property>
+                                    <property name="can-unselect">True</property>
                                     <property name="model">
                                       <object class="GListStore" id="symbol_table_model"/>
                                     </property>
+                                    <signal name="selection-changed" handler="symbol_row_activated"/>
                                   </object>
                                 </property>
                                 <child>
@@ -381,6 +390,7 @@ Hex dump at address %s
 </interface>]]></property>
                                       </object>
                                     </property>
+                                    <property name="resizable">True</property>
                                     <property name="title">Name</property>
                                   </object>
                                 </child>
@@ -404,11 +414,13 @@ Hex dump at address %s
 </interface>]]></property>
                                       </object>
                                     </property>
+                                    <property name="resizable">True</property>
                                     <property name="title">Type</property>
                                   </object>
                                 </child>
                                 <child>
                                   <object class="GtkColumnViewColumn" id="address_column">
+                                    <property name="expand">True</property>
                                     <property name="factory">
                                       <object class="GtkBuilderListItemFactory">
                                         <property name="bytes"><![CDATA[<interface>
@@ -427,6 +439,7 @@ Hex dump at address %s
 </interface>]]></property>
                                       </object>
                                     </property>
+                                    <property name="resizable">True</property>
                                     <property name="title">Address</property>
                                   </object>
                                 </child>
@@ -445,6 +458,7 @@ Hex dump at address %s
                   <object class="GtkActionBar">
                     <child type="end">
                       <object class="GtkButton" id="generate_elf">
+                        <property name="action-name">win.generate-elf-file</property>
                         <property name="label">Generate ELF file</property>
                         <style>
                           <class name="pill"/>
@@ -454,6 +468,7 @@ Hex dump at address %s
                     </child>
                     <child type="end">
                       <object class="GtkButton" id="export_symbols">
+                        <property name="action-name">win.export-symbols</property>
                         <property name="label">Export symbols</property>
                         <style>
                           <class name="pill"/>

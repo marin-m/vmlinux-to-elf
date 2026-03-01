@@ -172,7 +172,9 @@ class MyApp(Adw.Application):
             def detection_thread():
 
                 with open(path, 'rb') as kernel_bin:
-                    bit_size = None  # TODO add widget
+                    bit_size = None
+                    if is_64_bits is not None:
+                        bit_size = 64 if is_64_bits else 32
                     override_relative = False  # TODO add widget
 
                     try:
@@ -186,95 +188,26 @@ class MyApp(Adw.Application):
 
                         def update_ui_unknown_arch_cb(*args):
 
+                            def bitness_pick_cb(source_obj, res, *data):
+                                if dialog.choose_finish(res) == '32-bit':
+                                    self.update_kernel_path(path, False)
+                                else:
+                                    self.update_kernel_path(path, True)
+
                             dialog = Adw.AlertDialog.new(
                                 'The architecture of your kernel could not be guessed '
                                 + 'successfully',
-                                'Please specify the ELF machine and architecture '
-                                + 'bit size manually.',
+                                'Is your kernel 32-bit or 64-bit?',
                             )
-                            dialog.add_response('ok', 'Ok')
-                            dialog.set_default_response('ok')
-                            dialog.set_close_response('ok')
+                            dialog.add_response('32-bit', '32-bit')
+                            dialog.add_response('64-bit', '64-bit')
+                            dialog.set_default_response('32-bit')
+                            dialog.set_close_response('32-bit')
                             dialog.choose(
                                 self.builder.get_object('main_window'),
                                 None,
-                                lambda source_obj, res, *data: (
-                                    dialog.choose_finish(res)
-                                ),
+                                bitness_pick_cb,
                             )
-
-                            # Hide the kernel version string
-
-                            kernel_string_row = self.builder.get_object(
-                                'kernel_string_row'
-                            )
-                            kernel_string_row.set_visible(False)
-
-                            # Display the "Analysis options" UI block
-
-                            analysis_options = self.builder.get_object(
-                                'analysis_options'
-                            )
-                            analysis_options.set_visible(True)
-
-                            # Hide guessed architecture
-
-                            architecture_combo = self.builder.get_object(
-                                'architecture_combo'
-                            )
-                            architecture_combo.set_title(
-                                sub(
-                                    r': .+?\)',
-                                    ': Unknown)',
-                                    architecture_combo.get_title(),
-                                )
-                            )
-
-                            # Hide guessed ELF Machine
-
-                            e_machine_combo = self.builder.get_object(
-                                'e_machine_combo'
-                            )
-                            e_machine_combo.set_title(
-                                sub(
-                                    r': .+?\)',
-                                    ': Unknown)',
-                                    e_machine_combo.get_title(),
-                                )
-                            )
-
-                            # Hide guessed bitness
-
-                            bitness_switch = self.builder.get_object(
-                                'bitness_switch'
-                            )
-                            bitness_switch.set_title(
-                                sub(
-                                    r': .+?\)',
-                                    ': Unknown)',
-                                    bitness_switch.get_title(),
-                                )
-                            )
-
-                            # Hide guessed base address
-
-                            base_address_entry = self.builder.get_object(
-                                'base_address_entry'
-                            )
-                            base_address_entry.set_title(
-                                sub(
-                                    r': .+?\)',
-                                    ': Unknown)',
-                                    base_address_entry.get_title(),
-                                )
-                            )
-
-                            # Hide "Detect symbols button" pointing to view #2
-
-                            detect_symbols_bar = self.builder.get_object(
-                                'detect_symbols_bar'
-                            )
-                            detect_symbols_bar.set_revealed(False)
 
                         GLib.idle_add(update_ui_unknown_arch_cb)
 

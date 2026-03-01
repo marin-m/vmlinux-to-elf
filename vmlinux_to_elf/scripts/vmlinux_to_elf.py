@@ -104,6 +104,7 @@ def main():
             ElfSymbolizer(
                 obtain_raw_kernel_from_file(kernel_bin.read()),
                 args.output_file,
+                None,
                 args.e_machine,
                 args.bit_size,
                 args.base_address,

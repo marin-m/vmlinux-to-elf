@@ -30,6 +30,7 @@ from vmlinux_to_elf.ui.detected_token_row import DetectedTokenRow
 from vmlinux_to_elf.core.vmlinuz_decompressor import (
     obtain_raw_kernel_from_file,
 )
+from vmlinux_to_elf.core.elf_symbolizer import ElfSymbolizer
 from vmlinux_to_elf.core.kallsyms import (
     KallsymsFinder,
     KallsymsNotFoundException,
@@ -160,10 +161,13 @@ class MyWindow(Adw.ApplicationWindow):
                     if err.message != 'Dismissed by user':
                         raise
                 else:
-                    self.update_kernel_path(result.get_path())
+                    self.update_kernel_path(
+                        result.get_path(),
+                        result.load_bytes(None)[0].get_data(),
+                    )
 
             file_picker = Gtk.FileDialog()
-            file_picker.set_filters(Gio.ListStore())
+            # file_picker.set_filters(Gio.ListStore())
             file_picker.open(self, callback=file_picked)
 
         self.add_simple_action('pick-file', pick_file)
@@ -196,6 +200,40 @@ class MyWindow(Adw.ApplicationWindow):
 
         def generate_elf_file(*args):
             print('TODO Implement generate_elf_file', args)
+
+            def file_picked(file_dialog: Gtk.FileDialog, task: Gio.Task):
+                try:
+                    result: Gio.File = file_dialog.save_finish(task)
+                except GLib.GError as err:  # Dismissed by user
+                    if err.message != 'Dismissed by user':
+                        raise
+                else:
+                    # TODO use some kind of thread + spinner
+
+                    data = BytesIO()
+                    ElfSymbolizer(
+                        self.raw_kernel,
+                        None,
+                        data,
+                        # TODO add more parameters
+                    )
+
+                    result.replace_contents(
+                        data.getvalue(),
+                        None,
+                        False,
+                        Gio.FileCreateFlags.NONE,
+                        None,
+                    )
+
+                    # TODO popup if success or error
+                    print('WIP OK')
+
+            file_picker = Gtk.FileDialog()
+            file_picker.set_initial_name(
+                self.kernel_path.split('/').pop() + '-vmlinux.bin'
+            )
+            file_picker.save(self, callback=file_picked)
 
         self.add_simple_action('generate-elf-file', generate_elf_file)
 
@@ -244,254 +282,256 @@ class MyWindow(Adw.ApplicationWindow):
     def update_kernel_path(
         self,
         path: Optional[str],
+        orig_data: Optional[bytes] = None,
         is_64_bits: Optional[bool] = None,
     ):
 
-        if path:
-            self.kernel_path = path
+        if not path:
+            return
 
-            self.file_picker_button.set_title('Kernel blob')
-            self.file_picker_button.set_subtitle(path)
+        self.kernel_path = path
+        if orig_data:
+            self.kernel_orig_data = orig_data
 
-            self.selection_spinner_row.set_visible(True)
+        self.file_picker_button.set_title('Kernel blob')
+        self.file_picker_button.set_subtitle(path)
 
-            def detection_thread():
+        self.selection_spinner_row.set_visible(True)
 
-                with open(path, 'rb') as kernel_bin:
-                    bit_size = None
-                    if is_64_bits is not None:
-                        bit_size = 64 if is_64_bits else 32
+        def detection_thread():
 
-                    self.handler.flush()
-                    try:
-                        self.raw_kernel = obtain_raw_kernel_from_file(
-                            kernel_bin.read()
+            bit_size = None
+            if is_64_bits is not None:
+                bit_size = 64 if is_64_bits else 32
+
+            self.handler.flush()
+            try:
+                self.raw_kernel = obtain_raw_kernel_from_file(
+                    self.kernel_orig_data
+                )
+                kallsyms = KallsymsFinder(
+                    self.raw_kernel,
+                    bit_size,
+                )
+
+            except ArchitectureGuessError:
+
+                def update_ui_unknown_arch_cb(*args):
+
+                    def bitness_pick_cb(source_obj, res, *data):
+                        if dialog.choose_finish(res) == '32-bit':
+                            self.update_kernel_path(path, None, False)
+                        else:
+                            self.update_kernel_path(path, None, True)
+
+                    dialog = Adw.AlertDialog.new(
+                        'The architecture of your kernel could not be guessed '
+                        + 'successfully',
+                        'Is your kernel 32-bit or 64-bit?',
+                    )
+                    dialog.add_response('32-bit', '32-bit')
+                    dialog.add_response('64-bit', '64-bit')
+                    dialog.set_default_response('32-bit')
+                    dialog.set_close_response('32-bit')
+                    dialog.choose(
+                        self,
+                        None,
+                        bitness_pick_cb,
+                    )
+
+                GLib.idle_add(update_ui_unknown_arch_cb)
+
+                raise
+
+            except (
+                ValueError,
+                KallsymsNotFoundException,
+                Exception,
+            ) as err:
+                # TODO Do actual error handling for all Python exceptions too?
+
+                def update_ui_invalid_file_cb(err):
+
+                    dialog = Adw.AlertDialog.new(
+                        'Could not open kernel', str(err)
+                    )
+                    dialog.add_response('ok', 'Ok')
+                    dialog.set_default_response('ok')
+                    dialog.set_close_response('ok')
+                    dialog.choose(
+                        self,
+                        None,
+                        lambda source_obj, res, *data: dialog.choose_finish(
+                            res
+                        ),
+                    )
+
+                    # Hide the kernel version string
+
+                    self.kernel_string_row.set_visible(False)
+
+                    # Hide the "Analysis options" UI block
+
+                    self.analysis_options.set_visible(False)
+
+                    # Hide "Detect symbols button" pointing to view #2
+
+                    self.detect_symbols_bar.set_revealed(False)
+
+                GLib.idle_add(update_ui_invalid_file_cb, err)
+
+                raise
+
+            else:
+                # Set and show metadata
+
+                def update_ui_cb(*args):
+                    # Display the kernel version string
+
+                    self.kernel_string_row.set_visible(True)
+                    self.kernel_string_row.set_subtitle(
+                        kallsyms.version_string
+                    )
+
+                    # Display the "Analysis options" UI block
+
+                    self.analysis_options.set_visible(True)
+
+                    # Show guessed architecture
+
+                    """
+                    key = (
+                        architecture_to_readable_name[
+                            kallsyms.architecture
+                        ]
+                        if kallsyms.architecture
+                        else 'Unknown'
+                    )
+
+                    self.architecture_combo.set_title(
+                        'Architecture preset (auto-detect: %s)' % key
+                    )
+                    key = self.architecture_combo.get_model().find(key)
+                    if key is not None:
+                        self.architecture_combo.set_selected(key)
+                    """
+
+                    # Show guessed ELF Machine
+
+                    key = (
+                        ElfMachine(kallsyms.elf_machine).name
+                        if kallsyms.elf_machine
+                        else 'Unknown'
+                    )
+
+                    self.e_machine_combo.set_title(
+                        'ELF machine (auto-detect: %s)' % key
+                    )
+                    key = self.e_machine_combo.get_model().find(key)
+                    if key is not None:
+                        self.e_machine_combo.set_selected(key)
+
+                    # Show guessed bitness
+
+                    is_64_bits = kallsyms.is_64_bits
+
+                    self.bitness_switch.set_title(
+                        '64-bit (auto-detect: %s)'
+                        % ('yes' if is_64_bits else 'no')
+                    )
+                    self.bitness_switch.set_active(is_64_bits)
+
+                    # Show guessed base address
+
+                    if is_64_bits:
+                        default_value = '%016x' % (
+                            kallsyms.kernel_text_candidate or 0
                         )
-                        kallsyms = KallsymsFinder(
-                            self.raw_kernel,
-                            bit_size,
-                        )
-
-                    except ArchitectureGuessError:
-
-                        def update_ui_unknown_arch_cb(*args):
-
-                            def bitness_pick_cb(source_obj, res, *data):
-                                if dialog.choose_finish(res) == '32-bit':
-                                    self.update_kernel_path(path, False)
-                                else:
-                                    self.update_kernel_path(path, True)
-
-                            dialog = Adw.AlertDialog.new(
-                                'The architecture of your kernel could not be guessed '
-                                + 'successfully',
-                                'Is your kernel 32-bit or 64-bit?',
-                            )
-                            dialog.add_response('32-bit', '32-bit')
-                            dialog.add_response('64-bit', '64-bit')
-                            dialog.set_default_response('32-bit')
-                            dialog.set_close_response('32-bit')
-                            dialog.choose(
-                                self,
-                                None,
-                                bitness_pick_cb,
-                            )
-
-                        GLib.idle_add(update_ui_unknown_arch_cb)
-
-                        raise
-
-                    except (
-                        ValueError,
-                        KallsymsNotFoundException,
-                        Exception,
-                    ) as err:
-                        # TODO Do actual error handling for all Python exceptions too?
-
-                        def update_ui_invalid_file_cb(err):
-
-                            dialog = Adw.AlertDialog.new(
-                                'Could not open kernel', str(err)
-                            )
-                            dialog.add_response('ok', 'Ok')
-                            dialog.set_default_response('ok')
-                            dialog.set_close_response('ok')
-                            dialog.choose(
-                                self,
-                                None,
-                                lambda source_obj, res, *data: (
-                                    dialog.choose_finish(res)
-                                ),
-                            )
-
-                            # Hide the kernel version string
-
-                            self.kernel_string_row.set_visible(False)
-
-                            # Hide the "Analysis options" UI block
-
-                            self.analysis_options.set_visible(False)
-
-                            # Hide "Detect symbols button" pointing to view #2
-
-                            self.detect_symbols_bar.set_revealed(False)
-
-                        GLib.idle_add(update_ui_invalid_file_cb, err)
-
-                        raise
-
                     else:
-                        # Set and show metadata
+                        default_value = '%08x' % (
+                            kallsyms.kernel_text_candidate or 0
+                        )
 
-                        def update_ui_cb(*args):
-                            # Display the kernel version string
+                    self.base_address_entry.set_title(
+                        'Base address, hexadecimal (auto-detect: %s)'
+                        % default_value
+                    )
+                    self.base_address_entry.set_text(default_value)
 
-                            self.kernel_string_row.set_visible(True)
-                            self.kernel_string_row.set_subtitle(
-                                kallsyms.version_string
-                            )
+                    # Show "Detect symbols button" pointing to view #2
 
-                            # Display the "Analysis options" UI block
+                    self.detect_symbols_bar.set_revealed(True)
 
-                            self.analysis_options.set_visible(True)
+                    # Display detected offsets in view #2
 
-                            # Show guessed architecture
+                    data = {
+                        'input_file_start': 0,
+                        'kallsyms_addresses_or_offsets': kallsyms.kallsyms_addresses_or_offsets__offset,
+                        'kallsyms_num_syms': kallsyms.kallsyms_num_syms__offset,
+                        'kallsyms_names': kallsyms.kallsyms_names__offset,
+                        'kallsyms_markers': kallsyms.kallsyms_markers__offset,
+                        'kallsyms_token_table': kallsyms.kallsyms_token_table__offset,
+                        'kallsyms_token_index': kallsyms.kallsyms_token_index__offset,
+                        'kallsyms_token_index_end': kallsyms.kallsyms_token_index_end__offset,
+                        'elf64_rela_start': kallsyms.elf64_rela_start,
+                        'elf64_rela_end_excl': kallsyms.elf64_rela_end_excl,
+                    }
 
-                            """
-                            key = (
-                                architecture_to_readable_name[
-                                    kallsyms.architecture
-                                ]
-                                if kallsyms.architecture
-                                else 'Unknown'
-                            )
+                    selection_model = self.offset_list_selection_model
 
-                            self.architecture_combo.set_title(
-                                'Architecture preset (auto-detect: %s)' % key
-                            )
-                            key = self.architecture_combo.get_model().find(key)
-                            if key is not None:
-                                self.architecture_combo.set_selected(key)
-                            """
+                    list_store = selection_model.get_model()
+                    selection_model.set_model(None)
+                    list_store.remove_all()
 
-                            # Show guessed ELF Machine
-
-                            key = (
-                                ElfMachine(kallsyms.elf_machine).name
-                                if kallsyms.elf_machine
-                                else 'Unknown'
-                            )
-
-                            self.e_machine_combo.set_title(
-                                'ELF machine (auto-detect: %s)' % key
-                            )
-                            key = self.e_machine_combo.get_model().find(key)
-                            if key is not None:
-                                self.e_machine_combo.set_selected(key)
-
-                            # Show guessed bitness
-
-                            is_64_bits = kallsyms.is_64_bits
-
-                            self.bitness_switch.set_title(
-                                '64-bit (auto-detect: %s)'
-                                % ('yes' if is_64_bits else 'no')
-                            )
-                            self.bitness_switch.set_active(is_64_bits)
-
-                            # Show guessed base address
-
-                            if is_64_bits:
-                                default_value = '%016x' % (
-                                    kallsyms.kernel_text_candidate or 0
+                    for key, value in data.items():
+                        if value is not None:
+                            list_store.append(
+                                DetectedTokenRow(
+                                    token=key,
+                                    offset='%08x' % value,
                                 )
-                            else:
-                                default_value = '%08x' % (
-                                    kallsyms.kernel_text_candidate or 0
-                                )
-
-                            self.base_address_entry.set_title(
-                                'Base address, hexadecimal (auto-detect: %s)'
-                                % default_value
-                            )
-                            self.base_address_entry.set_text(default_value)
-
-                            # Show "Detect symbols button" pointing to view #2
-
-                            self.detect_symbols_bar.set_revealed(True)
-
-                            # Display detected offsets in view #2
-
-                            data = {
-                                'input_file_start': 0,
-                                'kallsyms_addresses_or_offsets': kallsyms.kallsyms_addresses_or_offsets__offset,
-                                'kallsyms_num_syms': kallsyms.kallsyms_num_syms__offset,
-                                'kallsyms_names': kallsyms.kallsyms_names__offset,
-                                'kallsyms_markers': kallsyms.kallsyms_markers__offset,
-                                'kallsyms_token_table': kallsyms.kallsyms_token_table__offset,
-                                'kallsyms_token_index': kallsyms.kallsyms_token_index__offset,
-                                'kallsyms_token_index_end': kallsyms.kallsyms_token_index_end__offset,
-                                'elf64_rela_start': kallsyms.elf64_rela_start,
-                                'elf64_rela_end_excl': kallsyms.elf64_rela_end_excl,
-                            }
-
-                            selection_model = self.offset_list_selection_model
-
-                            list_store = selection_model.get_model()
-                            selection_model.set_model(None)
-                            list_store.remove_all()
-
-                            for key, value in data.items():
-                                if value is not None:
-                                    list_store.append(
-                                        DetectedTokenRow(
-                                            token=key,
-                                            offset='%08x' % value,
-                                        )
-                                    )
-
-                            selection_model.set_model(list_store)
-
-                            # Prepare to display hex dump reacting to
-                            # clicking offsets in view #2
-
-                            self.offset_selection_split_view.set_show_sidebar(
-                                False
                             )
 
-                            # Display address in view #3
+                    selection_model.set_model(list_store)
 
-                            selection_model = self.symbol_table_selection_model
+                    # Prepare to display hex dump reacting to
+                    # clicking offsets in view #2
 
-                            list_store = selection_model.get_model()
-                            selection_model.set_model(None)
-                            list_store.remove_all()
+                    self.offset_selection_split_view.set_show_sidebar(False)
 
-                            fmt = '%016x' if is_64_bits else '%08x'
+                    # Display address in view #3
 
-                            for symbol in kallsyms.symbols:
-                                list_store.append(
-                                    RecoveredSymbolRow(
-                                        name=symbol.name,
-                                        type=symbol.symbol_type.name,
-                                        address=fmt % symbol.virtual_address,
-                                    )
-                                )
+                    selection_model = self.symbol_table_selection_model
 
-                            selection_model.set_model(list_store)
+                    list_store = selection_model.get_model()
+                    selection_model.set_model(None)
+                    list_store.remove_all()
 
-                        GLib.idle_add(update_ui_cb)
+                    fmt = '%016x' if is_64_bits else '%08x'
 
-                    finally:
+                    for symbol in kallsyms.symbols:
+                        list_store.append(
+                            RecoveredSymbolRow(
+                                name=symbol.name,
+                                type=symbol.symbol_type.name,
+                                address=fmt % symbol.virtual_address,
+                            )
+                        )
 
-                        def hide_spinner_cb(*args):
-                            self.selection_spinner_row.set_visible(False)
+                    selection_model.set_model(list_store)
 
-                        GLib.idle_add(hide_spinner_cb)
+                GLib.idle_add(update_ui_cb)
 
-            thread = Thread(target=detection_thread)
-            thread.daemon = True
-            thread.start()
+            finally:
+
+                def hide_spinner_cb(*args):
+                    self.selection_spinner_row.set_visible(False)
+
+                GLib.idle_add(hide_spinner_cb)
+
+        thread = Thread(target=detection_thread)
+        thread.daemon = True
+        thread.start()
 
 
 def main():

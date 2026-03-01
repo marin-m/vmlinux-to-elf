@@ -167,6 +167,16 @@ class MyWindow(Adw.ApplicationWindow):
 
         self.add_simple_action('pick-file', pick_file)
 
+        def copy_debug_information(*args):
+            print('TODO Implement copy_debug_information', args)
+
+        self.add_simple_action('copy-debug-information', copy_debug_information)
+
+        def copy_offset_information(*args):
+            print('TODO Implement copy_offset_information', args)
+
+        self.add_simple_action('copy-offset-information', copy_offset_information)
+
         def generate_elf_file(*args):
             print('TODO Implement generate_elf_file', args)
 

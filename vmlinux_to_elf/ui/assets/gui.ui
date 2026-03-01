@@ -170,6 +170,14 @@
                               <object class="AdwPreferencesPage">
                                 <child>
                                   <object class="AdwPreferencesGroup" id="analysis_notes">
+                                    <property name="header-suffix">
+                                      <object class="GtkButton">
+                                        <property name="action-name">win.copy-debug-information</property>
+                                        <property name="icon-name">edit-copy-symbolic</property>
+                                        <property name="tooltip-text">Copy debug information</property>
+                                        <property name="valign">start</property>
+                                      </object>
+                                    </property>
                                     <property name="title">Analysis notes</property>
                                     <child>
                                       <object class="GtkScrolledWindow">
@@ -199,6 +207,14 @@
                                 <child>
                                   <object class="AdwPreferencesGroup" id="offset_detection">
                                     <property name="description">Information auto-detected by vmlinux-to-elf - click an address to display in the lateral hex view pane </property>
+                                    <property name="header-suffix">
+                                      <object class="GtkButton">
+                                        <property name="action-name">win.copy-offset-information</property>
+                                        <property name="icon-name">edit-copy-symbolic</property>
+                                        <property name="tooltip-text">Copy offset information</property>
+                                        <property name="valign">start</property>
+                                      </object>
+                                    </property>
                                     <property name="title">Symbol table offset detection</property>
                                     <child>
                                       <object class="GtkScrolledWindow">

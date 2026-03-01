@@ -23,3 +23,20 @@ class RecoveredSymbolRow(GObject.Object):
     @GObject.Property(type=str)
     def address(self):
         return self._address
+
+
+# Slower:
+"""
+class RecoveredSymbolRow(GObject.Object):
+    __gtype_name__ = 'RecoveredSymbolRow'
+
+    name = GObject.Property(type=str)
+    type = GObject.Property(type=str)
+    address = GObject.Property(type=str)
+
+    def __init__(self, name: str, type: str, address: str):
+        super().__init__()
+        self.name = name
+        self.type = type
+        self.address = address
+"""

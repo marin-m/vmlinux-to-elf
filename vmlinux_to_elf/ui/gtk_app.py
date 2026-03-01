@@ -2,11 +2,13 @@
 # -*- encoding: Utf-8 -*-
 from os import stat, scandir, access, W_OK
 from os.path import dirname, realpath
+from argparse import ArgumentParser
 from threading import Thread
+from sys import stderr, argv
 from typing import Optional
 from subprocess import run
 from shutil import which
-from sys import stderr
+from io import BytesIO
 import logging
 
 SCRIPT_DIR = dirname(realpath(__file__))
@@ -96,6 +98,7 @@ Gio.resources_register(Gio.resource_load(RESOURCES_PATH))
 class MyWindow(Adw.ApplicationWindow):
     __gtype_name__ = 'MainWindow'
     kernel_path: Optional[str] = None
+    raw_kernel: Optional[bytes] = None
 
     detect_symbols_bar: Gtk.ActionBar = Gtk.Template.Child()
     about_dialog: Adw.AboutDialog = Gtk.Template.Child()
@@ -103,12 +106,16 @@ class MyWindow(Adw.ApplicationWindow):
     file_picker_button: Adw.ActionRow = Gtk.Template.Child()
     selection_spinner_row: Adw.PreferencesRow = Gtk.Template.Child()
     kallsyms_debug_buffer: Gtk.TextBuffer = Gtk.Template.Child()
+    hex_buffer: Gtk.TextBuffer = Gtk.Template.Child()
+    offset_selection_split_view: Adw.OverlaySplitView = Gtk.Template.Child()
     kernel_string_row: Adw.PreferencesRow = Gtk.Template.Child()
     analysis_options: Adw.PreferencesGroup = Gtk.Template.Child()
     bitness_switch: Adw.SwitchRow = Gtk.Template.Child()
     base_address_entry: Adw.EntryRow = Gtk.Template.Child()
     symbol_table_selection_model: Gtk.SelectionModel = Gtk.Template.Child()
+    symbol_table_model: Gio.ListStore = Gtk.Template.Child()
     offset_list_selection_model: Gtk.SelectionModel = Gtk.Template.Child()
+    offset_list_model: Gio.ListStore = Gtk.Template.Child()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -184,14 +191,24 @@ class MyWindow(Adw.ApplicationWindow):
             e_machine_model.append(e_machine.name)
 
         self.e_machine_combo.set_model(e_machine_model)
-    
+
     @Gtk.Template.Callback()
-    def token_row_activated(self, *args):
-        print('TODO handle token_row_activated:', args)
-    
+    def token_row_activated(self, column_view, position, user_data):
+        item: DetectedTokenRow = (
+            self.offset_list_selection_model.get_selected_item()
+        )
+        text_buffer = '\nData for "%s" at %s:\n\n' % (item.token, item.offset)
+        fd = BytesIO(self.raw_kernel)
+        fd.seek(int(item.offset, 16))
+        for i in range(100):
+            for i in range(8):
+                text_buffer += fd.read(1).hex() + ('\n' if i == 7 else ' ')
+        self.hex_buffer.set_text(text_buffer)
+        self.offset_selection_split_view.set_show_sidebar(True)
+
     @Gtk.Template.Callback()
-    def symbol_row_activated(self, *args):
-        print('TODO handle symbol_row_activated:', args)
+    def symbol_row_activated(self, column_view, position, user_data):
+        print('TODO handle symbol_row_activated')
 
     def update_kernel_path(
         self,
@@ -216,8 +233,11 @@ class MyWindow(Adw.ApplicationWindow):
 
                     self.handler.flush()
                     try:
+                        self.raw_kernel = obtain_raw_kernel_from_file(
+                            kernel_bin.read()
+                        )
                         kallsyms = KallsymsFinder(
-                            obtain_raw_kernel_from_file(kernel_bin.read()),
+                            self.raw_kernel,
                             bit_size,
                         )
 
@@ -351,7 +371,7 @@ class MyWindow(Adw.ApplicationWindow):
                             # Show guessed base address
 
                             if is_64_bits:
-                                default_value = '%16x' % (
+                                default_value = '%016x' % (
                                     kallsyms.kernel_text_candidate or 0
                                 )
                             else:
@@ -390,22 +410,23 @@ class MyWindow(Adw.ApplicationWindow):
                             selection_model.set_model(None)
                             list_store.remove_all()
 
-                            fmt = '%16x' if is_64_bits else '%08x'
-
                             for key, value in data.items():
                                 if value is not None:
                                     list_store.append(
                                         DetectedTokenRow(
                                             token=key,
-                                            offset=fmt % value,
+                                            offset='%08x' % value,
                                         )
                                     )
 
                             selection_model.set_model(list_store)
 
-                            # Display hex dump reacting to clicking offsets in view #2
+                            # Prepare to display hex dump reacting to
+                            # clicking offsets in view #2
 
-                            # XX TODO
+                            self.offset_selection_split_view.set_show_sidebar(
+                                False
+                            )
 
                             # Display address in view #3
 
@@ -415,7 +436,7 @@ class MyWindow(Adw.ApplicationWindow):
                             selection_model.set_model(None)
                             list_store.remove_all()
 
-                            fmt = '%16x' if is_64_bits else '%08x'
+                            fmt = '%016x' if is_64_bits else '%08x'
 
                             for symbol in kallsyms.symbols:
                                 list_store.append(
@@ -443,17 +464,34 @@ class MyWindow(Adw.ApplicationWindow):
 
 
 def main():
+    """
+    args = ArgumentParser()
+    args.add_argument(
+        '-v',
+        '--verbose',
+        help='Show extra debugging output',
+        action='store_true',
+    )
+
+    args = args.parse_args()
+    """
+
     logging.basicConfig(
-        stream=stderr, level=logging.INFO, format='%(message)s'
+        stream=stderr,
+        # level=logging.DEBUG if args.verbose else logging.INFO,
+        level=logging.INFO,
+        format='%(message)s',
     )
 
     GLib.set_prgname('re.fossplant.vmlinux-to-elf')
+
+    # TODO handle file open
 
     app = MyApp(
         application_id='re.fossplant.vmlinux-to-elf',
         flags=Gio.ApplicationFlags.NON_UNIQUE,
     )
-    app.run(sys.argv)
+    app.run(argv)
 
 
 if __name__ == '__main__':

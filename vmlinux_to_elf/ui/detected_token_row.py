@@ -18,3 +18,18 @@ class DetectedTokenRow(GObject.Object):
     @GObject.Property(type=str)
     def offset(self):
         return self._offset
+
+
+# Slower:
+"""
+class DetectedTokenRow(GObject.Object):
+    __gtype_name__ = 'DetectedTokenRow'
+
+    token = GObject.Property(type=str)
+    offset = GObject.Property(type=str)
+
+    def __init__(self, token: str, offset: str):
+        super().__init__()
+        self.token = token
+        self.offset = offset
+"""

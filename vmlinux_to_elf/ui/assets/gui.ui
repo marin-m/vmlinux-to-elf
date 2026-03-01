@@ -165,7 +165,7 @@
                           <object class="AdwHeaderBar"/>
                         </child>
                         <child>
-                          <object class="AdwOverlaySplitView">
+                          <object class="AdwOverlaySplitView" id="offset_selection_split_view">
                             <property name="content">
                               <object class="AdwPreferencesPage">
                                 <child>

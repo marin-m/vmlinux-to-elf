@@ -118,6 +118,7 @@ class MyWindow(Adw.ApplicationWindow):
     offset_list_selection_model: Gtk.SelectionModel = Gtk.Template.Child()
     offset_list_model: Gio.ListStore = Gtk.Template.Child()
     offset_page_toast: Adw.ToastOverlay = Gtk.Template.Child()
+    navigation: Adw.NavigationView = Gtk.Template.Child()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -208,26 +209,49 @@ class MyWindow(Adw.ApplicationWindow):
                     if err.message != 'Dismissed by user':
                         raise
                 else:
-                    # TODO use some kind of thread + spinner
+                    self.navigation.push_by_tag('loading_page')
 
-                    data = BytesIO()
-                    ElfSymbolizer(
-                        self.raw_kernel,
-                        None,
-                        data,
-                        # TODO add more parameters
-                    )
+                    def processing_thread(*args):
 
-                    result.replace_contents(
-                        data.getvalue(),
-                        None,
-                        False,
-                        Gio.FileCreateFlags.NONE,
-                        None,
-                    )
+                        data = BytesIO()
+                        ElfSymbolizer(
+                            self.raw_kernel,
+                            None,
+                            data,
+                            # TODO add more parameters
+                        )
 
-                    # TODO popup if success or error
-                    print('WIP OK')
+                        def processing_done(*args):
+
+                            result.replace_contents(
+                                data.getvalue(),
+                                None,
+                                False,
+                                Gio.FileCreateFlags.NONE,
+                                None,
+                            )
+
+                            if (
+                                self.navigation.get_visible_page_tag()
+                                == 'loading_page'
+                            ):
+                                self.navigation.pop()
+
+                            # TODO popup if success or error
+
+                            dialog = Adw.AlertDialog.new(
+                                'Kernel successfully wrote', None
+                            )
+                            dialog.add_response('ok', 'Ok')
+                            dialog.set_default_response('ok')
+                            dialog.set_close_response('ok')
+                            dialog.choose(self, None, None)
+
+                        GLib.idle_add(processing_done)
+
+                    thread = Thread(target=processing_thread)
+                    thread.daemon = True
+                    thread.start()
 
             file_picker = Gtk.FileDialog()
             file_picker.set_initial_name(
@@ -266,17 +290,20 @@ class MyWindow(Adw.ApplicationWindow):
         fd = BytesIO(self.raw_kernel)
         fd.seek(int(item.offset, 16))
 
-        subst_chars = ''.join(j if j.isprintable() else '.' for j in bytes(range(256)).decode('ibm850'))
+        subst_chars = ''.join(
+            j if j.isprintable() else '.'
+            for j in bytes(range(256)).decode('ibm850')
+        )
 
         for i in range(100):
             buf = fd.read(8)
             for char in buf:
-                text_buffer += ('%02x' % char) + ' '
+                text_buffer += '%02x ' % char
             text_buffer += ' '
             for char in buf:
                 text_buffer += subst_chars[char]
             text_buffer += '\n'
-            
+
         self.hex_buffer.set_text(text_buffer)
         self.offset_selection_split_view.set_show_sidebar(True)
 
@@ -367,13 +394,7 @@ class MyWindow(Adw.ApplicationWindow):
                     dialog.add_response('ok', 'Ok')
                     dialog.set_default_response('ok')
                     dialog.set_close_response('ok')
-                    dialog.choose(
-                        self,
-                        None,
-                        lambda source_obj, res, *data: dialog.choose_finish(
-                            res
-                        ),
-                    )
+                    dialog.choose(self, None, None)
 
                     # Hide the kernel version string
 

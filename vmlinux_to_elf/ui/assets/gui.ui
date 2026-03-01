@@ -49,10 +49,9 @@
                           <object class="AdwPreferencesRow" id="selection_spinner_row">
                             <property name="visible">False</property>
                             <child>
-                              <object class="GtkSpinner">
+                              <object class="AdwSpinner">
                                 <property name="margin-bottom">7</property>
                                 <property name="margin-top">7</property>
-                                <property name="spinning">True</property>
                               </object>
                             </child>
                           </object>
@@ -295,7 +294,7 @@
                             <property name="sidebar">
                               <object class="GtkBox">
                                 <property name="orientation">vertical</property>
-                                <property name="width-request">300</property>
+                                <property name="width-request">320</property>
                                 <child>
                                   <object class="GtkScrolledWindow">
                                     <property name="vexpand">True</property>
@@ -351,9 +350,11 @@ Hex dump at address %s
                   <object class="AdwLayout" id="offsets_page_wait_layout">
                     <property name="name">offsets_page_wait_layout</property>
                     <child>
-                      <object class="AdwStatusPage">
-                        <property name="child">
-                          <object class="AdwSpinner"/>
+                      <object class="AdwStatusPage" id="offsets_status_page">
+                        <property name="paintable">
+                          <object class="AdwSpinnerPaintable">
+                            <property name="widget">offsets_status_page</property>
+                          </object>
                         </property>
                       </object>
                     </child>
@@ -502,6 +503,29 @@ Hex dump at address %s
             </property>
             <property name="tag">preview_page</property>
             <property name="title">Values preview</property>
+          </object>
+        </child>
+        <child>
+          <object class="AdwNavigationPage" id="loading_page">
+            <property name="can-pop">False</property>
+            <property name="child">
+              <object class="AdwToolbarView">
+                <property name="content">
+                  <object class="AdwStatusPage" id="status_page">
+                    <property name="paintable">
+                      <object class="AdwSpinnerPaintable">
+                        <property name="widget">status_page</property>
+                      </object>
+                    </property>
+                  </object>
+                </property>
+                <child type="top">
+                  <object class="AdwHeaderBar"/>
+                </child>
+              </object>
+            </property>
+            <property name="tag">loading_page</property>
+            <property name="title">Exporting symbols...</property>
           </object>
         </child>
       </object>

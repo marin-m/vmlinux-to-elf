@@ -2,10 +2,11 @@
 <!-- Created with Cambalache 0.96.3 -->
 <interface>
   <!-- interface-name gui.ui -->
+  <!-- interface-authors Marin Moulinier -->
   <requires lib="gio" version="2.44"/>
   <requires lib="gtk" version="4.12"/>
   <requires lib="libadwaita" version="1.6"/>
-  <object class="AdwApplicationWindow" id="main_window">
+  <template class="MainWindow" parent="AdwApplicationWindow">
     <property name="content">
       <object class="AdwNavigationView" id="navigation">
         <child>
@@ -473,7 +474,7 @@ Hex dump at address %s
     <property name="default-width">800</property>
     <property name="icon-name">re.fossplant.vmlinux-to-elf</property>
     <property name="startup-id">re.fossplant.vmlinux-to-elf</property>
-  </object>
+  </template>
   <menu id="application_menu">
     <submenu>
       <attribute name="label">_Recent files..</attribute>
@@ -494,5 +495,4 @@ Hex dump at address %s
     <property name="version">2.0.0</property>
     <property name="website">https://github.com/marin-m/vmlinux-to-elf</property>
   </object>
-  <object class="AdwSpinnerPaintable"/>
 </interface>

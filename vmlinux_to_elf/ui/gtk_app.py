@@ -64,12 +64,8 @@ class KallsymsLogHandler(logging.Handler):
 
 
 class MyApp(Adw.Application):
-    kernel_path: Optional[str] = None
-
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-
-        # See: https://lazka.github.io/pgi-docs/#Gtk-4.0/classes/TextBuffer.html#Gtk.TextBuffer
 
         theme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default())
         theme.add_resource_path('/re/fossplant/vmlinux-to-elf/')
@@ -77,60 +73,76 @@ class MyApp(Adw.Application):
         self.connect('activate', self.on_activate)
 
     def on_activate(self, app):
-        # Create a Builder object, in order
-        # to parse the Cambalache-produced UI file
+        # Application will close once it no longer has active windows attached to it
 
-        self.builder = Gtk.Builder()
-        self.builder.add_from_resource('/re/fossplant/vmlinux-to-elf/gui.ui')
+        MyWindow().set_application(self)
+
+
+# Create a templated window object, in order
+# to parse the Cambalache-produced UI file
+
+if (
+    access(RESOURCES_PATH, W_OK)
+    and which('glib-compile-resources')
+    and max(meta.stat().st_mtime for meta in scandir(ASSETS_DIR))
+    > stat(RESOURCES_PATH).st_mtime
+):
+    run(['glib-compile-resources', RESOURCES_PATH + '.xml'], cwd=ASSETS_DIR)
+
+Gio.resources_register(Gio.resource_load(RESOURCES_PATH))
+
+
+@Gtk.Template(resource_path='/re/fossplant/vmlinux-to-elf/gui.ui')
+class MyWindow(Adw.ApplicationWindow):
+    __gtype_name__ = 'MainWindow'
+    kernel_path: Optional[str] = None
+
+    detect_symbols_bar: Gtk.ActionBar = Gtk.Template.Child()
+    about_dialog: Adw.AboutDialog = Gtk.Template.Child()
+    e_machine_combo: Adw.ComboRow = Gtk.Template.Child()
+    file_picker_button: Adw.ActionRow = Gtk.Template.Child()
+    selection_spinner_row: Adw.PreferencesRow = Gtk.Template.Child()
+    kallsyms_debug_buffer: Gtk.TextBuffer = Gtk.Template.Child()
+    kernel_string_row: Adw.PreferencesRow = Gtk.Template.Child()
+    analysis_options: Adw.PreferencesGroup = Gtk.Template.Child()
+    bitness_switch: Adw.SwitchRow = Gtk.Template.Child()
+    base_address_entry: Adw.EntryRow = Gtk.Template.Child()
+    symbol_table_selection_model: Gtk.SelectionModel = Gtk.Template.Child()
+    offset_list_selection_model: Gtk.SelectionModel = Gtk.Template.Child()
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
         # WIP: Log info to display in the Gtk.TextBuffer
         # present in UI flow screen #2:
 
         logger = logging.getLogger()
 
-        self.handler = KallsymsLogHandler(
-            self.builder.get_object('kallsyms_debug_buffer')
-        )
+        self.handler = KallsymsLogHandler(self.kallsyms_debug_buffer)
         self.handler.setLevel(logging.INFO)
         logger.addHandler(self.handler)
 
         # Connect UI signals
 
-        self.connect_signals()
+        # self.connect_signals()
 
         # WIP set the architecture ListModel+ListItemFactory into the Adw.ComboRow for the architecture list
 
         self.init_arch_list()
 
-        # Obtain and show the main window
-
-        self.win: Adw.ApplicationWindow = self.builder.get_object(
-            'main_window'
-        )
-        self.win.set_application(
-            self
-        )  # Application will close once it no longer has active windows attached to it
-
         # Connect UI actions
 
         self.connect_actions()
 
-        detect_symbols_bar = self.builder.get_object('detect_symbols_bar')
-        detect_symbols_bar.set_revealed(False)
+        # Show the main window
 
-        self.win.present()
-
-    def connect_signals(self):
-
-        pass
-
-        # TODO set up callbacks for syncing interface elements between them
-        # + a correct model object?
+        self.detect_symbols_bar.set_revealed(False)
+        self.present()
 
     def connect_actions(self):
 
         def show_about(*args):
-            self.builder.get_object('about_dialog').present(self.win)
+            self.about_dialog.present(self)
 
         self.add_simple_action('show-about', show_about)
 
@@ -147,7 +159,7 @@ class MyApp(Adw.Application):
 
             file_picker = Gtk.FileDialog()
             file_picker.set_filters(Gio.ListStore())
-            file_picker.open(self.win, callback=file_picked)
+            file_picker.open(self, callback=file_picked)
 
         self.add_simple_action('pick-file', pick_file)
 
@@ -155,13 +167,9 @@ class MyApp(Adw.Application):
 
         action = Gio.SimpleAction.new(name, None)
         action.connect('activate', callback)
-        self.win.add_action(action)
+        self.add_action(action)
 
     def init_arch_list(self):
-
-        self.e_machine_combo: Adw.ComboRow = self.builder.get_object(
-            'e_machine_combo'
-        )
 
         e_machine_model = Gtk.StringList()
 
@@ -180,16 +188,10 @@ class MyApp(Adw.Application):
         if path:
             self.kernel_path = path
 
-            self.file_picker_button: Adw.ActionRow = self.builder.get_object(
-                'file_picker_button'
-            )
             self.file_picker_button.set_title('Kernel blob')
             self.file_picker_button.set_subtitle(path)
 
-            selection_spinner_row = self.builder.get_object(
-                'selection_spinner_row'
-            )
-            selection_spinner_row.set_visible(True)
+            self.selection_spinner_row.set_visible(True)
 
             def detection_thread():
 
@@ -225,7 +227,7 @@ class MyApp(Adw.Application):
                             dialog.set_default_response('32-bit')
                             dialog.set_close_response('32-bit')
                             dialog.choose(
-                                self.builder.get_object('main_window'),
+                                self,
                                 None,
                                 bitness_pick_cb,
                             )
@@ -250,7 +252,7 @@ class MyApp(Adw.Application):
                             dialog.set_default_response('ok')
                             dialog.set_close_response('ok')
                             dialog.choose(
-                                self.builder.get_object('main_window'),
+                                self,
                                 None,
                                 lambda source_obj, res, *data: (
                                     dialog.choose_finish(res)
@@ -259,24 +261,15 @@ class MyApp(Adw.Application):
 
                             # Hide the kernel version string
 
-                            kernel_string_row = self.builder.get_object(
-                                'kernel_string_row'
-                            )
-                            kernel_string_row.set_visible(False)
+                            self.kernel_string_row.set_visible(False)
 
                             # Hide the "Analysis options" UI block
 
-                            analysis_options = self.builder.get_object(
-                                'analysis_options'
-                            )
-                            analysis_options.set_visible(False)
+                            self.analysis_options.set_visible(False)
 
                             # Hide "Detect symbols button" pointing to view #2
 
-                            detect_symbols_bar = self.builder.get_object(
-                                'detect_symbols_bar'
-                            )
-                            detect_symbols_bar.set_revealed(False)
+                            self.detect_symbols_bar.set_revealed(False)
 
                         GLib.idle_add(update_ui_invalid_file_cb, err)
 
@@ -288,20 +281,14 @@ class MyApp(Adw.Application):
                         def update_ui_cb(*args):
                             # Display the kernel version string
 
-                            kernel_string_row = self.builder.get_object(
-                                'kernel_string_row'
-                            )
-                            kernel_string_row.set_visible(True)
-                            kernel_string_row.set_subtitle(
+                            self.kernel_string_row.set_visible(True)
+                            self.kernel_string_row.set_subtitle(
                                 kallsyms.version_string
                             )
 
                             # Display the "Analysis options" UI block
 
-                            analysis_options = self.builder.get_object(
-                                'analysis_options'
-                            )
-                            analysis_options.set_visible(True)
+                            self.analysis_options.set_visible(True)
 
                             # Show guessed architecture
 
@@ -314,15 +301,12 @@ class MyApp(Adw.Application):
                                 else 'Unknown'
                             )
 
-                            architecture_combo = self.builder.get_object(
-                                'architecture_combo'
-                            )
-                            architecture_combo.set_title(
+                            self.architecture_combo.set_title(
                                 'Architecture preset (auto-detect: %s)' % key
                             )
-                            key = architecture_combo.get_model().find(key)
+                            key = self.architecture_combo.get_model().find(key)
                             if key is not None:
-                                architecture_combo.set_selected(key)
+                                self.architecture_combo.set_selected(key)
                             """
 
                             # Show guessed ELF Machine
@@ -333,28 +317,22 @@ class MyApp(Adw.Application):
                                 else 'Unknown'
                             )
 
-                            e_machine_combo = self.builder.get_object(
-                                'e_machine_combo'
-                            )
-                            e_machine_combo.set_title(
+                            self.e_machine_combo.set_title(
                                 'ELF machine (auto-detect: %s)' % key
                             )
-                            key = e_machine_combo.get_model().find(key)
+                            key = self.e_machine_combo.get_model().find(key)
                             if key is not None:
-                                e_machine_combo.set_selected(key)
+                                self.e_machine_combo.set_selected(key)
 
                             # Show guessed bitness
 
                             is_64_bits = kallsyms.is_64_bits
 
-                            bitness_switch = self.builder.get_object(
-                                'bitness_switch'
-                            )
-                            bitness_switch.set_title(
+                            self.bitness_switch.set_title(
                                 '64-bit (auto-detect: %s)'
                                 % ('yes' if is_64_bits else 'no')
                             )
-                            bitness_switch.set_active(is_64_bits)
+                            self.bitness_switch.set_active(is_64_bits)
 
                             # Show guessed base address
 
@@ -367,25 +345,20 @@ class MyApp(Adw.Application):
                                     kallsyms.kernel_text_candidate or 0
                                 )
 
-                            base_address_entry = self.builder.get_object(
-                                'base_address_entry'
-                            )
-                            base_address_entry.set_title(
+                            self.base_address_entry.set_title(
                                 'Base address, hexadecimal (auto-detect: %s)'
                                 % default_value
                             )
-                            base_address_entry.set_text(default_value)
+                            self.base_address_entry.set_text(default_value)
 
                             # Show "Detect symbols button" pointing to view #2
 
-                            detect_symbols_bar = self.builder.get_object(
-                                'detect_symbols_bar'
-                            )
-                            detect_symbols_bar.set_revealed(True)
+                            self.detect_symbols_bar.set_revealed(True)
 
                             # Display detected offsets in view #2
 
                             data = {
+                                'input_file_start': 0,
                                 'kallsyms_addresses_or_offsets': kallsyms.kallsyms_addresses_or_offsets__offset,
                                 'kallsyms_num_syms': kallsyms.kallsyms_num_syms__offset,
                                 'kallsyms_names': kallsyms.kallsyms_names__offset,
@@ -394,12 +367,10 @@ class MyApp(Adw.Application):
                                 'kallsyms_token_index': kallsyms.kallsyms_token_index__offset,
                                 'kallsyms_token_index_end': kallsyms.kallsyms_token_index_end__offset,
                                 'elf64_rela_start': kallsyms.elf64_rela_start,
-                                'elf64_rela_end_excl': kallsyms.elf64_rela_end_excl
+                                'elf64_rela_end_excl': kallsyms.elf64_rela_end_excl,
                             }
 
-                            selection_model = self.builder.get_object(
-                                'offset_list_selection_model'
-                            )
+                            selection_model = self.offset_list_selection_model
 
                             list_store = selection_model.get_model()
                             selection_model.set_model(None)
@@ -424,9 +395,7 @@ class MyApp(Adw.Application):
 
                             # Display address in view #3
 
-                            selection_model = self.builder.get_object(
-                                'symbol_table_selection_model'
-                            )
+                            selection_model = self.symbol_table_selection_model
 
                             list_store = selection_model.get_model()
                             selection_model.set_model(None)
@@ -450,10 +419,7 @@ class MyApp(Adw.Application):
                     finally:
 
                         def hide_spinner_cb(*args):
-                            selection_spinner_row = self.builder.get_object(
-                                'selection_spinner_row'
-                            )
-                            selection_spinner_row.set_visible(False)
+                            self.selection_spinner_row.set_visible(False)
 
                         GLib.idle_add(hide_spinner_cb)
 
@@ -467,19 +433,7 @@ def main():
         stream=stderr, level=logging.INFO, format='%(message)s'
     )
 
-    if (
-        access(RESOURCES_PATH, W_OK)
-        and which('glib-compile-resources')
-        and max(meta.stat().st_mtime for meta in scandir(ASSETS_DIR))
-        > stat(RESOURCES_PATH).st_mtime
-    ):
-        run(
-            ['glib-compile-resources', RESOURCES_PATH + '.xml'], cwd=ASSETS_DIR
-        )
-
     GLib.set_prgname('re.fossplant.vmlinux-to-elf')
-
-    Gio.resources_register(Gio.resource_load(RESOURCES_PATH))
 
     app = MyApp(
         application_id='re.fossplant.vmlinux-to-elf',

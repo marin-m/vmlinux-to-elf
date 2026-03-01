@@ -6,6 +6,7 @@ from threading import Thread
 from typing import Optional
 from subprocess import run
 from shutil import which
+from sys import stderr
 from re import sub
 import logging
 
@@ -28,7 +29,7 @@ from vmlinux_to_elf.core.vmlinuz_decompressor import (
 )
 from vmlinux_to_elf.core.kallsyms import (
     KallsymsFinder,
-    KallsymsNotFoundException
+    KallsymsNotFoundException,
 )
 from vmlinux_to_elf.core.architecture_detecter import (
     ArchitectureGuessError,
@@ -102,7 +103,7 @@ class MyApp(Adw.Application):
             def file_picked(file_dialog: Gtk.FileDialog, task: Gio.Task):
                 try:
                     result: Gio.File = file_dialog.open_finish(task)
-                except GLib.GError as err: # Dismissed by user
+                except GLib.GError as err:  # Dismissed by user
                     if err.message != 'Dismissed by user':
                         raise
                 else:
@@ -147,12 +148,12 @@ class MyApp(Adw.Application):
     def update_kernel_path(
         self,
         path: Optional[str],
-        is_64_bits : Optional[bool] = None,
-        manual_preset : Optional[ArchitectureName] = None
+        is_64_bits: Optional[bool] = None,
+        manual_preset: Optional[ArchitectureName] = None,
     ):
 
         # TODO : Do re-entrance to this function with
-        # combo box setting callbacks
+        # combo box setting callbacks
 
         if path:
             self.kernel_path = path
@@ -181,23 +182,258 @@ class MyApp(Adw.Application):
                             override_relative,
                         )
 
-                    except (ValueError, KallsymsNotFoundException):
-                        raise
-
                     except ArchitectureGuessError:
-                        logging.error(
-                            '[!] The architecture of your kernel could not be guessed '
-                            + 'successfully. Please specify the --bit-size argument manually '
-                            + '(use --help for its precise specification).'
-                        )
-                        # TODO Do actual error handling
+
+                        def update_ui_unknown_arch_cb(*args):
+
+                            dialog = Adw.AlertDialog.new(
+                                'The architecture of your kernel could not be guessed '
+                                + 'successfully',
+                                'Please specify the ELF machine and architecture '
+                                + 'bit size manually.',
+                            )
+                            dialog.add_response('ok', 'Ok')
+                            dialog.set_default_response('ok')
+                            dialog.set_close_response('ok')
+                            dialog.choose(
+                                self.builder.get_object('main_window'),
+                                None,
+                                lambda source_obj, res, *data: (
+                                    dialog.choose_finish(res)
+                                ),
+                            )
+
+                            # Hide the kernel version string
+
+                            kernel_string_row = self.builder.get_object(
+                                'kernel_string_row'
+                            )
+                            kernel_string_row.set_visible(False)
+
+                            # Display the "Analysis options" UI block
+
+                            analysis_options = self.builder.get_object(
+                                'analysis_options'
+                            )
+                            analysis_options.set_visible(True)
+
+                            # Hide guessed architecture
+
+                            architecture_combo = self.builder.get_object(
+                                'architecture_combo'
+                            )
+                            architecture_combo.set_title(
+                                sub(
+                                    r': .+?\)',
+                                    ': Unknown)',
+                                    architecture_combo.get_title(),
+                                )
+                            )
+
+                            # Hide guessed ELF Machine
+
+                            e_machine_combo = self.builder.get_object(
+                                'e_machine_combo'
+                            )
+                            e_machine_combo.set_title(
+                                sub(
+                                    r': .+?\)',
+                                    ': Unknown)',
+                                    e_machine_combo.get_title(),
+                                )
+                            )
+
+                            # Hide guessed bitness
+
+                            bitness_switch = self.builder.get_object(
+                                'bitness_switch'
+                            )
+                            bitness_switch.set_title(
+                                sub(
+                                    r': .+?\)',
+                                    ': Unknown)',
+                                    bitness_switch.get_title(),
+                                )
+                            )
+
+                            # Hide guessed base address
+
+                            base_address_entry = self.builder.get_object(
+                                'base_address_entry'
+                            )
+                            base_address_entry.set_title(
+                                sub(
+                                    r': .+?\)',
+                                    ': Unknown)',
+                                    base_address_entry.get_title(),
+                                )
+                            )
+
+                            # Hide "Detect symbols button" pointing to view #2
+
+                            detect_symbols_bar = self.builder.get_object(
+                                'detect_symbols_bar'
+                            )
+                            detect_symbols_bar.set_revealed(False)
+
+                        GLib.idle_add(update_ui_unknown_arch_cb)
+
                         raise
 
-                    except Exception:
-                        # TODO Do actual error handling (for all Python exceptions too?
-                        # show a popup when wrong?)
+                    except (
+                        ValueError,
+                        KallsymsNotFoundException,
+                        Exception,
+                    ) as err:
+                        # TODO Do actual error handling (for all Python exceptions too?)
+
+                        def update_ui_invalid_file_cb(err):
+
+                            dialog = Adw.AlertDialog.new(
+                                'Could not open kernel', str(err)
+                            )
+                            dialog.add_response('ok', 'Ok')
+                            dialog.set_default_response('ok')
+                            dialog.set_close_response('ok')
+                            dialog.choose(
+                                self.builder.get_object('main_window'),
+                                None,
+                                lambda source_obj, res, *data: (
+                                    dialog.choose_finish(res)
+                                ),
+                            )
+
+                            # Hide the kernel version string
+
+                            kernel_string_row = self.builder.get_object(
+                                'kernel_string_row'
+                            )
+                            kernel_string_row.set_visible(False)
+
+                            # Hide the "Analysis options" UI block
+
+                            analysis_options = self.builder.get_object(
+                                'analysis_options'
+                            )
+                            analysis_options.set_visible(False)
+
+                            # Hide "Detect symbols button" pointing to view #2
+
+                            detect_symbols_bar = self.builder.get_object(
+                                'detect_symbols_bar'
+                            )
+                            detect_symbols_bar.set_revealed(False)
+
+                        GLib.idle_add(update_ui_invalid_file_cb, err)
 
                         raise
+
+                    else:
+                        # Set and show metadata
+
+                        def update_ui_cb(*args):
+                            # Display the kernel version string
+
+                            kernel_string_row = self.builder.get_object(
+                                'kernel_string_row'
+                            )
+                            kernel_string_row.set_visible(True)
+                            kernel_string_row.set_subtitle(
+                                kallsyms.version_string
+                            )
+
+                            # Display the "Analysis options" UI block
+
+                            analysis_options = self.builder.get_object(
+                                'analysis_options'
+                            )
+                            analysis_options.set_visible(True)
+
+                            # Show guessed architecture
+
+                            key = architecture_to_readable_name[
+                                kallsyms.architecture
+                            ]
+
+                            architecture_combo = self.builder.get_object(
+                                'architecture_combo'
+                            )
+                            architecture_combo.set_title(
+                                sub(
+                                    r': .+?\)',
+                                    ': %s)' % key,
+                                    architecture_combo.get_title(),
+                                )
+                            )
+                            architecture_combo.set_selected(
+                                architecture_combo.get_model().find(key)
+                            )
+
+                            # Show guessed ELF Machine
+
+                            key = ElfMachine(kallsyms.elf_machine).name
+
+                            e_machine_combo = self.builder.get_object(
+                                'e_machine_combo'
+                            )
+                            e_machine_combo.set_title(
+                                sub(
+                                    r': .+?\)',
+                                    ': %s)' % key,
+                                    e_machine_combo.get_title(),
+                                )
+                            )
+                            e_machine_combo.set_selected(
+                                e_machine_combo.get_model().find(key)
+                            )
+
+                            # Show guessed bitness
+
+                            is_64_bits = kallsyms.is_64_bits
+
+                            bitness_switch = self.builder.get_object(
+                                'bitness_switch'
+                            )
+                            bitness_switch.set_title(
+                                sub(
+                                    r': .+?\)',
+                                    ': %s)' % ('yes' if is_64_bits else 'no'),
+                                    bitness_switch.get_title(),
+                                )
+                            )
+                            bitness_switch.set_active(is_64_bits)
+
+                            # Show guessed base address
+
+                            if is_64_bits:
+                                default_value = '%16x' % (
+                                    kallsyms.kernel_text_candidate or 0
+                                )
+                            else:
+                                default_value = '%08x' % (
+                                    kallsyms.kernel_text_candidate or 0
+                                )
+
+                            base_address_entry = self.builder.get_object(
+                                'base_address_entry'
+                            )
+                            base_address_entry.set_title(
+                                sub(
+                                    r': .+?\)',
+                                    ': %s)' % default_value,
+                                    base_address_entry.get_title(),
+                                )
+                            )
+                            base_address_entry.set_text('%s' % default_value)
+
+                            # Show "Detect symbols button" pointing to view #2
+
+                            detect_symbols_bar = self.builder.get_object(
+                                'detect_symbols_bar'
+                            )
+                            detect_symbols_bar.set_revealed(True)
+
+                        GLib.idle_add(update_ui_cb)
 
                     finally:
 
@@ -209,110 +445,15 @@ class MyApp(Adw.Application):
 
                         GLib.idle_add(hide_spinner_cb)
 
-                    # xx set and show metadata
-
-                    def update_ui_cb(*args):
-                        # Display the kernel version string
-
-                        kernel_string_row = self.builder.get_object(
-                            'kernel_string_row'
-                        )
-                        kernel_string_row.set_visible(True)
-                        kernel_string_row.set_subtitle(kallsyms.version_string)
-
-                        # Display the "Analysis options" UI block
-
-                        analysis_options = self.builder.get_object(
-                            'analysis_options'
-                        )
-                        analysis_options.set_visible(True)
-
-                        # Show guessed architecture
-
-                        key = architecture_to_readable_name[
-                            kallsyms.architecture
-                        ]
-
-                        architecture_combo = self.builder.get_object(
-                            'architecture_combo'
-                        )
-                        architecture_combo.set_title(
-                            sub(
-                                r': .+?\)',
-                                ': %s)' % key,
-                                architecture_combo.get_title()
-                            )
-                        )
-                        architecture_combo.set_selected(
-                            architecture_combo.get_model().find(key)
-                        )
-
-                        # Show guessed ELF Machine
-
-                        key = ElfMachine(kallsyms.elf_machine).name
-
-                        e_machine_combo = self.builder.get_object(
-                            'e_machine_combo'
-                        )
-                        e_machine_combo.set_title(
-                            sub(
-                                r': .+?\)',
-                                ': %s)' % key,
-                                e_machine_combo.get_title()
-                            )
-                        )
-                        e_machine_combo.set_selected(
-                            e_machine_combo.get_model().find(key)
-                        )
-
-                        # Show guessed bitness
-
-                        is_64_bits = kallsyms.is_64_bits
-
-                        bitness_switch = self.builder.get_object(
-                            'bitness_switch'
-                        )
-                        bitness_switch.set_title(
-                            sub(
-                                r': .+?\)',
-                                ': %s)' % ('yes' if is_64_bits else 'no'),
-                                bitness_switch.get_title()
-                            )
-                        )
-                        bitness_switch.set_active(is_64_bits)
-
-                        # Show guessed base address
-
-                        if kallsyms.kernel_text_candidate:
-                            base_address_entry = self.builder.get_object(
-                                'base_address_entry'
-                            )
-                            base_address_entry.set_title(
-                                sub(
-                                    r': .+?\)',
-                                    ': %08x)' % kallsyms.kernel_text_candidate,
-                                    base_address_entry.get_title()
-                                )
-                            )
-                            base_address_entry.set_text(
-                                '%08x' % kallsyms.kernel_text_candidate
-                            )
-
-                        # Show "Detect symbols button" pointing to view #2
-
-                        detect_symbols_bar = self.builder.get_object(
-                            'detect_symbols_bar'
-                        )
-                        detect_symbols_bar.set_revealed(True)
-
-                    GLib.idle_add(update_ui_cb)
-
             thread = Thread(target=detection_thread)
             thread.daemon = True
             thread.start()
 
 
 def main():
+    logging.basicConfig(
+        stream=stderr, level=logging.INFO, format='%(message)s'
+    )
 
     if (
         access(RESOURCES_PATH, W_OK)

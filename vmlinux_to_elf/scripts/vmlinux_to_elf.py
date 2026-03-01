@@ -2,7 +2,7 @@
 # -*- encoding: Utf-8 -*-
 import logging
 from argparse import ArgumentParser
-from sys import stdout
+from sys import stderr
 
 from vmlinux_to_elf.core.architecture_detecter import ArchitectureGuessError
 from vmlinux_to_elf.core.elf_symbolizer import ElfSymbolizer
@@ -13,7 +13,7 @@ from vmlinux_to_elf.core.vmlinuz_decompressor import (
 
 def main():
     logging.basicConfig(
-        stream=stdout, level=logging.INFO, format='%(message)s'
+        stream=stderr, level=logging.INFO, format='%(message)s'
     )
 
     args = ArgumentParser(

@@ -139,6 +139,7 @@
                         <property name="action-name">navigation.push</property>
                         <property name="action-target">'offsets_page'</property>
                         <property name="label">Find symbol table</property>
+                        <signal name="clicked" handler="sync_base_offset"/>
                         <style>
                           <class name="pill"/>
                           <class name="suggested-action"/>
@@ -360,7 +361,7 @@ Hex dump at address %s
               </object>
             </property>
             <property name="tag">offsets_page</property>
-            <property name="title">Offset selection</property>
+            <property name="title">Detected file offsets</property>
           </object>
         </child>
         <child>

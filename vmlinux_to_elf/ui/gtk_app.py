@@ -220,7 +220,7 @@ class MyWindow(Adw.ApplicationWindow):
         self.e_machine_combo.set_model(e_machine_model)
 
     @Gtk.Template.Callback()
-    def token_row_activated(self, column_view, position, user_data):
+    def token_row_activated(self, *data):
         item: DetectedTokenRow = (
             self.offset_list_selection_model.get_selected_item()
         )
@@ -234,8 +234,12 @@ class MyWindow(Adw.ApplicationWindow):
         self.offset_selection_split_view.set_show_sidebar(True)
 
     @Gtk.Template.Callback()
-    def symbol_row_activated(self, column_view, position, user_data):
+    def symbol_row_activated(self, *data):
         print('TODO handle symbol_row_activated')
+
+    @Gtk.Template.Callback()
+    def sync_base_offset(self, *data):
+        print('TODO handle sync_base_offset')
 
     def update_kernel_path(
         self,

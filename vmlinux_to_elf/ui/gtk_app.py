@@ -116,6 +116,7 @@ class MyWindow(Adw.ApplicationWindow):
     symbol_table_model: Gio.ListStore = Gtk.Template.Child()
     offset_list_selection_model: Gtk.SelectionModel = Gtk.Template.Child()
     offset_list_model: Gio.ListStore = Gtk.Template.Child()
+    offset_page_toast: Adw.ToastOverlay = Gtk.Template.Child()
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -168,14 +169,30 @@ class MyWindow(Adw.ApplicationWindow):
         self.add_simple_action('pick-file', pick_file)
 
         def copy_debug_information(*args):
-            print('TODO Implement copy_debug_information', args)
+            clipboard = Gdk.Display.get_default().get_clipboard()
+            clipboard.set(self.handler.raw_log)
+            toast = Adw.Toast.new('Debug information copied to clipboard')
+            toast.set_timeout(3)
+            self.offset_page_toast.add_toast(toast)
 
-        self.add_simple_action('copy-debug-information', copy_debug_information)
+        self.add_simple_action(
+            'copy-debug-information', copy_debug_information
+        )
 
         def copy_offset_information(*args):
-            print('TODO Implement copy_offset_information', args)
+            raw_text = ''
+            for index in range(self.offset_list_model.get_n_items()):
+                item = self.offset_list_model.get_item(index)
+                raw_text += '%s: %s\n' % (item.token, item.offset)
+            clipboard = Gdk.Display.get_default().get_clipboard()
+            clipboard.set(raw_text)
+            toast = Adw.Toast.new('Offset information copied to clipboard')
+            toast.set_timeout(3)
+            self.offset_page_toast.add_toast(toast)
 
-        self.add_simple_action('copy-offset-information', copy_offset_information)
+        self.add_simple_action(
+            'copy-offset-information', copy_offset_information
+        )
 
         def generate_elf_file(*args):
             print('TODO Implement generate_elf_file', args)

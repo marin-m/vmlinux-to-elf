@@ -286,6 +286,9 @@
                                     </child>
                                   </object>
                                 </child>
+                                <child>
+                                  <object class="AdwToastOverlay" id="offset_page_toast"/>
+                                </child>
                               </object>
                             </property>
                             <property name="sidebar">

@@ -115,6 +115,9 @@
                         </child>
                       </object>
                     </child>
+                    <child>
+                      <object class="AdwToastOverlay" id="main_page_toast"/>
+                    </child>
                   </object>
                 </property>
                 <child type="top">
@@ -135,10 +138,8 @@
                   <object class="GtkActionBar" id="detect_symbols_bar">
                     <child type="end">
                       <object class="GtkButton" id="find_symbol_table">
-                        <property name="action-name">navigation.push</property>
-                        <property name="action-target">'offsets_page'</property>
+                        <property name="action-name">win.validate-manual-options</property>
                         <property name="label">Find symbol table</property>
-                        <signal name="clicked" handler="sync_base_offset"/>
                         <style>
                           <class name="pill"/>
                           <class name="suggested-action"/>
@@ -383,7 +384,6 @@ Hex dump at address %s
                                     <property name="model">
                                       <object class="GListStore" id="symbol_table_model"/>
                                     </property>
-                                    <signal name="selection-changed" handler="symbol_row_activated"/>
                                   </object>
                                 </property>
                                 <child>

@@ -165,6 +165,7 @@ class MyWindow(Adw.ApplicationWindow):
     symbol_table_selection_model: Gtk.SelectionModel = Gtk.Template.Child()
     symbol_table_model: Gio.ListStore = Gtk.Template.Child()
     offset_list_selection_model: Gtk.SelectionModel = Gtk.Template.Child()
+    main_page_toast: Adw.ToastOverlay = Gtk.Template.Child()
     offset_list_model: Gio.ListStore = Gtk.Template.Child()
     offset_page_toast: Adw.ToastOverlay = Gtk.Template.Child()
     navigation: Adw.NavigationView = Gtk.Template.Child()
@@ -197,6 +198,48 @@ class MyWindow(Adw.ApplicationWindow):
             self.about_dialog.present(self)
 
         self.add_simple_action('show-about', show_about)
+
+        def validate_manual_options(*args):
+            try:
+                stuff_has_changed = (
+                    int(self.file_offset_entry.get_text().strip(), 16) != 0
+                    or int(self.base_address_entry.get_text().strip(), 16)
+                    != self.guessed_base_address
+                    or self.guessed_bitness != self.bitness_switch.get_active()
+                    or self.force_absolute_base_switch.get_active()
+                )
+            except ValueError:
+                toast = Adw.Toast.new('Please specify address and offset ' +
+                    'information in hexadecimal form only')
+                toast.set_timeout(10)
+                self.main_page_toast.add_toast(toast)
+                return
+            else:
+                self.navigation.push_by_tag('offsets_page')
+            if stuff_has_changed or self.did_user_mod_trigger:
+                # Display spinner
+
+                self.offsets_page.set_can_pop(False)
+                self.offsets_page_multi_layout.set_layout_name(
+                    'offsets_page_wait_layout'
+                )
+                self.offsets_page_wait_spinner.set_paintable(
+                    Adw.SpinnerPaintable.new(self.offsets_page_wait_spinner)
+                )
+
+                # Update kernel metadata
+
+                self.update_kernel_path(
+                    self.kernel_path,
+                    self.kernel_orig_data,
+                    self.bitness_switch.get_active(),
+                    self.force_absolute_base_switch.get_active(),
+                    int(self.base_address_entry.get_text().strip(), 16),
+                    int(self.file_offset_entry.get_text().strip(), 16),
+                    True,
+                )
+
+        self.add_simple_action('validate-manual-options', validate_manual_options)
 
         def pick_file(*args):
 
@@ -375,7 +418,7 @@ class MyWindow(Adw.ApplicationWindow):
         self.e_machine_combo.set_model(e_machine_model)
 
     @Gtk.Template.Callback()
-    def token_row_activated(self, *data):
+    def token_row_activated(self, *args):
         item: DetectedTokenRow = (
             self.offset_list_selection_model.get_selected_item()
         )
@@ -399,43 +442,6 @@ class MyWindow(Adw.ApplicationWindow):
 
         self.hex_buffer.set_text(text_buffer)
         self.offset_selection_split_view.set_show_sidebar(True)
-
-    @Gtk.Template.Callback()
-    def symbol_row_activated(self, *data):
-        print('TODO handle symbol_row_activated')
-
-    @Gtk.Template.Callback()
-    def sync_base_offset(self, *data):
-
-        stuff_has_changed = (
-            int(self.file_offset_entry.get_text().strip(), 16) != 0
-            or int(self.base_address_entry.get_text().strip(), 16)
-            != self.guessed_base_address
-            or self.guessed_bitness != self.bitness_switch.get_active()
-            or self.force_absolute_base_switch.get_active()
-        )
-        if stuff_has_changed or self.did_user_mod_trigger:
-            # Display spinner
-
-            self.offsets_page.set_can_pop(False)
-            self.offsets_page_multi_layout.set_layout_name(
-                'offsets_page_wait_layout'
-            )
-            self.offsets_page_wait_spinner.set_paintable(
-                Adw.SpinnerPaintable.new(self.offsets_page_wait_spinner)
-            )
-
-            # Update kernel metadata
-
-            self.update_kernel_path(
-                self.kernel_path,
-                self.kernel_orig_data,
-                self.bitness_switch.get_active(),
-                self.force_absolute_base_switch.get_active(),
-                int(self.base_address_entry.get_text().strip(), 16),
-                int(self.file_offset_entry.get_text().strip(), 16),
-                True,
-            )
 
     def update_kernel_path(
         self,

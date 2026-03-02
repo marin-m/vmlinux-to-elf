@@ -139,6 +139,9 @@ class MyWindow(Adw.ApplicationWindow):
     __gtype_name__ = 'MainWindow'
     kernel_path: Optional[str] = None
     raw_kernel: Optional[bytes] = None
+    guessed_base_address: Optional[int] = None
+    guessed_bitness: Optional[bool] = None
+    did_user_mod_trigger: bool = False
 
     detect_symbols_bar: Gtk.ActionBar = Gtk.Template.Child()
     about_dialog: Adw.AboutDialog = Gtk.Template.Child()
@@ -153,6 +156,7 @@ class MyWindow(Adw.ApplicationWindow):
     bitness_switch: Adw.SwitchRow = Gtk.Template.Child()
     base_address_entry: Adw.EntryRow = Gtk.Template.Child()
     bss_size_entry: Adw.SpinRow = Gtk.Template.Child()
+    offsets_page: Adw.NavigationPage = Gtk.Template.Child()
     file_offset_entry: Adw.EntryRow = Gtk.Template.Child()
     force_absolute_base_switch: Adw.SwitchRow = Gtk.Template.Child()
     symbol_table_selection_model: Gtk.SelectionModel = Gtk.Template.Child()
@@ -396,17 +400,49 @@ class MyWindow(Adw.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def sync_base_offset(self, *data):
-        print('TODO handle sync_base_offset')
+
+        stuff_has_changed = (
+            int(self.file_offset_entry.get_text().strip(), 16) != 0
+            or int(self.base_address_entry.get_text().strip(), 16)
+            != self.guessed_base_address
+            or self.guessed_bitness != self.bitness_switch.get_active()
+            or self.force_absolute_base_switch.get_active()
+        )
+        if stuff_has_changed or self.did_user_mod_trigger:
+            # Display spinner
+
+            self.offsets_page.set_can_pop(False)
+            self.offsets_page.get_child().set_layout_name(
+                'offsets_page_wait_layout'
+            )
+
+            # Update kernel metadata
+
+            self.update_kernel_path(
+                self.kernel_path,
+                self.kernel_orig_data,
+                self.bitness_switch.get_active(),
+                self.force_absolute_base_switch.get_active(),
+                int(self.base_address_entry.get_text().strip(), 16),
+                int(self.file_offset_entry.get_text().strip(), 16),
+                True,
+            )
 
     def update_kernel_path(
         self,
         path: Optional[str],
         orig_data: Optional[bytes] = None,
         is_64_bits: Optional[bool] = None,
+        override_relative_base: bool = False,
+        override_base_address: Optional[int] = None,
+        override_file_offset: int = 0,
+        user_mod_trigger: bool = False,
     ):
 
         if not path:
             return
+
+        self.did_user_mod_trigger = user_mod_trigger
 
         self.kernel_path = path
         if orig_data:
@@ -426,11 +462,13 @@ class MyWindow(Adw.ApplicationWindow):
             self.handler.flush()
             try:
                 self.raw_kernel = obtain_raw_kernel_from_file(
-                    self.kernel_orig_data
+                    self.kernel_orig_data[override_file_offset:]
                 )
                 kallsyms = KallsymsFinder(
                     self.raw_kernel,
                     bit_size,
+                    override_relative_base,
+                    override_base_address,
                 )
 
             except ArchitectureGuessError:
@@ -543,33 +581,42 @@ class MyWindow(Adw.ApplicationWindow):
                     key = self.e_machine_combo.get_model().find(key)
                     if key is not None:
                         self.e_machine_combo.set_selected(key)
+                    
+                    nonlocal is_64_bits
 
-                    # Show guessed bitness
+                    if not user_mod_trigger:
+                        # Show guessed bitness
 
-                    is_64_bits = kallsyms.is_64_bits
+                        is_64_bits = kallsyms.is_64_bits
 
-                    self.bitness_switch.set_title(
-                        '64-bit (auto-detect: %s)'
-                        % ('yes' if is_64_bits else 'no')
-                    )
-                    self.bitness_switch.set_active(is_64_bits)
+                        self.bitness_switch.set_title(
+                            '64-bit (auto-detect: %s)'
+                            % ('yes' if is_64_bits else 'no')
+                        )
+                        self.bitness_switch.set_active(is_64_bits)
 
-                    # Show guessed base address
+                        self.guessed_bitness = is_64_bits
 
-                    if is_64_bits:
-                        default_value = '%016x' % (
+                        # Show guessed base address
+
+                        if is_64_bits:
+                            default_value = '%016x' % (
+                                kallsyms.kernel_text_candidate or 0
+                            )
+                        else:
+                            default_value = '%08x' % (
+                                kallsyms.kernel_text_candidate or 0
+                            )
+
+                        self.base_address_entry.set_title(
+                            'Base address, hexadecimal (auto-detect: %s)'
+                            % default_value
+                        )
+                        self.base_address_entry.set_text(default_value)
+
+                        self.guessed_base_address = (
                             kallsyms.kernel_text_candidate or 0
                         )
-                    else:
-                        default_value = '%08x' % (
-                            kallsyms.kernel_text_candidate or 0
-                        )
-
-                    self.base_address_entry.set_title(
-                        'Base address, hexadecimal (auto-detect: %s)'
-                        % default_value
-                    )
-                    self.base_address_entry.set_text(default_value)
 
                     # Show "Detect symbols button" pointing to view #2
 
@@ -639,6 +686,11 @@ class MyWindow(Adw.ApplicationWindow):
 
                 def hide_spinner_cb(*args):
                     self.selection_spinner_row.set_visible(False)
+
+                    self.offsets_page.set_can_pop(True)
+                    self.offsets_page.get_child().set_layout_name(
+                        'offsets_page_layout'
+                    )
 
                 GLib.idle_add(hide_spinner_cb)
 

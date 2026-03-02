@@ -6,6 +6,7 @@ import math
 from enum import Enum
 from re import match, search, findall
 from struct import pack, unpack_from
+from typing import Optional
 
 from vmlinux_to_elf.core.architecture_detecter import (
     ArchitectureDetectionResult,
@@ -187,7 +188,7 @@ class KallsymsFinder:
         kernel_img: bytes,
         bit_size: int = None,
         override_relative_base: bool = False,
-        base_address: int = None,
+        base_address: Optional[int] = None,
         # extra_info: bool = False,
     ):
         self.override_relative_base = override_relative_base

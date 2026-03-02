@@ -18,7 +18,14 @@ RESOURCES_PATH = realpath(ASSETS_DIR + '/vmlinux-to-elf.gresource')
 # Based on https://github.com/Taiko2k/GTK4PythonTutorial?tab=readme-ov-file#ui-from-graphical-designer
 
 import sys
-import gi
+
+try:
+    import gi
+except ImportError:
+    exit(
+        '[!] Please set up the package including the "gui" '
+        + 'UV extra (see README)'
+    )
 
 gi.require_version('Gtk', '4.0')
 gi.require_version('Gdk', '4.0')
@@ -145,6 +152,9 @@ class MyWindow(Adw.ApplicationWindow):
     analysis_options: Adw.PreferencesGroup = Gtk.Template.Child()
     bitness_switch: Adw.SwitchRow = Gtk.Template.Child()
     base_address_entry: Adw.EntryRow = Gtk.Template.Child()
+    bss_size_entry: Adw.SpinRow = Gtk.Template.Child()
+    file_offset_entry: Adw.EntryRow = Gtk.Template.Child()
+    force_absolute_base_switch: Adw.SwitchRow = Gtk.Template.Child()
     symbol_table_selection_model: Gtk.SelectionModel = Gtk.Template.Child()
     symbol_table_model: Gio.ListStore = Gtk.Template.Child()
     offset_list_selection_model: Gtk.SelectionModel = Gtk.Template.Child()
@@ -273,7 +283,20 @@ class MyWindow(Adw.ApplicationWindow):
                             self.raw_kernel,
                             None,
                             data,
-                            # TODO add more parameters
+                            elf_machine=ElfMachine[
+                                self.e_machine_combo.get_selected_item().get_string()
+                            ],
+                            bit_size=64
+                            if self.bitness_switch.get_active()
+                            else 32,
+                            base_address=int(
+                                self.base_address_entry.get_text().strip(), 16
+                            ),  # TODO HAVE A REAL CONSTRAINT OVER THIS FIELD
+                            bss_size=int(self.bss_size_entry.get_value()),
+                            file_offset=int(
+                                self.file_offset_entry.get_text().strip(), 16
+                            ),
+                            override_relative=self.force_absolute_base_switch.get_active(),
                         )
 
                         def processing_done(*args):

@@ -31,7 +31,6 @@ classifiers = [
     "Topic :: Software Development :: Embedded Systems",
     "Topic :: System :: Operating System Kernels :: Linux",
     "Topic :: Security",
-    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
     "Environment :: Console",
     "Environment :: X11 Applications :: GTK",
     "Environment :: X11 Applications :: Gnome"

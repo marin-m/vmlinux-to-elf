@@ -157,6 +157,9 @@ class MyWindow(Adw.ApplicationWindow):
     base_address_entry: Adw.EntryRow = Gtk.Template.Child()
     bss_size_entry: Adw.SpinRow = Gtk.Template.Child()
     offsets_page: Adw.NavigationPage = Gtk.Template.Child()
+    offsets_page_multi_layout: Adw.MultiLayoutView = Gtk.Template.Child()
+    offsets_page_wait_spinner: Adw.StatusPage = Gtk.Template.Child()
+    wait_spinner: Adw.StatusPage = Gtk.Template.Child()
     file_offset_entry: Adw.EntryRow = Gtk.Template.Child()
     force_absolute_base_switch: Adw.SwitchRow = Gtk.Template.Child()
     symbol_table_selection_model: Gtk.SelectionModel = Gtk.Template.Child()
@@ -279,6 +282,9 @@ class MyWindow(Adw.ApplicationWindow):
                         dialog.choose(self, None, None)
                 else:
                     self.navigation.push_by_tag('loading_page')
+                    self.wait_spinner.set_paintable(
+                        Adw.SpinnerPaintable.new(self.wait_spinner)
+                    )
 
                     def processing_thread(*args):
 
@@ -412,8 +418,11 @@ class MyWindow(Adw.ApplicationWindow):
             # Display spinner
 
             self.offsets_page.set_can_pop(False)
-            self.offsets_page.get_child().set_layout_name(
+            self.offsets_page_multi_layout.set_layout_name(
                 'offsets_page_wait_layout'
+            )
+            self.offsets_page_wait_spinner.set_paintable(
+                Adw.SpinnerPaintable.new(self.offsets_page_wait_spinner)
             )
 
             # Update kernel metadata
@@ -581,7 +590,7 @@ class MyWindow(Adw.ApplicationWindow):
                     key = self.e_machine_combo.get_model().find(key)
                     if key is not None:
                         self.e_machine_combo.set_selected(key)
-                    
+
                     nonlocal is_64_bits
 
                     if not user_mod_trigger:

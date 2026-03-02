@@ -350,13 +350,7 @@ Hex dump at address %s
                   <object class="AdwLayout" id="offsets_page_wait_layout">
                     <property name="name">offsets_page_wait_layout</property>
                     <child>
-                      <object class="AdwStatusPage" id="offsets_status_page">
-                        <property name="paintable">
-                          <object class="AdwSpinnerPaintable">
-                            <property name="widget">offsets_status_page</property>
-                          </object>
-                        </property>
-                      </object>
+                      <object class="AdwStatusPage" id="offsets_page_wait_spinner"/>
                     </child>
                   </object>
                 </child>
@@ -511,13 +505,7 @@ Hex dump at address %s
             <property name="child">
               <object class="AdwToolbarView">
                 <property name="content">
-                  <object class="AdwStatusPage" id="offsets_page_wait_spinner">
-                    <property name="paintable">
-                      <object class="AdwSpinnerPaintable">
-                        <property name="widget">offsets_page_wait_spinner</property>
-                      </object>
-                    </property>
-                  </object>
+                  <object class="AdwStatusPage" id="wait_spinner"/>
                 </property>
                 <child type="top">
                   <object class="AdwHeaderBar"/>

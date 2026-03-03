@@ -42,8 +42,7 @@ flatpak install re.fossplant.vmlinux-to-elf
 
 Installation (CLI+GUI, requires libadwaita ≥ 1.6 available on Ubuntu ≥ 24.10)
 
-```
-sudo snap install --classic astral-uv
+```bash
 sudo apt install gir1.2-adw-1 gir1.2-gtk-4.0
 uv tool install vmlinux-to-elf[gui]
 

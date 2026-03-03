@@ -17,12 +17,24 @@ vmlinux-to-elf <input_kernel.bin> <output_kernel.elf>
 
 # Graphical:
 flatpak run re.fossplant.vmlinux-to-elf
+
+# Graphical (without Flatpak):
+vmlinux-to-elf-gui
 ```
 
 Installation (CLI):
 ```bash
+# Installation with uv (recommended)
 sudo snap install --classic astral-uv
 uv tool install vmlinux-to-elf
+
+# Same including GUI (requires libadwaita ≥ 1.6 available
+# on Ubuntu ≥ 24.10)
+uv tool install vmlinux-to-elf[gui]
+
+# Installation with pipx
+sudo apt install pipx
+pipx install vmlinux-to-elf
 ```
 
 Installation (GUI):

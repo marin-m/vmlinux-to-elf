@@ -22,7 +22,7 @@ vmlinux-to-elf-gui
 Installation (CLI-only):
 ```bash
 # Installation with uv (recommended)
-sudo snap install astral-uv
+sudo snap install --classic astral-uv
 uv tool install vmlinux-to-elf
 
 # Or with pipx
@@ -37,7 +37,7 @@ sudo apt install libgirepository-2.0-dev libgtk-4-dev libadwaita-1-dev \
     gir1.2-adw-1 gir1.2-gtk-4.0 python3-dev glib-compile-resources
 
 # Installation with uv (recommended)
-sudo snap install astral-uv
+sudo snap install --classic astral-uv
 uv tool install vmlinux-to-elf[gui]
 
 # Or with pipx

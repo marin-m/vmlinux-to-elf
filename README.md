@@ -16,38 +16,34 @@ Usage:
 vmlinux-to-elf <input_kernel.bin> <output_kernel.elf>
 
 # Graphical:
-vmlinux-to-elf-gui
+flatpak run re.fossplant.vmlinux-to-elf
 ```
 
-Installation (CLI-only):
+Installation (CLI):
 ```bash
-# Installation with uv (recommended)
 sudo snap install --classic astral-uv
 uv tool install vmlinux-to-elf
-
-# Or with pipx
-sudo apt install pipx
-pipx install vmlinux-to-elf
 ```
 
-Installation (full, requires `libadwaita` 1.6+ available on Ubuntu 24.10+):
+Installation (GUI):
+
+[![Get it on Flathub](https://flathub.org/api/badge?svg&locale=en)](https://flathub.org/en/apps/re.fossplant.vmlinux-to-elf)
+
 ```bash
+sudo apt install flatpak
+flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+flatpak install re.fossplant.vmlinux-to-elf
+```
+
+Local development environment setup (running the GUI outside Flatpak requires  `libadwaita` 1.6+, available on Ubuntu 24.10+):
+
+```bash
+git clone git@github.com:marin-m/vmlinux-to-elf.git
+
 # Dependencies for the GTK-4 GUI
 sudo apt install libgirepository-2.0-dev libgtk-4-dev libadwaita-1-dev \
     gir1.2-adw-1 gir1.2-gtk-4.0 python3-dev glib-compile-resources
 
-# Installation with uv (recommended)
-sudo snap install --classic astral-uv
-uv tool install vmlinux-to-elf[gui]
-
-# Or with pipx
-sudo apt install pipx
-pipx install vmlinux-to-elf[gui]
-```
-
-Local development environment setup:
-```bash
-git clone git@github.com:marin-m/vmlinux-to-elf.git
 cd vmlinux-to-elf
 # With uv (creates ".venv", call "source .venv/bin/activate" to set up)
 uv sync --extra gui

@@ -30,6 +30,7 @@ uv tool install vmlinux-to-elf
 
 # Same including GUI (requires libadwaita ≥ 1.6 available
 # on Ubuntu ≥ 24.10)
+sudo apt install gir1.2-adw-1 gir1.2-gtk-4.0
 uv tool install vmlinux-to-elf[gui]
 
 # Installation with pipx

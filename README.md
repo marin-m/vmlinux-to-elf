@@ -35,6 +35,7 @@ Installation (GUI):
 [![Get it on Flathub](https://flathub.org/api/badge?svg&locale=en)](https://flathub.org/en/apps/re.fossplant.vmlinux-to-elf)
 
 ```bash
+# Install GUI
 sudo apt install flatpak
 flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 flatpak install re.fossplant.vmlinux-to-elf

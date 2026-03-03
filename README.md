@@ -22,23 +22,23 @@ flatpak run re.fossplant.vmlinux-to-elf
 vmlinux-to-elf-gui
 ```
 
-Installation (CLI):
+Installation (CLI on all distros, or CLI+GUI on recent distros):
 ```bash
-# Installation with uv (recommended)
+# Install CLI with uv (recommended)
 sudo snap install --classic astral-uv
 uv tool install vmlinux-to-elf
 
-# Same including GUI (requires libadwaita ≥ 1.6 available
+# Install CLI+GUI (requires libadwaita ≥ 1.6 available
 # on Ubuntu ≥ 24.10)
 sudo apt install gir1.2-adw-1 gir1.2-gtk-4.0
 uv tool install vmlinux-to-elf[gui]
 
-# Installation with pipx
+# Install CLI with pipx
 sudo apt install pipx
 pipx install vmlinux-to-elf
 ```
 
-Installation (GUI):
+Installation (GUI, all distros):
 
 [![Get it on Flathub](https://flathub.org/api/badge?svg&locale=en)](https://flathub.org/en/apps/re.fossplant.vmlinux-to-elf)
 

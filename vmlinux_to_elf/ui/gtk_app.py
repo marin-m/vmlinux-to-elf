@@ -3,12 +3,12 @@
 from os import stat, scandir, access, W_OK
 from os.path import dirname, realpath
 from argparse import ArgumentParser
+from io import BytesIO, StringIO
 from threading import Thread
 from sys import stderr, argv
 from typing import Optional
 from subprocess import run
 from shutil import which
-from io import BytesIO
 import logging
 
 SCRIPT_DIR = dirname(realpath(__file__))
@@ -139,6 +139,7 @@ class MyWindow(Adw.ApplicationWindow):
     __gtype_name__ = 'MainWindow'
     kernel_path: Optional[str] = None
     raw_kernel: Optional[bytes] = None
+    kallsyms: Optional[KallsymsFinder] = None
     guessed_base_address: Optional[int] = None
     guessed_bitness: Optional[bool] = None
     did_user_mod_trigger: bool = False
@@ -209,8 +210,10 @@ class MyWindow(Adw.ApplicationWindow):
                     or self.force_absolute_base_switch.get_active()
                 )
             except ValueError:
-                toast = Adw.Toast.new('Please specify address and offset ' +
-                    'information in hexadecimal form only')
+                toast = Adw.Toast.new(
+                    'Please specify address and offset '
+                    + 'information in hexadecimal form only'
+                )
                 toast.set_timeout(10)
                 self.main_page_toast.add_toast(toast)
                 return
@@ -239,7 +242,9 @@ class MyWindow(Adw.ApplicationWindow):
                     True,
                 )
 
-        self.add_simple_action('validate-manual-options', validate_manual_options)
+        self.add_simple_action(
+            'validate-manual-options', validate_manual_options
+        )
 
         def pick_file(*args):
 
@@ -344,7 +349,7 @@ class MyWindow(Adw.ApplicationWindow):
                             else 32,
                             base_address=int(
                                 self.base_address_entry.get_text().strip(), 16
-                            ),  # TODO HAVE A REAL CONSTRAINT OVER THIS FIELD
+                            ),
                             bss_size=int(self.bss_size_entry.get_value()),
                             file_offset=int(
                                 self.file_offset_entry.get_text().strip(), 16
@@ -398,7 +403,74 @@ class MyWindow(Adw.ApplicationWindow):
         self.add_simple_action('generate-elf-file', generate_elf_file)
 
         def export_symbols(*args):
-            print('TODO Implement export_symbols', args)
+
+            def file_picked(file_dialog: Gtk.FileDialog, task: Gio.Task):
+                try:
+                    open_result: Gio.File = file_dialog.save_finish(task)
+                except GLib.GError as err:
+                    if err.message != 'Dismissed by user':
+                        dialog = Adw.AlertDialog.new(
+                            'Could not open file', err.message
+                        )
+                        dialog.add_response('ok', 'Ok')
+                        dialog.set_default_response('ok')
+                        dialog.set_close_response('ok')
+                        dialog.choose(self, None, None)
+                else:
+                    self.navigation.push_by_tag('loading_page')
+                    self.wait_spinner.set_paintable(
+                        Adw.SpinnerPaintable.new(self.wait_spinner)
+                    )
+
+                    def processing_thread(*args):
+
+                        out_buffer = StringIO()
+                        self.kallsyms.print_symbols_debug(out_buffer)
+
+                        out_buffer = out_buffer.getvalue().encode('utf-8')
+
+                        def processing_done(*args):
+
+                            if (
+                                self.navigation.get_visible_page_tag()
+                                == 'loading_page'
+                            ):
+                                self.navigation.pop()
+
+                            try:
+                                open_result.replace_contents(
+                                    out_buffer,
+                                    None,
+                                    False,
+                                    Gio.FileCreateFlags.NONE,
+                                    None,
+                                )
+
+                            except GLib.GError as err:
+                                dialog = Adw.AlertDialog.new(
+                                    'Could not write file', err.message
+                                )
+
+                            else:
+                                dialog = Adw.AlertDialog.new(
+                                    'Symbols file successfully wrote', None
+                                )
+                            dialog.add_response('ok', 'Ok')
+                            dialog.set_default_response('ok')
+                            dialog.set_close_response('ok')
+                            dialog.choose(self, None, None)
+
+                        GLib.idle_add(processing_done)
+
+                    thread = Thread(target=processing_thread)
+                    thread.daemon = True
+                    thread.start()
+
+            file_picker = Gtk.FileDialog()
+            file_picker.set_initial_name(
+                self.kernel_path.split('/').pop() + '-symbols.txt'
+            )
+            file_picker.save(self, callback=file_picked)
 
         self.add_simple_action('export-symbols', export_symbols)
 
@@ -479,7 +551,7 @@ class MyWindow(Adw.ApplicationWindow):
                 self.raw_kernel = obtain_raw_kernel_from_file(
                     self.kernel_orig_data[override_file_offset:]
                 )
-                kallsyms = KallsymsFinder(
+                self.kallsyms = KallsymsFinder(
                     self.raw_kernel,
                     bit_size,
                     override_relative_base,
@@ -556,7 +628,7 @@ class MyWindow(Adw.ApplicationWindow):
 
                     self.kernel_string_row.set_visible(True)
                     self.kernel_string_row.set_subtitle(
-                        kallsyms.version_string
+                        self.kallsyms.version_string
                     )
 
                     # Display the "Analysis options" UI block
@@ -568,9 +640,9 @@ class MyWindow(Adw.ApplicationWindow):
                     """
                     key = (
                         architecture_to_readable_name[
-                            kallsyms.architecture
+                            self.kallsyms.architecture
                         ]
-                        if kallsyms.architecture
+                        if self.kallsyms.architecture
                         else 'Unknown'
                     )
 
@@ -585,8 +657,8 @@ class MyWindow(Adw.ApplicationWindow):
                     # Show guessed ELF Machine
 
                     key = (
-                        ElfMachine(kallsyms.elf_machine).name
-                        if kallsyms.elf_machine
+                        ElfMachine(self.kallsyms.elf_machine).name
+                        if self.kallsyms.elf_machine
                         else 'Unknown'
                     )
 
@@ -602,7 +674,7 @@ class MyWindow(Adw.ApplicationWindow):
                     if not user_mod_trigger:
                         # Show guessed bitness
 
-                        is_64_bits = kallsyms.is_64_bits
+                        is_64_bits = self.kallsyms.is_64_bits
 
                         self.bitness_switch.set_title(
                             '64-bit (auto-detect: %s)'
@@ -616,11 +688,11 @@ class MyWindow(Adw.ApplicationWindow):
 
                         if is_64_bits:
                             default_value = '%016x' % (
-                                kallsyms.kernel_text_candidate or 0
+                                self.kallsyms.kernel_text_candidate or 0
                             )
                         else:
                             default_value = '%08x' % (
-                                kallsyms.kernel_text_candidate or 0
+                                self.kallsyms.kernel_text_candidate or 0
                             )
 
                         self.base_address_entry.set_title(
@@ -630,7 +702,7 @@ class MyWindow(Adw.ApplicationWindow):
                         self.base_address_entry.set_text(default_value)
 
                         self.guessed_base_address = (
-                            kallsyms.kernel_text_candidate or 0
+                            self.kallsyms.kernel_text_candidate or 0
                         )
 
                     # Show "Detect symbols button" pointing to view #2
@@ -641,15 +713,15 @@ class MyWindow(Adw.ApplicationWindow):
 
                     data = {
                         'input_file_start': 0,
-                        'kallsyms_addresses_or_offsets': kallsyms.kallsyms_addresses_or_offsets__offset,
-                        'kallsyms_num_syms': kallsyms.kallsyms_num_syms__offset,
-                        'kallsyms_names': kallsyms.kallsyms_names__offset,
-                        'kallsyms_markers': kallsyms.kallsyms_markers__offset,
-                        'kallsyms_token_table': kallsyms.kallsyms_token_table__offset,
-                        'kallsyms_token_index': kallsyms.kallsyms_token_index__offset,
-                        'kallsyms_token_index_end': kallsyms.kallsyms_token_index_end__offset,
-                        'elf64_rela_start': kallsyms.elf64_rela_start,
-                        'elf64_rela_end_excl': kallsyms.elf64_rela_end_excl,
+                        'kallsyms_addresses_or_offsets': self.kallsyms.kallsyms_addresses_or_offsets__offset,
+                        'kallsyms_num_syms': self.kallsyms.kallsyms_num_syms__offset,
+                        'kallsyms_names': self.kallsyms.kallsyms_names__offset,
+                        'kallsyms_markers': self.kallsyms.kallsyms_markers__offset,
+                        'kallsyms_token_table': self.kallsyms.kallsyms_token_table__offset,
+                        'kallsyms_token_index': self.kallsyms.kallsyms_token_index__offset,
+                        'kallsyms_token_index_end': self.kallsyms.kallsyms_token_index_end__offset,
+                        'elf64_rela_start': self.kallsyms.elf64_rela_start,
+                        'elf64_rela_end_excl': self.kallsyms.elf64_rela_end_excl,
                     }
 
                     selection_model = self.offset_list_selection_model
@@ -684,7 +756,7 @@ class MyWindow(Adw.ApplicationWindow):
 
                     fmt = '%016x' if is_64_bits else '%08x'
 
-                    for symbol in kallsyms.symbols:
+                    for symbol in self.kallsyms.symbols:
                         list_store.append(
                             RecoveredSymbolRow(
                                 name=symbol.name,

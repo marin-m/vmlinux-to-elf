@@ -6,6 +6,7 @@ import math
 from enum import Enum
 from re import match, search, findall
 from struct import pack, unpack_from
+from io import StringIO
 from typing import Optional
 
 from vmlinux_to_elf.core.architecture_detecter import (
@@ -1523,7 +1524,7 @@ class KallsymsFinder:
 
             self.name_to_symbol[symbol.name] = symbol
 
-    def print_symbols_debug(self):
+    def print_symbols_debug(self, out_buffer: Optional[StringIO] = None):
         # Print symbol types (debug)
 
         symbol_types = set()
@@ -1539,12 +1540,14 @@ class KallsymsFinder:
         for symbol_address, symbol_name in zip(
             self.kernel_addresses, self.symbol_names
         ):
-            logging.info(
-                '{0:s} {1:s} {2:s}'.format(
-                    '%016x' % symbol_address
-                    if self.is_64_bits
-                    else '%08x' % symbol_address,
-                    symbol_name[0],  # The symbol type
-                    symbol_name[1:],  # The symbol name itself
-                )
+            out_string = '{0:s} {1:s} {2:s}'.format(
+                '%016x' % symbol_address
+                if self.is_64_bits
+                else '%08x' % symbol_address,
+                symbol_name[0],  # The symbol type
+                symbol_name[1:],  # The symbol name itself
             )
+            if out_buffer:
+                out_buffer.write(out_string + '\n')
+            else:
+                logging.info(out_string)

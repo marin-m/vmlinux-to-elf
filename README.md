@@ -17,28 +17,20 @@ vmlinux-to-elf <input_kernel.bin> <output_kernel.elf>
 
 # Graphical:
 flatpak run re.fossplant.vmlinux-to-elf
-
-# Graphical (without Flatpak):
-vmlinux-to-elf-gui
 ```
 
-Installation (CLI on all distros, or CLI+GUI on recent distros):
+Installation (CLI):
 ```bash
 # Install CLI with uv (recommended)
 sudo snap install --classic astral-uv
 uv tool install vmlinux-to-elf
-
-# Install CLI+GUI (requires libadwaita ≥ 1.6 available
-# on Ubuntu ≥ 24.10)
-sudo apt install gir1.2-adw-1 gir1.2-gtk-4.0
-uv tool install vmlinux-to-elf[gui]
 
 # Install CLI with pipx
 sudo apt install pipx
 pipx install vmlinux-to-elf
 ```
 
-Installation (GUI, all distros):
+Installation (GUI):
 
 [![Get it on Flathub](https://flathub.org/api/badge?svg&locale=en)](https://flathub.org/en/apps/re.fossplant.vmlinux-to-elf)
 
@@ -46,6 +38,17 @@ Installation (GUI, all distros):
 sudo apt install flatpak
 flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 flatpak install re.fossplant.vmlinux-to-elf
+```
+
+Installation (CLI+GUI, requires libadwaita ≥ 1.6 available on Ubuntu ≥ 24.10)
+
+```
+sudo snap install --classic astral-uv
+sudo apt install gir1.2-adw-1 gir1.2-gtk-4.0
+uv tool install vmlinux-to-elf[gui]
+
+# Then launch with:
+vmlinux-to-elf-gui
 ```
 
 Local development environment setup (running the GUI outside Flatpak requires  `libadwaita` 1.6+, available on Ubuntu 24.10+):

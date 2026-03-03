@@ -168,6 +168,8 @@ class MyWindow(Adw.ApplicationWindow):
     offset_list_selection_model: Gtk.SelectionModel = Gtk.Template.Child()
     main_page_toast: Adw.ToastOverlay = Gtk.Template.Child()
     offset_list_model: Gio.ListStore = Gtk.Template.Child()
+    application_menu: Gio.Menu = Gtk.Template.Child()
+    recent_files_menu: Gio.Menu = Gtk.Template.Child()
     offset_page_toast: Adw.ToastOverlay = Gtk.Template.Child()
     navigation: Adw.NavigationView = Gtk.Template.Child()
 
@@ -187,6 +189,24 @@ class MyWindow(Adw.ApplicationWindow):
         # architecture list
 
         self.init_arch_list()
+
+        # List recent files
+
+        num_recent_files = 0
+        for item in Gtk.RecentManager.get_default().get_items():
+            if (
+                item.has_application('re.fossplant.vmlinux-to-elf')
+                and item.exists()
+            ):
+                self.recent_files_menu.append(
+                    item.get_uri_display(),
+                    'win.open-recent(%s)' % repr(item.get_uri()),
+                )
+                num_recent_files += 1
+                if num_recent_files >= 10:
+                    break
+        if num_recent_files == 0:
+            self.application_menu.remove(0)
 
         # Connect UI actions
 
@@ -246,30 +266,47 @@ class MyWindow(Adw.ApplicationWindow):
             'validate-manual-options', validate_manual_options
         )
 
+        def load_bytes_cb(open_result, result):
+            try:
+                data: bytes = open_result.load_bytes_finish(
+                    result
+                )[0].get_data()
+            except GLib.GError as err:
+                self.selection_spinner_row.set_visible(False)
+                dialog = Adw.AlertDialog.new(
+                    'Could not read file', err.message
+                )
+                dialog.add_response('ok', 'Ok')
+                dialog.set_default_response('ok')
+                dialog.set_close_response('ok')
+                dialog.choose(self, None, None)
+            else:
+                self.update_kernel_path(
+                    open_result.get_path(),
+                    data,
+                )
+
+        def open_recent(action, initial_uri):
+            initial_uri = initial_uri.get_string()
+
+            file = Gio.File.new_for_uri(initial_uri)
+
+            self.selection_spinner_row.set_visible(True)
+            file.load_bytes_async(None, load_bytes_cb)
+
+        self.add_simple_action(
+            'open-recent', open_recent, GLib.VariantType.new('s')
+        )
+
         def pick_file(*args):
 
             def file_picked(file_dialog: Gtk.FileDialog, task: Gio.Task):
                 try:
                     open_result: Gio.File = file_dialog.open_finish(task)
+                    Gtk.RecentManager.get_default().add_item(
+                        open_result.get_uri()
+                    )
 
-                    def load_bytes_cb(source, result, *args):
-                        try:
-                            data: bytes = open_result.load_bytes_finish(
-                                result
-                            )[0].get_data()
-                        except GLib.GError as err:
-                            dialog = Adw.AlertDialog.new(
-                                'Could not read file', err.message
-                            )
-                            dialog.add_response('ok', 'Ok')
-                            dialog.set_default_response('ok')
-                            dialog.set_close_response('ok')
-                            dialog.choose(self, None, None)
-                        else:
-                            self.update_kernel_path(
-                                open_result.get_path(),
-                                data,
-                            )
                 except GLib.GError as err:
                     if err.message != 'Dismissed by user':
                         dialog = Adw.AlertDialog.new(
@@ -280,13 +317,18 @@ class MyWindow(Adw.ApplicationWindow):
                         dialog.set_close_response('ok')
                         dialog.choose(self, None, None)
                 else:
+                    self.selection_spinner_row.set_visible(True)
                     open_result.load_bytes_async(None, load_bytes_cb)
 
             file_picker = Gtk.FileDialog()
             # file_picker.set_filters(Gio.ListStore())
+            # if initial_uri:
+            #     file_picker.set_initial_file(Gio.File.new_for_uri(initial_uri))
             file_picker.open(self, callback=file_picked)
 
-        self.add_simple_action('pick-file', pick_file)
+        self.add_simple_action(
+            'pick-file', pick_file
+        )
 
         def copy_debug_information(*args):
             clipboard = Gdk.Display.get_default().get_clipboard()
@@ -474,9 +516,11 @@ class MyWindow(Adw.ApplicationWindow):
 
         self.add_simple_action('export-symbols', export_symbols)
 
-    def add_simple_action(self, name, callback):
+    def add_simple_action(
+        self, name, callback, param_type: Optional[GLib.VariantType] = None
+    ):
 
-        action = Gio.SimpleAction.new(name, None)
+        action = Gio.SimpleAction.new(name, param_type)
         action.connect('activate', callback)
         self.add_action(action)
 

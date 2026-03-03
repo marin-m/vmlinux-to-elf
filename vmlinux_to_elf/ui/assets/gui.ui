@@ -146,6 +146,22 @@
                         </style>
                       </object>
                     </child>
+                    <child>
+                      <object class="GtkButton">
+                        <property name="action-name">navigation.push</property>
+                        <property name="action-target">'offsets_page'</property>
+                        <property name="label">(Debug: go to view 2)</property>
+                        <property name="visible">False</property>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkButton">
+                        <property name="action-name">navigation.push</property>
+                        <property name="action-target">'preview_page'</property>
+                        <property name="label">(Debug: go to view 3)</property>
+                        <property name="visible">False</property>
+                      </object>
+                    </child>
                   </object>
                 </child>
               </object>
@@ -524,7 +540,7 @@ Hex dump at address %s
     <property name="startup-id">re.fossplant.vmlinux-to-elf</property>
   </template>
   <menu id="application_menu">
-    <submenu>
+    <submenu id="recent_files_menu">
       <attribute name="label">_Recent files..</attribute>
     </submenu>
     <item>

@@ -291,6 +291,10 @@ class MyWindow(Adw.ApplicationWindow):
 
             file = Gio.File.new_for_uri(initial_uri)
 
+            self.kernel_string_row.set_visible(False)
+            self.analysis_options.set_visible(False)
+            self.detect_symbols_bar.set_revealed(False)
+
             self.selection_spinner_row.set_visible(True)
             file.load_bytes_async(None, load_bytes_cb)
 
@@ -317,13 +321,15 @@ class MyWindow(Adw.ApplicationWindow):
                         dialog.set_close_response('ok')
                         dialog.choose(self, None, None)
                 else:
+                    self.kernel_string_row.set_visible(False)
+                    self.analysis_options.set_visible(False)
+                    self.detect_symbols_bar.set_revealed(False)
+
                     self.selection_spinner_row.set_visible(True)
                     open_result.load_bytes_async(None, load_bytes_cb)
 
             file_picker = Gtk.FileDialog()
             # file_picker.set_filters(Gio.ListStore())
-            # if initial_uri:
-            #     file_picker.set_initial_file(Gio.File.new_for_uri(initial_uri))
             file_picker.open(self, callback=file_picked)
 
         self.add_simple_action(
@@ -582,6 +588,10 @@ class MyWindow(Adw.ApplicationWindow):
         self.file_picker_button.set_title('Kernel blob')
         self.file_picker_button.set_subtitle(path)
 
+        self.kernel_string_row.set_visible(False)
+        self.analysis_options.set_visible(False)
+        self.detect_symbols_bar.set_revealed(False)
+
         self.selection_spinner_row.set_visible(True)
 
         def detection_thread():
@@ -640,6 +650,12 @@ class MyWindow(Adw.ApplicationWindow):
 
                 def update_ui_invalid_file_cb(err):
 
+                    self.kernel_string_row.set_visible(False)
+                    self.analysis_options.set_visible(False)
+                    self.detect_symbols_bar.set_revealed(False)
+
+                    self.navigation.pop_to_tag('main_page')
+
                     dialog = Adw.AlertDialog.new(
                         'Could not open kernel', str(err)
                     )
@@ -647,18 +663,6 @@ class MyWindow(Adw.ApplicationWindow):
                     dialog.set_default_response('ok')
                     dialog.set_close_response('ok')
                     dialog.choose(self, None, None)
-
-                    # Hide the kernel version string
-
-                    self.kernel_string_row.set_visible(False)
-
-                    # Hide the "Analysis options" UI block
-
-                    self.analysis_options.set_visible(False)
-
-                    # Hide "Detect symbols button" pointing to view #2
-
-                    self.detect_symbols_bar.set_revealed(False)
 
                 GLib.idle_add(update_ui_invalid_file_cb, err)
 

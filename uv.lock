@@ -184,7 +184,7 @@ gui = [
 
 [package.metadata]
 requires-dist = [
-    { name = "lz4", specifier = ">=4.4.5" },
+    { name = "lz4" },
     { name = "minilzo", specifier = ">=1.2" },
     { name = "peewee", specifier = ">=4.0.0" },
     { name = "pygobject", marker = "extra == 'gui'", specifier = ">=3.54.5" },

@@ -21,21 +21,25 @@
     <p>- Unpack certain types of Android boot.img files, starting with an "ANDROID!" or "UNCOMPRESSED_IMG" magic.</p>
     <p>- Produce an .ELF file fully analyzable with IDA Pro or Ghidra as an output.</p>
   </description>
-  <screenshots>
-    <!--screenshot type="default">
+  <!--screenshots>
+    <screenshot type="default">
       <image type="source" scale="2">https://raw.githubusercontent.com/marin-m/SongRec/57bfe25/packaging/Screenshot_hires_light.png</image>
-      <caption>SongRec's main window</caption>
+      <caption>vmlinux-to-elf: kernel selection screen</caption>
     </screenshot>
     <screenshot>
       <image type="source" scale="2">https://raw.githubusercontent.com/marin-m/SongRec/57bfe25/packaging/Screenshot_favourites_light.png</image>
-      <caption>SongRec's favourites window</caption>
+      <caption>vmlinux-to-elf: detected offsets preview screen</caption>
+    </screenshot>
+    <screenshot>
+      <image type="source" scale="2">https://raw.githubusercontent.com/marin-m/SongRec/57bfe25/packaging/Screenshot_favourites_light.png</image>
+      <caption>vmlinux-to-elf: extraction successfull screen</caption>
     </screenshot>
     <screenshot environment="gnome:dark">
       <image type="source" scale="2">https://raw.githubusercontent.com/marin-m/SongRec/57bfe25/packaging/Screenshot_hires_dark.png</image>
-      <caption>SongRec's main window, on GNOME in dark mode</caption>
-    </screenshot-->
-  </screenshots>
-  <translation type="gettext">vmlinux-to-elf</translation>
+      <caption>vmlinux-to-elf's main window, on GNOME in dark mode</caption>
+    </screenshot>
+  </screenshots-->
+  <!--translation type="gettext">vmlinux-to-elf</translation-->
   <supports>
     <control>keyboard</control>
     <control>pointing</control>

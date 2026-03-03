@@ -35,9 +35,7 @@ cd flatpak-builder-tools/pip
 uv sync --all-groups --frozen
 source .venv/bin/activate
 
-cd
-mkdir -p re.fossplant.vmlinux-to-elf
-cd re.fossplant.vmlinux-to-elf
+cd ~/vte/packaging/flatpak
 ~/flatpak-builder-tools/pip/flatpak-pip-generator --pyproject-file ~/vte/pyproject.toml --optdep-groups gui
 ```
 

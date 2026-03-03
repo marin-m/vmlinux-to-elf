@@ -6,5 +6,10 @@ build/
 __pycache__/
 .~lock.*
 
+# The following is related to building packages
+vendor/
+repo/
+.flatpak-builder/
+
 **/*.egg-info/
 **/.idea/

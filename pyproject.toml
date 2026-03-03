@@ -1,17 +1,13 @@
 
 [build-system]
-requires = ["uv_build>=0.10.3,<0.11.0"]
-build-backend = "uv_build"
-
-[tool.uv.build-backend]
-module-name = "vmlinux_to_elf"
-module-root = ""
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "vmlinux-to-elf"
-version = "1.1.0"
+version = "1.2.0"
 dependencies = [
-    "lz4>=4.4.5",
+    "lz4",
     "zstandard>=0.25.0",
     "minilzo>=1.2",
     "peewee>=4.0.0",
@@ -21,7 +17,24 @@ authors = [{ name = "Marin Moulinier" }]
 description = "A tool to recover a fully analyzable .ELF from a raw kernel, through extracting the kernel symbol table (kallsyms)"
 readme = "README.md"
 license = "GPL-3.0-or-later"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Assembly",
+    "Topic :: Software Development :: Disassemblers",
+    "Topic :: Software Development :: Embedded Systems",
+    "Topic :: System :: Operating System Kernels :: Linux",
+    "Topic :: Security",
+    "Environment :: Console",
+    "Environment :: X11 Applications :: GTK",
+    "Environment :: X11 Applications :: Gnome"
+]
 license-files = ["LICENSE"]
+
+[project.optional-dependencies]
+gui = ["pygobject>=3.54.5"]
 
 [project.urls]
 Homepage = "https://github.com/marin-m/vmlinux-to-elf"
@@ -31,6 +44,28 @@ Issues = "https://github.com/marin-m/vmlinux-to-elf/issues"
 [project.scripts]
 kallsyms-finder = "vmlinux_to_elf.scripts.kallsyms_finder:main"
 vmlinux-to-elf = "vmlinux_to_elf.scripts.vmlinux_to_elf:main"
+vmlinux-to-elf-gui = "vmlinux_to_elf.ui.gtk_app:main"
+# Development scripts
+vte-tests-pe = "vmlinux_to_elf.utils.arm64_efi:main"
+
+[tool.setuptools]
+include-package-data = true
+package-dir = { vmlinux_to_elf = "vmlinux_to_elf" }
+packages = [
+    "vmlinux_to_elf",
+    "vmlinux_to_elf.core",
+    "vmlinux_to_elf.utils",
+    "vmlinux_to_elf.utils.elf_tests",
+    "vmlinux_to_elf.kernel_db",
+    "vmlinux_to_elf.ui",
+    "vmlinux_to_elf.ui.assets",
+    "vmlinux_to_elf.scripts",
+]
+
+[tool.setuptools.package-data]
+"vmlinux_to_elf.ui.assets" = ["vmlinux-to-elf.gresource"]
+"vmlinux_to_elf.ui.utils.elf_tests" = ["*"]
+"vmlinux_to_elf.kernel_db" = ["database.sqlite3"]
 
 [tool.ruff]
 line-length = 79

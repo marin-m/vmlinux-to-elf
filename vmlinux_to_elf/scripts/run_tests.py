@@ -19,7 +19,7 @@ import logging
 from os import makedirs
 from os.path import dirname, exists, realpath
 from re import sub
-from sys import stdout
+from sys import stderr
 from traceback import print_exc
 
 from vmlinux_to_elf.core.elf_symbolizer import ElfSymbolizer
@@ -39,11 +39,11 @@ def slugify(file_path):
 
 if __name__ == '__main__':
     logging.basicConfig(
-        stream=stdout, level=logging.INFO, format='%(message)s'
+        stream=stderr, level=logging.INFO, format='%(message)s'
     )
 
     if not exists(TEST_KERNELS_PATH):
-        exit(
+        logging.critical(
             (
                 '[!] In order to use this script, please '
                 + 'create a file at %s, containing to path '
@@ -51,6 +51,8 @@ if __name__ == '__main__':
             )
             % (TEST_KERNELS_PATH)
         )
+
+        exit()
 
     makedirs(ELF_KERNELS_OUTPUT_PATH, exist_ok=True)
 

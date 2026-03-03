@@ -39,7 +39,8 @@ class ElfSymbolizer:
     def __init__(
         self,
         file_contents: bytes,
-        output_file: str,
+        output_file: str = None,
+        output_stream: BytesIO = None,
         elf_machine: int = None,
         bit_size: int = None,
         base_address: int = None,
@@ -360,9 +361,13 @@ class ElfSymbolizer:
 
         # Save the modified ELF
 
-        with open(output_file, 'wb') as fd:
-            kernel.serialize(fd)
+        if output_file:
+            with open(output_file, 'wb') as fd:
+                kernel.serialize(fd)
 
-        logging.info(
-            '[+] Successfully wrote the new ELF kernel to %s' % output_file
-        )
+            logging.info(
+                '[+] Successfully wrote the new ELF kernel to %s' % output_file
+            )
+
+        else:
+            kernel.serialize(output_stream)

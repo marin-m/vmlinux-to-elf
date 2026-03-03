@@ -1,0 +1,110 @@
+{
+    "app-id": "re.fossplant.vmlinux-to-elf",
+    "runtime": "org.gnome.Platform",
+    "runtime-version": "49",
+    "sdk": "org.gnome.Sdk",
+    "command": "vmlinux-to-elf-gui",
+    "finish-args": [
+        "--share=ipc",
+        "--socket=fallback-x11",
+        "--socket=wayland",
+        "--device=dri"
+    ],
+    "modules": [
+        {
+            "name": "python3-lz4",
+            "buildsystem": "simple",
+            "build-commands": [
+                "pip3 install --verbose --exists-action=i --no-index --find-links=\"file://${PWD}\" --prefix=${FLATPAK_DEST} \"lz4>=4.4.5\" --use-deprecated=legacy-resolver --no-build-isolation"
+            ],
+            "sources": [
+                {
+                    "type": "file",
+                    "url": "https://files.pythonhosted.org/packages/57/51/f1b86d93029f418033dddf9b9f79c8d2641e7454080478ee2aab5123173e/lz4-4.4.5.tar.gz",
+                    "sha256": "5f0b9e53c1e82e88c10d7c180069363980136b9d7a8306c4dca4f760d60c39f0"
+                }
+            ]
+        },
+        {
+            "name": "python3-zstandard",
+            "buildsystem": "simple",
+            "build-commands": [
+                "pip3 install --verbose --exists-action=i --no-index --find-links=\"file://${PWD}\" --prefix=${FLATPAK_DEST} \"zstandard>=0.25.0\" --no-build-isolation"
+            ],
+            "sources": [
+                {
+                    "type": "file",
+                    "url": "https://files.pythonhosted.org/packages/fd/aa/3e0508d5a5dd96529cdc5a97011299056e14c6505b678fd58938792794b1/zstandard-0.25.0.tar.gz",
+                    "sha256": "7713e1179d162cf5c7906da876ec2ccb9c3a9dcbdffef0cc7f70c3667a205f0b"
+                }
+            ]
+        },
+        {
+            "name": "python3-minilzo",
+            "buildsystem": "simple",
+            "build-commands": [
+                "pip3 install --verbose --exists-action=i --no-index --find-links=\"file://${PWD}\" --prefix=${FLATPAK_DEST} \"minilzo>=1.2\" --no-build-isolation"
+            ],
+            "sources": [
+                {
+                    "type": "file",
+                    "url": "https://files.pythonhosted.org/packages/9f/cf/70409b35fbd32f5456fe72f410bf5fb30e279d3226e8a2228f11daede5f7/minilzo-1.2.tar.gz",
+                    "sha256": "4cdcc0dc3e8558a29d8a6fed5c66a1ae3c8014e12d0a27554890c4248f76b141"
+                }
+            ]
+        },
+        {
+            "name": "python3-peewee",
+            "buildsystem": "simple",
+            "build-commands": [
+                "pip3 install --verbose --exists-action=i --no-index --find-links=\"file://${PWD}\" --prefix=${FLATPAK_DEST} \"peewee>=4.0.0\" --no-build-isolation"
+            ],
+            "sources": [
+                {
+                    "type": "file",
+                    "url": "https://files.pythonhosted.org/packages/bf/99/0f8d9e46df9812ab31dadb07ba304c3ff6d6076bf19a67f4d046790be2e1/peewee-4.0.1-py3-none-any.whl",
+                    "sha256": "10afaa02c9f6d0f2dfe0f5b9007075c985eb141ab740a8831e37be2a61b3595c"
+                }
+            ]
+        },
+        {
+            "name": "python3-pygobject",
+            "buildsystem": "simple",
+            "build-commands": [
+                "pip3 install --verbose --exists-action=i --no-index --find-links=\"file://${PWD}\" --prefix=${FLATPAK_DEST} \"pygobject>=3.54.5\" --no-build-isolation"
+            ],
+            "sources": [
+                {
+                    "type": "file",
+                    "url": "https://files.pythonhosted.org/packages/22/d9/1728840a22a4ef8a8f479b9156aa2943cd98c3907accd3849fb0d5f82bfd/pycairo-1.29.0.tar.gz",
+                    "sha256": "f3f7fde97325cae80224c09f12564ef58d0d0f655da0e3b040f5807bd5bd3142"
+                },
+                {
+                    "type": "file",
+                    "url": "https://files.pythonhosted.org/packages/1f/86/b87f8d9ecb01effa2b17319b9b0a8852c29374ab7c5268a44597cb1605c7/pygobject-3.56.0.tar.gz",
+                    "sha256": "4fbb5bf47524e01026f8e309dd54233eb0f75f2281392c5bf0df5d9041cc7891"
+                }
+            ]
+        },
+        {
+            "name": "vmlinux-to-elf",
+            "buildsystem": "simple",
+            "build-commands": [
+                "mkdir -p /app/bin/",
+                "pip3 install --verbose --exists-action=i --no-index --find-links=\"file://${PWD}\" --prefix=${FLATPAK_DEST} \".\" --no-build-isolation",
+                "mkdir -p /app/share/icons/hicolor/scalable/apps/",
+                "mkdir -p /app/share/metainfo/",
+                "mkdir -p /app/share/applications/",
+                "cp -r ./vmlinux_to_elf/ui/assets/re.fossplant.vmlinux-to-elf.svg /app/share/icons/hicolor/scalable/apps/",
+                "cp -r ./vmlinux_to_elf/ui/assets/re.fossplant.vmlinux-to-elf.metainfo.xml /app/share/metainfo/",
+                "cp -r ./vmlinux_to_elf/ui/assets/re.fossplant.vmlinux-to-elf.desktop /app/share/applications/"
+            ],
+            "sources": [
+                {
+                    "type": "dir",
+                    "path": "../../"
+                }
+            ]
+        }
+    ]
+}

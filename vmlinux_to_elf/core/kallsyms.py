@@ -6,6 +6,8 @@ import math
 from enum import Enum
 from re import match, search, findall
 from struct import pack, unpack_from
+from io import StringIO
+from typing import Optional
 
 from vmlinux_to_elf.core.architecture_detecter import (
     ArchitectureDetectionResult,
@@ -187,7 +189,7 @@ class KallsymsFinder:
         kernel_img: bytes,
         bit_size: int = None,
         override_relative_base: bool = False,
-        base_address: int = None,
+        base_address: Optional[int] = None,
         # extra_info: bool = False,
     ):
         self.override_relative_base = override_relative_base
@@ -199,8 +201,8 @@ class KallsymsFinder:
 
         if bit_size:
             if bit_size not in (64, 32):
-                exit(
-                    '[!] Please specify a register bit size of either 32 or 64 bits'
+                raise ArchitectureGuessError(
+                    'Please specify a register bit size of either 32 or 64 bits'
                 )
             else:
                 self.is_64_bits = bit_size == 64
@@ -543,16 +545,17 @@ class KallsymsFinder:
                 % (self.kernel_text_candidate)
             )
 
-        logging.info(
-            '[+] Found relocations table at file offset 0x%04x (count=%d)'
-            % (self.elf64_rela_start, count)
-        )
         return True
 
     def apply_elf64_rela(self) -> bool:
         """
         Apply relocations table, return True if success, False
         otherwise
+
+        TODO: Use the __relocate_kernel symbol and parse instructions
+          instead of making this wild guess?
+
+        TODO: Move to a dedicated file?
         """
         if self.elf64_rela is None or self.kernel_text_candidate is None:
             return False
@@ -1521,7 +1524,7 @@ class KallsymsFinder:
 
             self.name_to_symbol[symbol.name] = symbol
 
-    def print_symbols_debug(self):
+    def print_symbols_debug(self, out_buffer: Optional[StringIO] = None):
         # Print symbol types (debug)
 
         symbol_types = set()
@@ -1537,12 +1540,14 @@ class KallsymsFinder:
         for symbol_address, symbol_name in zip(
             self.kernel_addresses, self.symbol_names
         ):
-            logging.info(
-                '{0:s} {1:s} {2:s}'.format(
-                    '%016x' % symbol_address
-                    if self.is_64_bits
-                    else '%08x' % symbol_address,
-                    symbol_name[0],  # The symbol type
-                    symbol_name[1:],  # The symbol name itself
-                )
+            out_string = '{0:s} {1:s} {2:s}'.format(
+                '%016x' % symbol_address
+                if self.is_64_bits
+                else '%08x' % symbol_address,
+                symbol_name[0],  # The symbol type
+                symbol_name[1:],  # The symbol name itself
             )
+            if out_buffer:
+                out_buffer.write(out_string + '\n')
+            else:
+                logging.info(out_string)

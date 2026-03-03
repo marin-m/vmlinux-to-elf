@@ -1,0 +1,19 @@
+[Desktop Entry]
+Categories=Utility;GTK;Audio;AudioVideo;
+Exec=vmlinux-to-elf-gui %f
+Icon=re.fossplant.vmlinux-to-elf
+# See https://github.com/lemenkov/shared-mime-info/blob/master/freedesktop.org.xml.in
+# regarding the applicable mime types
+MimeType=application/x-pie-executable;application/x-executable;application/x-sharedlib;application/vnd.microsoft.portable-executable;application/octet-stream;
+StartupNotify=true
+StartupWMClass=vmlinux-to-elf
+Terminal=false
+Type=Application
+Version=1.5
+
+Name=vmlinux-to-elf
+Comment=A tool to recover a fully analyzable .ELF from a raw kernel, through extracting the kernel symbol table (kallsyms)
+Keywords=Linux;Kernel;Reverse-Engineering;Security;VMLinux;ELF;Firmware Analysis;
+
+# See https://specifications.freedesktop.org/desktop-entry-spec/latest/ar01s06.html
+# regarding the general layout of the current file

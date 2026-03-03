@@ -2,7 +2,7 @@
 # -*- encoding: Utf-8 -*-
 import logging
 from argparse import ArgumentParser
-from sys import stdout
+from sys import stderr
 
 from vmlinux_to_elf.core.architecture_detecter import ArchitectureGuessError
 from vmlinux_to_elf.core.elf_symbolizer import ElfSymbolizer
@@ -13,7 +13,7 @@ from vmlinux_to_elf.core.vmlinuz_decompressor import (
 
 def main():
     logging.basicConfig(
-        stream=stdout, level=logging.INFO, format='%(message)s'
+        stream=stderr, level=logging.INFO, format='%(message)s'
     )
 
     args = ArgumentParser(
@@ -91,7 +91,7 @@ def main():
     if (args.e_machine is not None and args.bit_size is None) or (
         args.e_machine is None and args.bit_size is not None
     ):
-        logging.error(
+        logging.critical(
             '[!] Please specify both an addressing bit size '
             + 'and the ELF "e_machine" field, or neither for '
             + 'auto-detection'
@@ -104,6 +104,7 @@ def main():
             ElfSymbolizer(
                 obtain_raw_kernel_from_file(kernel_bin.read()),
                 args.output_file,
+                None,
                 args.e_machine,
                 args.bit_size,
                 args.base_address,
@@ -114,11 +115,13 @@ def main():
             )
 
         except ArchitectureGuessError:
-            exit(
+            logging.critical(
                 '[!] The architecture of your kernel could not be guessed '
                 + 'successfully. Please specify the --e-machine and --bit-size '
                 + 'arguments manually (use --help for their precise specification).'
             )
+
+            exit()
 
 
 if __name__ == '__main__':

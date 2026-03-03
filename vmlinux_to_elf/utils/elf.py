@@ -14,7 +14,7 @@ from ctypes import (
 from enum import IntEnum
 from io import SEEK_END, BytesIO
 
-from vmlinux_to_elf.utils.pretty_print import pretty_print_structure
+import vmlinux_to_elf.utils.pretty_print
 
 """
     This file contains a wrapper for parsing and writing ELF files.
@@ -89,7 +89,8 @@ class VariableEndiannessAndWordsizeStructure:
                 },
                 'is_big_endian': is_big_endian,
                 'is_64_bits': is_64_bits,
-                '_pack_': True,
+                '_layout_': 'ms',
+                '_pack_': 1,
                 '_fields_': [
                     (
                         field[0],
@@ -114,7 +115,7 @@ class VariableEndiannessAndWordsizeStructure:
         data.write(self)
 
     def pretty_print(self):
-        pretty_print_structure(self)
+        vmlinux_to_elf.utils.pretty_print.pretty_print_structure(self)
 
 
 class ElfFile:

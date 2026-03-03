@@ -16,6 +16,9 @@ Usage:
 vmlinux-to-elf <input_kernel.bin> <output_kernel.elf>
 
 # Graphical:
+vmlinux-to-elf-gui
+
+# Graphical (Flatpak):
 flatpak run re.fossplant.vmlinux-to-elf
 ```
 
@@ -41,17 +44,14 @@ flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flath
 flatpak install re.fossplant.vmlinux-to-elf
 ```
 
-Installation (CLI+GUI, requires libadwaita ≥ 1.6 available on Ubuntu ≥ 24.10)
+Installation (CLI+GUI, requires `libadwaita` ≥ 1.6 available on Ubuntu ≥ 24.10)
 
 ```bash
 sudo apt install gir1.2-adw-1 gir1.2-gtk-4.0
 uv tool install vmlinux-to-elf[gui]
-
-# Then launch with:
-vmlinux-to-elf-gui
 ```
 
-Local development environment setup (running the GUI outside Flatpak requires  `libadwaita` 1.6+, available on Ubuntu 24.10+):
+Local development environment setup:
 
 ```bash
 git clone git@github.com:marin-m/vmlinux-to-elf.git

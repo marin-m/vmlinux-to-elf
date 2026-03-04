@@ -1,5 +1,5 @@
 [Desktop Entry]
-Categories=Utility;GTK;Audio;AudioVideo;
+Categories=Utility;GTK;Development;
 Exec=vmlinux-to-elf-gui %f
 Icon=re.fossplant.vmlinux-to-elf
 # See https://github.com/lemenkov/shared-mime-info/blob/master/freedesktop.org.xml.in

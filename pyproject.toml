@@ -63,6 +63,7 @@ packages = [
 
 [tool.setuptools.package-data]
 "vmlinux_to_elf.ui.assets" = ["vmlinux-to-elf.gresource"]
+"vmlinux_to_elf.utils" = ["elf_tests/*"]
 "vmlinux_to_elf.kernel_db" = ["database.sqlite3"]
 
 [tool.ruff]

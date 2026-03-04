@@ -4,7 +4,7 @@ This tool allows to obtain a fully analyzable .ELF file from a vmlinux/vmlinuz/b
 
 <p align="center"><img src="https://raw.githubusercontent.com/marin-m/vmlinux-to-elf/master/pics/landing_illustration.png"></p>
 
-<p align="center"><a href="https://snapcraft.io/vmlinux-to-elf"><img src="pics/snap_badge_black.svg?raw=true"></a> <a href="https://flathub.org/en/apps/re.fossplant.vmlinux-to-elf"><img src="pics/flathub_badge_black.svg?raw=true"></a></p>
+<p align="center"><a href="https://snapcraft.io/vmlinux-to-elf"><img src="pics/snap_badge.svg?raw=true"></a> <a href="https://flathub.org/en/apps/re.fossplant.vmlinux-to-elf"><img src="pics/flathub_badge.svg?raw=true"></a></p>
 
 For this, it scans your kernel for a kernel symbol table ([kallsyms](https://github.com/torvalds/linux/blob/master/kernel/kallsyms.c)), a compressed symbol table that is present in almost every kernel, mostly unaltered.
 

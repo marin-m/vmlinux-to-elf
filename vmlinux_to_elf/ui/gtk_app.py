@@ -99,7 +99,7 @@ class MyApp(Adw.Application):
                     dialog.add_response('ok', 'Ok')
                     dialog.set_default_response('ok')
                     dialog.set_close_response('ok')
-                    dialog.choose(self, None, None)
+                    dialog.choose(self.window, None, None)
                 else:
                     self.window.update_kernel_path(
                         files[0].get_path(),

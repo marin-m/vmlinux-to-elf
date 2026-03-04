@@ -4,7 +4,7 @@ This tool allows to obtain a fully analyzable .ELF file from a vmlinux/vmlinuz/b
 
 <p align="center"><img src="https://raw.githubusercontent.com/marin-m/vmlinux-to-elf/master/pics/landing_illustration.png"></p>
 
-<p align="center"><a href="https://snapcraft.io/vmlinux-to-elf"><img src="pics/snap_badge.svg?raw=true"></a> <a href="https://flathub.org/en/apps/re.fossplant.vmlinux-to-elf"><img src="pics/flathub_badge.svg?raw=true"></a></p>
+<p align="center"><a href="https://snapcraft.io/vmlinux-to-elf"><img src="pics/snap_badge.svg?raw=true"></a> &nbsp; <a href="https://flathub.org/en/apps/re.fossplant.vmlinux-to-elf"><img src="pics/flathub_badge.svg?raw=true"></a></p>
 
 For this, it scans your kernel for a kernel symbol table ([kallsyms](https://github.com/torvalds/linux/blob/master/kernel/kallsyms.c)), a compressed symbol table that is present in almost every kernel, mostly unaltered.
 
@@ -36,7 +36,7 @@ sudo snap install vmlinux-to-elf
 sudo apt install gir1.2-adw-1 gir1.2-gtk-4.0
 uv tool install vmlinux-to-elf[gui]
 
-# Install CLI with uv and GUI with Flatkpak (recommended on
+# Install CLI with uv and GUI with Flatpak (recommended on
 # distributions with libadwaita < 1.6)
 sudo snap install --classic astral-uv
 uv tool install vmlinux-to-elf

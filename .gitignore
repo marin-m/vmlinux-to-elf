@@ -10,6 +10,7 @@ __pycache__/
 vendor/
 repo/
 .flatpak-builder/
+*.snap
 
 **/*.egg-info/
 **/.idea/

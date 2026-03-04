@@ -4,6 +4,8 @@ This tool allows to obtain a fully analyzable .ELF file from a vmlinux/vmlinuz/b
 
 <p align="center"><img src="https://raw.githubusercontent.com/marin-m/vmlinux-to-elf/master/pics/landing_illustration.png"></p>
 
+<p align="center"><a href="https://snapcraft.io/vmlinux-to-elf"><img src="pics/snap_badge_black.svg?raw=true"></a> <a href="https://flathub.org/en/apps/re.fossplant.vmlinux-to-elf"><img src="pics/flathub_badge_black.svg?raw=true"></a></p>
+
 For this, it scans your kernel for a kernel symbol table ([kallsyms](https://github.com/torvalds/linux/blob/master/kernel/kallsyms.c)), a compressed symbol table that is present in almost every kernel, mostly unaltered.
 
 Because the concerned symbol table is originally compressed, it should recover strings that aren't visible in the original binary.
@@ -15,40 +17,33 @@ Usage:
 # Command line:
 vmlinux-to-elf <input_kernel.bin> <output_kernel.elf>
 
-# Graphical:
-vmlinux-to-elf-gui
+# Command line, list symbol addresses only:
+kallsyms-finder <input_kernel.bin> # If installed with uv
+vmlinux-to-elf.kallsyms-finder # If installed with snap
 
-# Graphical (Flatpak):
-flatpak run re.fossplant.vmlinux-to-elf
+# Graphical:
+vmlinux-to-elf-gui # If installed with uv
+vmlinux-to-elf.gui # If installed with snap
+flatpak run re.fossplant.vmlinux-to-elf # If installed with flatpak
 ```
 
-Installation (CLI):
+Installation:
 ```bash
-# Install CLI with uv (recommended)
+# Install CLI+GUI with Snap (recommended on Ubuntu)
+sudo snap install vmlinux-to-elf
+
+# Install CLI+GUI with uv (recommended on other distributions)
+sudo apt install gir1.2-adw-1 gir1.2-gtk-4.0
+uv tool install vmlinux-to-elf[gui]
+
+# Install CLI with uv and GUI with Flatkpak (recommended on
+# distributions with libadwaita < 1.6)
 sudo snap install --classic astral-uv
 uv tool install vmlinux-to-elf
 
-# Install CLI with pipx
-sudo apt install pipx
-pipx install vmlinux-to-elf
-```
-
-Installation (GUI):
-
-[![Get it on Flathub](https://flathub.org/api/badge?svg&locale=en)](https://flathub.org/en/apps/re.fossplant.vmlinux-to-elf)
-
-```bash
-# Install GUI
 sudo apt install flatpak
 flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 flatpak install re.fossplant.vmlinux-to-elf
-```
-
-Installation (CLI+GUI, requires `libadwaita` ≥ 1.6 available on Ubuntu ≥ 24.10)
-
-```bash
-sudo apt install gir1.2-adw-1 gir1.2-gtk-4.0
-uv tool install vmlinux-to-elf[gui]
 ```
 
 Local development environment setup:
@@ -66,8 +61,6 @@ uv sync --extra gui
 # With uv, vmlinux-to-elf is callable system-wide (creates a symlink
 # to the source in "~/.local/bin")
 uv tool install -e .[gui]
-# Or with pipx (vmlinux-to-elf is callable system wide)
-pipx install -e .[gui]
 ```
 
 ## Features

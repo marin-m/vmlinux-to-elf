@@ -82,5 +82,6 @@ https://hughsie.github.io/oars/index.html
     <mediatype>application/x-sharedlib</mediatype>
     <mediatype>application/vnd.microsoft.portable-executable</mediatype>
     <mediatype>application/octet-stream</mediatype>
+    <mediatype>application/vnd.efi.img</mediatype>
   </provides>
 </component>

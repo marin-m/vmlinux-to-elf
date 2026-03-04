@@ -4,7 +4,7 @@ Exec=vmlinux-to-elf-gui %f
 Icon=re.fossplant.vmlinux-to-elf
 # See https://github.com/lemenkov/shared-mime-info/blob/master/freedesktop.org.xml.in
 # regarding the applicable mime types
-MimeType=application/x-pie-executable;application/x-executable;application/x-sharedlib;application/vnd.microsoft.portable-executable;application/octet-stream;
+MimeType=application/x-pie-executable;application/x-executable;application/x-sharedlib;application/vnd.microsoft.portable-executable;application/octet-stream;application/vnd.efi.img;
 StartupNotify=true
 StartupWMClass=vmlinux-to-elf
 Terminal=false

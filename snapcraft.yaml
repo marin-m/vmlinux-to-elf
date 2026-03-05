@@ -32,6 +32,10 @@ parts:
     plugin: python
     source: .
 
+    stage-packages:
+      - libdrm-common
+      - libproxy1v5
+
   share:
     plugin: dump
     source: vmlinux_to_elf/ui/assets/
@@ -48,3 +52,9 @@ parts:
       install -Dm644 re.fossplant.vmlinux-to-elf.metainfo.xml -t usr/share/metainfo/
       install -Dm644 re.fossplant.vmlinux-to-elf.desktop -t usr/share/applications/
       install -Dm644 re.fossplant.vmlinux-to-elf.svg -t usr/share/icons/hicolor/scalable/apps/
+
+layout:
+  /usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libproxy:
+    bind: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/libproxy
+  /usr/share/libdrm:
+    bind: $SNAP/usr/share/libdrm

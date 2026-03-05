@@ -80,6 +80,9 @@ class MyApp(Adw.Application):
         theme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default())
         theme.add_resource_path('/re/fossplant/vmlinux-to-elf/')
 
+        theme = Gtk.CssProvider.new()
+        theme.load_from_resource('/re/fossplant/vmlinux-to-elf/style.css')
+
         self.connect('open', self.on_open)
         self.connect('startup', self.on_startup)
         self.connect('activate', self.on_activate)

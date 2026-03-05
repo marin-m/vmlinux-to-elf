@@ -214,6 +214,9 @@
                                             <property name="right-margin">4</property>
                                             <property name="top-margin">4</property>
                                             <property name="wrap-mode">word-char</property>
+                                            <style>
+                                              <class name="small_tty"/>
+                                            </style>
                                           </object>
                                         </property>
                                         <property name="height-request">190</property>
@@ -257,6 +260,7 @@
     <property name="child">
       <object class="GtkLabel">
         <property name="xalign">0</property>
+        <property name="name">small_tty</property>
         <binding name="label">
           <lookup name="token" type="DetectedTokenRow">
             <lookup name="item">GtkColumnViewCell</lookup>
@@ -282,6 +286,7 @@
     <property name="child">
       <object class="GtkLabel">
         <property name="xalign">0</property>
+        <property name="name">small_tty</property>
         <binding name="label">
           <lookup name="offset" type="DetectedTokenRow">
             <lookup name="item">GtkColumnViewCell</lookup>
@@ -411,6 +416,7 @@ Hex dump at address %s
     <property name="child">
       <object class="GtkLabel">
         <property name="xalign">0</property>
+        <property name="name">small_tty</property>
         <binding name="label">
           <lookup name="name" type="RecoveredSymbolRow">
             <lookup name="item">GtkColumnViewCell</lookup>
@@ -435,6 +441,7 @@ Hex dump at address %s
     <property name="child">
       <object class="GtkLabel">
         <property name="xalign">0</property>
+        <property name="name">small</property>
         <binding name="label">
           <lookup name="type" type="RecoveredSymbolRow">
             <lookup name="item">GtkColumnViewCell</lookup>
@@ -460,6 +467,7 @@ Hex dump at address %s
     <property name="child">
       <object class="GtkLabel">
         <property name="xalign">0</property>
+        <property name="name">small_tty</property>
         <binding name="label">
           <lookup name="address" type="RecoveredSymbolRow">
             <lookup name="item">GtkColumnViewCell</lookup>

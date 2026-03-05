@@ -2,7 +2,7 @@
 <gresources>
   <gresource prefix="/re/fossplant/vmlinux-to-elf/">
     <file compressed="true" preprocess="xml-stripblanks">gui.ui</file>
-    <!--file compressed="true">style.css</file-->
+    <file compressed="true">style.css</file>
     <file compressed="true" preprocess="xml-stripblanks" alias="scalable/apps/re.fossplant.vmlinux-to-elf.svg">re.fossplant.vmlinux-to-elf.svg</file>
     <file compressed="true" preprocess="xml-stripblanks">re.fossplant.vmlinux-to-elf.svg</file>
   </gresource>

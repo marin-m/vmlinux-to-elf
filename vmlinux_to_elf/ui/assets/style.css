@@ -1,0 +1,8 @@
+.small_tty, #small_tty {
+    font-size: small;
+    font-family: monospace;
+}
+
+.small, #small {
+    font-size: small;
+}

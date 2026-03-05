@@ -56,7 +56,7 @@ sudo apt install libgirepository-2.0-dev libgtk-4-dev libadwaita-1-dev \
     gir1.2-adw-1 gir1.2-gtk-4.0 python3-dev glib-compile-resources
 
 cd vmlinux-to-elf
-# Download Python modules and setup virtualenv (creates ".venv",
+# Download Python modules and initialize virtualenv (creates ".venv",
 # call "source .venv/bin/activate" to set up)
 uv sync --extra gui
 # Add vmlinux-to-elf to $PATH, so that the commands are callable

@@ -2,5 +2,9 @@
 <!DOCTYPE cambalache-project SYSTEM "cambalache-project.dtd">
 <!-- Created with Cambalache 0.96.3 -->
 <cambalache-project version="0.96.0" target_tk="gtk-4.0">
-  <ui template-class="MainWindow" filename="gui.ui" sha256="f50f23a8e40fc14afe3d39b3fc92337bd4412c77b6ae6e16585178ee3aaad510"/>
+  <gresources filename="vmlinux-to-elf.gresource.xml" sha256="71d04f8816faf77b2b915a2c555343e38b68b5d310d0de579e9258b13dad9c05"/>
+  <css filename="style.css"/>
+  <ui template-class="MainWindow" filename="gui.ui" sha256="0097416a099bd2dd1add1b67016d61e48ee81104bc07354f7289fda92f700c08">
+    <css-provider>style.css</css-provider>
+  </ui>
 </cambalache-project>

@@ -2,9 +2,12 @@
 
 This tool allows to obtain a fully analyzable .ELF file from a vmlinux/vmlinuz/bzImage/zImage kernel image (either a raw binary blob or a preexisting but stripped .ELF file), with recovered function and variable symbols.
 
-<p align="center"><img src="https://raw.githubusercontent.com/marin-m/vmlinux-to-elf/master/pics/landing_illustration.png"></p>
-
-<p align="center"><a href="https://snapcraft.io/vmlinux-to-elf"><img src="pics/snap_badge.svg?raw=true"></a> &nbsp; <a href="https://flathub.org/en/apps/re.fossplant.vmlinux-to-elf"><img src="pics/flathub_badge.svg?raw=true"></a></p>
+<p align="center">
+<img src="https://raw.githubusercontent.com/marin-m/vmlinux-to-elf/master/pics/landing_illustration.png">
+</p>
+<p align="center">
+<a href="https://snapcraft.io/vmlinux-to-elf"><img src="pics/snap_badge.svg?raw=true"></a> &nbsp; <a href="https://flathub.org/en/apps/re.fossplant.vmlinux-to-elf"><img src="pics/flathub_badge.svg?raw=true"></a>
+</p>
 
 For this, it scans your kernel for a kernel symbol table ([kallsyms](https://github.com/torvalds/linux/blob/master/kernel/kallsyms.c)), a compressed symbol table that is present in almost every kernel, mostly unaltered.
 
@@ -26,6 +29,12 @@ vmlinux-to-elf-gui # If installed with uv
 vmlinux-to-elf.gui # If installed with snap
 flatpak run re.fossplant.vmlinux-to-elf # If installed with flatpak
 ```
+
+<p align="center">
+<img src="pics/Screenshot_2_Kernel_loaded.png?raw=true" alt="Application main screen" width="850">
+    
+<img src="pics/Screenshot_6_Offsets_view_with_hex_dump.png?raw=true" alt="Application kernel offsets view" width="850">
+</p>
 
 Installation:
 ```bash

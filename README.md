@@ -5,15 +5,16 @@ This tool allows to obtain a fully analyzable .ELF file from a vmlinux/vmlinuz/b
 <p align="center">
 <img src="https://raw.githubusercontent.com/marin-m/vmlinux-to-elf/master/pics/landing_illustration.png">
 </p>
-<p align="center">
-<a href="https://snapcraft.io/vmlinux-to-elf"><img src="pics/snap_badge.svg?raw=true"></a> &nbsp; <a href="https://flathub.org/en/apps/re.fossplant.vmlinux-to-elf"><img src="pics/flathub_badge.svg?raw=true"></a>
-</p>
 
 For this, it scans your kernel for a kernel symbol table ([kallsyms](https://github.com/torvalds/linux/blob/master/kernel/kallsyms.c)), a compressed symbol table that is present in almost every kernel, mostly unaltered.
 
 Because the concerned symbol table is originally compressed, it should recover strings that aren't visible in the original binary.
 
 It produces an .ELF file that you can analyze using IDA Pro and Ghidra. This tool is hence useful for embedded systems reverse engineering.
+
+<p align="center">
+<a href="https://snapcraft.io/vmlinux-to-elf"><img src="pics/snap_badge.svg?raw=true"></a> &nbsp; <a href="https://flathub.org/en/apps/re.fossplant.vmlinux-to-elf"><img src="pics/flathub_badge.svg?raw=true"></a>
+</p>
 
 Usage:
 ```bash

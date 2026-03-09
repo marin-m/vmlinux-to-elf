@@ -60,6 +60,13 @@ https://hughsie.github.io/oars/index.html
 -->
   <content_rating type="oars-1.1" />
   <releases>
+    <release version="1.2.1" date="2026-03-09">
+      <description>
+        <p>Fix regression in parsing certain Android images (issue #81)</p>
+        <p>Fix `.desktop` metadata</p>
+        <p>Implement Snapcraft packaging</p>
+      </description>
+    </release>
     <release version="1.2.0" date="2026-03-03">
       <description>
         <p>Release a new GTK-4 based UI</p>

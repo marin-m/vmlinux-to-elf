@@ -14,110 +14,111 @@
             <property name="child">
               <object class="AdwToolbarView">
                 <property name="content">
-                  <object class="AdwPreferencesPage">
-                    <child>
-                      <object class="AdwPreferencesGroup" id="welcome_text">
+                  <object class="AdwToastOverlay" id="main_page_toast">
+                    <property name="child">
+                      <object class="AdwPreferencesPage">
                         <child>
-                          <object class="GtkLabel">
-                            <property name="label">Welcome to vmlinux-to-elf. This tool serves the purpose of facilitating reverse engineering of Linux kernels found in embedded devices, generating symbol and/or ELF files suitable for tools such as IDA Pro.</property>
-                            <property name="wrap">True</property>
-                          </object>
-                        </child>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="AdwPreferencesGroup" id="kernel_selection">
-                        <property name="description">Please select a kernel to analyse (*.vmlinux, *.vmlinuz, *.bzImage, *.zImage)</property>
-                        <property name="title">Kernel selection</property>
-                        <child>
-                          <object class="AdwActionRow" id="file_picker_button">
-                            <property name="activatable">True</property>
-                            <property name="activatable-widget">file_picker_icon</property>
-                            <property name="title">Select a file...</property>
+                          <object class="AdwPreferencesGroup" id="welcome_text">
                             <child>
-                              <object class="GtkButton" id="file_picker_icon">
-                                <property name="action-name">win.pick-file</property>
-                                <property name="icon-name">document-open</property>
-                                <style>
-                                  <class name="flat"/>
-                                </style>
+                              <object class="GtkLabel">
+                                <property name="label">Welcome to vmlinux-to-elf. This tool serves the purpose of facilitating reverse engineering of Linux kernels found in embedded devices, generating symbol and/or ELF files suitable for tools such as IDA Pro.</property>
+                                <property name="wrap">True</property>
                               </object>
                             </child>
                           </object>
                         </child>
                         <child>
-                          <object class="AdwPreferencesRow" id="selection_spinner_row">
-                            <property name="visible">False</property>
+                          <object class="AdwPreferencesGroup" id="kernel_selection">
+                            <property name="description">Please select a kernel to analyse (*.vmlinux, *.vmlinuz, *.bzImage, *.zImage)</property>
+                            <property name="title">Kernel selection</property>
                             <child>
-                              <object class="AdwSpinner">
-                                <property name="margin-bottom">7</property>
-                                <property name="margin-top">7</property>
+                              <object class="AdwActionRow" id="file_picker_button">
+                                <property name="activatable">True</property>
+                                <property name="activatable-widget">file_picker_icon</property>
+                                <property name="title">Select a file...</property>
+                                <child>
+                                  <object class="GtkButton" id="file_picker_icon">
+                                    <property name="action-name">win.pick-file</property>
+                                    <property name="icon-name">document-open</property>
+                                    <style>
+                                      <class name="flat"/>
+                                    </style>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="AdwPreferencesRow" id="selection_spinner_row">
+                                <property name="visible">False</property>
+                                <child>
+                                  <object class="AdwSpinner">
+                                    <property name="margin-bottom">7</property>
+                                    <property name="margin-top">7</property>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="AdwActionRow" id="kernel_string_row">
+                                <property name="subtitle-selectable">True</property>
+                                <property name="title">Detected kernel string</property>
+                                <property name="visible">False</property>
                               </object>
                             </child>
                           </object>
                         </child>
                         <child>
-                          <object class="AdwActionRow" id="kernel_string_row">
-                            <property name="subtitle-selectable">True</property>
-                            <property name="title">Detected kernel string</property>
+                          <object class="AdwPreferencesGroup" id="analysis_options">
+                            <property name="description">vmlinux-to-elf will attempt to detect automatically the following parameters if not specified explictly.</property>
+                            <property name="title">Analysis options</property>
                             <property name="visible">False</property>
-                          </object>
-                        </child>
-                      </object>
-                    </child>
-                    <child>
-                      <object class="AdwPreferencesGroup" id="analysis_options">
-                        <property name="description">vmlinux-to-elf will attempt to detect automatically the following parameters if not specified explictly.</property>
-                        <property name="title">Analysis options</property>
-                        <property name="visible">False</property>
-                        <child>
-                          <object class="AdwComboRow" id="e_machine_combo">
-                            <property name="title">ELF machine (auto-detect: %s)</property>
-                          </object>
-                        </child>
-                        <child>
-                          <object class="AdwSwitchRow" id="bitness_switch">
-                            <property name="title">64-bit (auto-detect: %s)</property>
-                          </object>
-                        </child>
-                        <child>
-                          <object class="AdwEntryRow" id="file_offset_entry">
-                            <property name="text">0</property>
-                            <property name="title">File offset, hexadecimal</property>
-                          </object>
-                        </child>
-                        <child>
-                          <object class="AdwEntryRow" id="base_address_entry">
-                            <property name="name">Test 2</property>
-                            <property name="text">0</property>
-                            <property name="title">Base address, hexadecimal (auto-detect: %s)</property>
-                          </object>
-                        </child>
-                        <child>
-                          <object class="AdwSpinRow" id="bss_size_entry">
-                            <property name="adjustment">
-                              <object class="GtkAdjustment">
-                                <property name="page-increment">1.0</property>
-                                <property name="step-increment">1.0</property>
-                                <property name="upper">128.0</property>
+                            <child>
+                              <object class="AdwComboRow" id="e_machine_combo">
+                                <property name="title">ELF machine (auto-detect: %s)</property>
                               </object>
-                            </property>
-                            <property name="numeric">True</property>
-                            <property name="title">BSS size in megabytes (default: 16)</property>
-                            <property name="value">16.0</property>
-                          </object>
-                        </child>
-                        <child>
-                          <object class="AdwSwitchRow" id="force_absolute_base_switch">
-                            <property name="subtitle">ℹ️ Remind to toggle this if the previewed addresses do not look good</property>
-                            <property name="title">Force using absolute base address</property>
+                            </child>
+                            <child>
+                              <object class="AdwSwitchRow" id="bitness_switch">
+                                <property name="title">64-bit (auto-detect: %s)</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="AdwEntryRow" id="file_offset_entry">
+                                <property name="text">0</property>
+                                <property name="title">File offset, hexadecimal</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="AdwEntryRow" id="base_address_entry">
+                                <property name="name">Test 2</property>
+                                <property name="text">0</property>
+                                <property name="title">Base address, hexadecimal (auto-detect: %s)</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="AdwSpinRow" id="bss_size_entry">
+                                <property name="adjustment">
+                                  <object class="GtkAdjustment">
+                                    <property name="page-increment">1.0</property>
+                                    <property name="step-increment">1.0</property>
+                                    <property name="upper">128.0</property>
+                                  </object>
+                                </property>
+                                <property name="numeric">True</property>
+                                <property name="title">BSS size in megabytes (default: 16)</property>
+                                <property name="value">16.0</property>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="AdwSwitchRow" id="force_absolute_base_switch">
+                                <property name="subtitle">ℹ️ Remind to toggle this if the previewed addresses do not look good</property>
+                                <property name="title">Force using absolute base address</property>
+                              </object>
+                            </child>
                           </object>
                         </child>
                       </object>
-                    </child>
-                    <child>
-                      <object class="AdwToastOverlay" id="main_page_toast"/>
-                    </child>
+                    </property>
                   </object>
                 </property>
                 <child type="top">
@@ -178,84 +179,83 @@
                   <object class="AdwLayout" id="offsets_page_layout">
                     <property name="content">
                       <object class="AdwToolbarView">
-                        <child type="top">
-                          <object class="AdwHeaderBar"/>
-                        </child>
-                        <child>
-                          <object class="AdwOverlaySplitView" id="offset_selection_split_view">
-                            <property name="content">
-                              <object class="AdwPreferencesPage">
-                                <child>
-                                  <object class="AdwPreferencesGroup" id="analysis_notes">
-                                    <property name="header-suffix">
-                                      <object class="GtkButton">
-                                        <property name="action-name">win.copy-debug-information</property>
-                                        <property name="icon-name">edit-copy-symbolic</property>
-                                        <property name="tooltip-text">Copy debug information</property>
-                                        <property name="valign">start</property>
-                                      </object>
-                                    </property>
-                                    <property name="title">Analysis notes</property>
+                        <property name="content">
+                          <object class="AdwToastOverlay" id="offset_page_toast">
+                            <property name="child">
+                              <object class="AdwOverlaySplitView" id="offset_selection_split_view">
+                                <property name="content">
+                                  <object class="AdwPreferencesPage">
                                     <child>
-                                      <object class="GtkScrolledWindow">
-                                        <property name="child">
-                                          <object class="GtkTextView" id="kallsyms_debug_viewport">
-                                            <property name="bottom-margin">4</property>
-                                            <property name="buffer">
-                                              <object class="GtkTextBuffer" id="kallsyms_debug_buffer">
-                                                <property name="enable-undo">False</property>
-                                              </object>
-                                            </property>
-                                            <property name="cursor-visible">False</property>
-                                            <property name="editable">False</property>
-                                            <property name="height-request">190</property>
-                                            <property name="left-margin">4</property>
-                                            <property name="monospace">True</property>
-                                            <property name="right-margin">4</property>
-                                            <property name="top-margin">4</property>
-                                            <property name="wrap-mode">word-char</property>
-                                            <style>
-                                              <class name="small_tty"/>
-                                            </style>
+                                      <object class="AdwPreferencesGroup" id="analysis_notes">
+                                        <property name="header-suffix">
+                                          <object class="GtkButton">
+                                            <property name="action-name">win.copy-debug-information</property>
+                                            <property name="icon-name">edit-copy-symbolic</property>
+                                            <property name="tooltip-text">Copy debug information</property>
+                                            <property name="valign">start</property>
                                           </object>
                                         </property>
-                                        <property name="height-request">190</property>
-                                      </object>
-                                    </child>
-                                  </object>
-                                </child>
-                                <child>
-                                  <object class="AdwPreferencesGroup" id="offset_detection">
-                                    <property name="description">Information auto-detected by vmlinux-to-elf - click an address to display in the lateral hex view pane </property>
-                                    <property name="header-suffix">
-                                      <object class="GtkButton">
-                                        <property name="action-name">win.copy-offset-information</property>
-                                        <property name="icon-name">edit-copy-symbolic</property>
-                                        <property name="tooltip-text">Copy offset information</property>
-                                        <property name="valign">start</property>
-                                      </object>
-                                    </property>
-                                    <property name="title">Symbol table offset detection</property>
-                                    <child>
-                                      <object class="GtkScrolledWindow">
-                                        <property name="height-request">200</property>
+                                        <property name="title">Analysis notes</property>
                                         <child>
-                                          <object class="GtkColumnView">
-                                            <property name="model">
-                                              <object class="GtkSingleSelection" id="offset_list_selection_model">
-                                                <property name="autoselect">False</property>
-                                                <property name="can-unselect">True</property>
-                                                <property name="model">
-                                                  <object class="GListStore" id="offset_list_model"/>
+                                          <object class="GtkScrolledWindow">
+                                            <property name="child">
+                                              <object class="GtkTextView" id="kallsyms_debug_viewport">
+                                                <property name="bottom-margin">4</property>
+                                                <property name="buffer">
+                                                  <object class="GtkTextBuffer" id="kallsyms_debug_buffer">
+                                                    <property name="enable-undo">False</property>
+                                                  </object>
                                                 </property>
-                                                <signal name="selection-changed" handler="token_row_activated"/>
+                                                <property name="cursor-visible">False</property>
+                                                <property name="editable">False</property>
+                                                <property name="height-request">190</property>
+                                                <property name="left-margin">4</property>
+                                                <property name="monospace">True</property>
+                                                <property name="right-margin">4</property>
+                                                <property name="top-margin">4</property>
+                                                <property name="wrap-mode">word-char</property>
+                                                <style>
+                                                  <class name="small_tty"/>
+                                                </style>
                                               </object>
                                             </property>
+                                            <property name="height-request">190</property>
+                                          </object>
+                                        </child>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="AdwPreferencesGroup" id="offset_detection">
+                                        <property name="description">Information auto-detected by vmlinux-to-elf - click an address to display in the lateral hex view pane </property>
+                                        <property name="header-suffix">
+                                          <object class="GtkButton">
+                                            <property name="action-name">win.copy-offset-information</property>
+                                            <property name="icon-name">edit-copy-symbolic</property>
+                                            <property name="tooltip-text">Copy offset information</property>
+                                            <property name="valign">start</property>
+                                          </object>
+                                        </property>
+                                        <property name="title">Symbol table offset detection</property>
+                                        <child>
+                                          <object class="GtkScrolledWindow">
+                                            <property name="height-request">200</property>
                                             <child>
-                                              <object class="GtkColumnViewColumn" id="token_column">
-                                                <property name="factory">
-                                                  <object class="GtkBuilderListItemFactory">
-                                                    <property name="bytes"><![CDATA[<interface>
+                                              <object class="GtkColumnView">
+                                                <property name="model">
+                                                  <object class="GtkSingleSelection" id="offset_list_selection_model">
+                                                    <property name="autoselect">False</property>
+                                                    <property name="can-unselect">True</property>
+                                                    <property name="model">
+                                                      <object class="GListStore" id="offset_list_model"/>
+                                                    </property>
+                                                    <signal name="selection-changed" handler="token_row_activated"/>
+                                                  </object>
+                                                </property>
+                                                <child>
+                                                  <object class="GtkColumnViewColumn" id="token_column">
+                                                    <property name="factory">
+                                                      <object class="GtkBuilderListItemFactory">
+                                                        <property name="bytes"><![CDATA[<interface>
   <template class="GtkColumnViewCell">
     <property name="child">
       <object class="GtkLabel">
@@ -270,18 +270,18 @@
     </property>
   </template>
 </interface>]]></property>
+                                                      </object>
+                                                    </property>
+                                                    <property name="resizable">True</property>
+                                                    <property name="title">Token</property>
                                                   </object>
-                                                </property>
-                                                <property name="resizable">True</property>
-                                                <property name="title">Token</property>
-                                              </object>
-                                            </child>
-                                            <child>
-                                              <object class="GtkColumnViewColumn" id="offset_column">
-                                                <property name="expand">True</property>
-                                                <property name="factory">
-                                                  <object class="GtkBuilderListItemFactory">
-                                                    <property name="bytes"><![CDATA[<interface>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkColumnViewColumn" id="offset_column">
+                                                    <property name="expand">True</property>
+                                                    <property name="factory">
+                                                      <object class="GtkBuilderListItemFactory">
+                                                        <property name="bytes"><![CDATA[<interface>
   <template class="GtkColumnViewCell">
     <property name="child">
       <object class="GtkLabel">
@@ -296,10 +296,12 @@
     </property>
   </template>
 </interface>]]></property>
+                                                      </object>
+                                                    </property>
+                                                    <property name="resizable">True</property>
+                                                    <property name="title">Offset</property>
                                                   </object>
-                                                </property>
-                                                <property name="resizable">True</property>
-                                                <property name="title">Offset</property>
+                                                </child>
                                               </object>
                                             </child>
                                           </object>
@@ -307,46 +309,46 @@
                                       </object>
                                     </child>
                                   </object>
-                                </child>
-                                <child>
-                                  <object class="AdwToastOverlay" id="offset_page_toast"/>
-                                </child>
-                              </object>
-                            </property>
-                            <property name="sidebar">
-                              <object class="GtkBox">
-                                <property name="orientation">vertical</property>
-                                <property name="width-request">300</property>
-                                <child>
-                                  <object class="GtkScrolledWindow">
-                                    <property name="vexpand">True</property>
-                                    <property name="vexpand-set">True</property>
+                                </property>
+                                <property name="sidebar">
+                                  <object class="GtkBox">
+                                    <property name="orientation">vertical</property>
+                                    <property name="width-request">300</property>
                                     <child>
-                                      <object class="GtkTextView" id="hex_viewport">
-                                        <property name="bottom-margin">4</property>
-                                        <property name="buffer">
-                                          <object class="GtkTextBuffer" id="hex_buffer">
-                                            <property name="enable-undo">False</property>
-                                            <property name="text">
+                                      <object class="GtkScrolledWindow">
+                                        <property name="vexpand">True</property>
+                                        <property name="vexpand-set">True</property>
+                                        <child>
+                                          <object class="GtkTextView" id="hex_viewport">
+                                            <property name="bottom-margin">4</property>
+                                            <property name="buffer">
+                                              <object class="GtkTextBuffer" id="hex_buffer">
+                                                <property name="enable-undo">False</property>
+                                                <property name="text">
 Hex dump at address %s
 
 %s</property>
+                                              </object>
+                                            </property>
+                                            <property name="cursor-visible">False</property>
+                                            <property name="editable">False</property>
+                                            <property name="left-margin">4</property>
+                                            <property name="monospace">True</property>
+                                            <property name="right-margin">4</property>
+                                            <property name="top-margin">4</property>
+                                            <property name="wrap-mode">word-char</property>
                                           </object>
-                                        </property>
-                                        <property name="cursor-visible">False</property>
-                                        <property name="editable">False</property>
-                                        <property name="left-margin">4</property>
-                                        <property name="monospace">True</property>
-                                        <property name="right-margin">4</property>
-                                        <property name="top-margin">4</property>
-                                        <property name="wrap-mode">word-char</property>
+                                        </child>
                                       </object>
                                     </child>
                                   </object>
-                                </child>
+                                </property>
                               </object>
                             </property>
                           </object>
+                        </property>
+                        <child type="top">
+                          <object class="AdwHeaderBar"/>
                         </child>
                         <child type="bottom">
                           <object class="GtkActionBar">

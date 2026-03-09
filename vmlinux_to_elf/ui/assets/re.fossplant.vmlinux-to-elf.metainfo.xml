@@ -63,7 +63,8 @@ https://hughsie.github.io/oars/index.html
     <release version="1.2.1" date="2026-03-09">
       <description>
         <p>Fix regression in parsing certain Android images (issue #81)</p>
-        <p>Fix `.desktop` metadata</p>
+        <p>Fix ".desktop" metadata</p>
+        <p>Fix displaying "Adw.ToastOverlay" with recent GTK-4 versions</p>
         <p>Implement Snapcraft packaging</p>
       </description>
     </release>

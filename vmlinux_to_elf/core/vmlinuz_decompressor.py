@@ -269,17 +269,21 @@ def try_decompress_at(input_file: bytes, offset: int) -> bytes:
         pass
 
     if decoded and 0 in decoded[:32] and len(decoded) > 0x1000:
-        logging.info(
-            (
-                '[+] Kernel successfully decompressed in-memory (the offsets that '
-                + 'follow will be given relative to the decompressed binary)'
-            )
-        )
-
         return decoded
 
 
-def obtain_raw_kernel_from_file(input_file: bytes) -> bytes:
+def obtain_raw_kernel_from_file(
+    input_file: bytes, is_entry_point: bool = False
+) -> bytes:
+
+    if is_entry_point:
+        log_msg = '[+] Kernel successfully decompressed or unpacked'
+    else:
+        log_msg = (
+            '[+] Kernel successfully decompressed in-memory (the offsets that '
+            + 'follow will be given relative to the decompressed binary)'
+        )
+
     # Check for known signatures at fixed offsets.
     #
     # Note that mangled semi-correct kernel version strings may be present
@@ -304,9 +308,12 @@ def obtain_raw_kernel_from_file(input_file: bytes) -> bytes:
     for possible_offset in sorted(possible_offsets):
         decompressed_data = try_decompress_at(input_file, possible_offset)
         if decompressed_data:
+            logging.info(log_msg)
             return decompressed_data
 
-    if not search(rb'Linux version (\d+\.[\d.]*\d)[ -~]+', input_file):  # No kernel version string found
+    if not search(
+        rb'Linux version (\d+\.[\d.]*\d)[ -~]+', input_file
+    ):  # No kernel version string found
         # If not successful, scan for compression signatures in the whole document
         for possible_signature in Signature.Compressed:
             possible_offset = input_file.find(possible_signature)
@@ -316,6 +323,7 @@ def obtain_raw_kernel_from_file(input_file: bytes) -> bytes:
                     input_file, possible_offset
                 )
                 if decompressed_data:
+                    logging.info(log_msg)
                     return decompressed_data
                 possible_offset = input_file.find(
                     possible_signature, possible_offset + 1

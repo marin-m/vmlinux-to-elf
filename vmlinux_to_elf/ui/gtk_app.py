@@ -271,9 +271,9 @@ class MyWindow(Adw.ApplicationWindow):
 
         def load_bytes_cb(open_result, result):
             try:
-                data: bytes = open_result.load_bytes_finish(
-                    result
-                )[0].get_data()
+                data: bytes = open_result.load_bytes_finish(result)[
+                    0
+                ].get_data()
             except GLib.GError as err:
                 self.selection_spinner_row.set_visible(False)
                 dialog = Adw.AlertDialog.new(
@@ -335,9 +335,7 @@ class MyWindow(Adw.ApplicationWindow):
             # file_picker.set_filters(Gio.ListStore())
             file_picker.open(self, callback=file_picked)
 
-        self.add_simple_action(
-            'pick-file', pick_file
-        )
+        self.add_simple_action('pick-file', pick_file)
 
         def copy_debug_information(*args):
             clipboard = Gdk.Display.get_default().get_clipboard()

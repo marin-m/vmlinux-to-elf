@@ -44,6 +44,7 @@ Issues = "https://github.com/marin-m/vmlinux-to-elf/issues"
 [project.scripts]
 kallsyms-finder = "vmlinux_to_elf.scripts.kallsyms_finder:main"
 vmlinux-to-elf = "vmlinux_to_elf.scripts.vmlinux_to_elf:main"
+vmlinuz-decompressor = "vmlinux_to_elf.scripts.vmlinuz_decompressor:main"
 vmlinux-to-elf-gui = "vmlinux_to_elf.ui.gtk_app:main"
 # Development scripts
 vte-tests-pe = "vmlinux_to_elf.utils.arm64_efi:main"

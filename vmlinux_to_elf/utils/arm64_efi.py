@@ -191,7 +191,12 @@ def main():
     with open(args.input_file, 'rb') as fd:
         struct = LinuxARM64EFIStub()
         fd.readinto(struct)
-        assert struct.code0 == b'MZ@\xfa'
+
+        # code0 may be nop or a branch address
+        # in non-EFI setups (e.g Android kernels),
+        # depending on the kernel version
+
+        # assert struct.code0 == b'MZ@\xfa'
         assert struct.magic == b'ARM\x64'
         struct.pretty_print()
         fd.seek(0x58 + struct.pe_size_of_optional_header)

@@ -179,6 +179,12 @@ options:
 
 ```
 
+## How is the source code organized?
+
+<a href="pics/vmlinux-to-elf internal charting.pdf?raw=true">
+<img src="https://docs.google.com/drawings/d/e/2PACX-1vSnK-GDr74AXNPLHgwmHC9eH0e9MtMzSZ7XLqBkwynmImcT6K1QQP0WL6i5BG1zgajOnSaVxq6QQHRL/pub?w=1440&amp;h=2160&amp;">
+</a>
+
 ## Bug fixes, improvements, etc.
 
 Don't hesitate to [open an issue](https://github.com/marin-m/vmlinux-to-elf/issues/new) for any suggestion of improvement.

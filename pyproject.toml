@@ -10,7 +10,7 @@ dependencies = [
     "lz4",
     "zstandard>=0.25.0",
     "minilzo>=1.2",
-    "peewee>=4.0.0",
+    "peewee>=3.17",
 ]
 requires-python = ">=3.9"
 authors = [{ name = "Marin Moulinier" }]

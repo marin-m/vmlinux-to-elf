@@ -25,6 +25,10 @@ vmlinux-to-elf <input_kernel.bin> <output_kernel.elf>
 kallsyms-finder <input_kernel.bin> # If installed with uv
 vmlinux-to-elf.kallsyms-finder # If installed with snap
 
+# Command line, just decompress the kernel:
+vmlinuz-decompressor <input_kernel.bin> <output_kernel.bin> # If installed with uv
+vmlinux-to-elf.vmlinuz-decompressor # If installed with snap
+
 # Graphical:
 vmlinux-to-elf-gui # If installed with uv
 vmlinux-to-elf.gui # If installed with snap

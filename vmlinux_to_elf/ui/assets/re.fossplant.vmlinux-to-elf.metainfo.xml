@@ -60,6 +60,13 @@ https://hughsie.github.io/oars/index.html
 -->
   <content_rating type="oars-1.1" />
   <releases>
+    <release version="1.2.2" date="2026-03-12">
+      <description>
+        <p>Modify the "pyproject.toml" file to accept Peewee 3.x so that the AUR package can be bumped</p>
+        <p>Add a "vmlinuz-decompressor" script for just decompressing kernels without symbolizing</p>
+        <p>Improve app documentation</p>
+      </description>
+    </release>
     <release version="1.2.1" date="2026-03-09">
       <description>
         <p>Fix regression in parsing certain Android images (issue #81)</p>
@@ -84,6 +91,7 @@ https://hughsie.github.io/oars/index.html
     <dbus type="user">re.fossplant.vmlinux-to-elf</dbus>
     <binary>vmlinux-to-elf</binary>
     <binary>kallsyms-finder</binary>
+    <binary>vmlinuz-decompressor</binary>
     <binary>vmlinux-to-elf-gui</binary>
     <mediatype>application/x-pie-executable</mediatype>
     <mediatype>application/x-executable</mediatype>

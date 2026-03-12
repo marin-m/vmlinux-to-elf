@@ -4,7 +4,7 @@
 <cambalache-project version="0.96.0" target_tk="gtk-4.0">
   <gresources filename="vmlinux-to-elf.gresource.xml" sha256="71d04f8816faf77b2b915a2c555343e38b68b5d310d0de579e9258b13dad9c05"/>
   <css filename="style.css"/>
-  <ui template-class="MainWindow" filename="gui.ui" sha256="ccb8d3d3049e31dfc56fd69d69225567fb0a158fc35608f8a7ccc8f096891f83">
+  <ui template-class="MainWindow" filename="gui.ui" sha256="7df3e970ad8f8a4d5ffb5ef977564b429cf8f652feb1bdf16b727d97a8dd0f59">
     <css-provider>style.css</css-provider>
   </ui>
 </cambalache-project>

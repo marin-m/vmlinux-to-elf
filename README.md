@@ -3,7 +3,7 @@
 This tool allows to obtain a fully analyzable .ELF file from a vmlinux/vmlinuz/bzImage/zImage kernel image (either a raw binary blob or a preexisting but stripped .ELF file), with recovered function and variable symbols.
 
 <p align="center">
-<img src="https://raw.githubusercontent.com/marin-m/vmlinux-to-elf/master/pics/landing_illustration.png">
+<img src="https://raw.githubusercontent.com/marin-m/vmlinux-to-elf/master/pics/landing_illustration.png" alt="Landing illustration">
 </p>
 
 For this, it scans your kernel for a kernel symbol table ([kallsyms](https://github.com/torvalds/linux/blob/master/kernel/kallsyms.c)), a compressed symbol table that is present in almost every kernel, mostly unaltered.
@@ -13,7 +13,7 @@ Because the concerned symbol table is originally compressed, it should recover s
 It produces an .ELF file that you can analyze using IDA Pro and Ghidra. This tool is hence useful for embedded systems reverse engineering.
 
 <p align="center">
-<a href="https://snapcraft.io/vmlinux-to-elf"><img src="pics/snap_badge.svg?raw=true"></a> &nbsp; <a href="https://flathub.org/en/apps/re.fossplant.vmlinux-to-elf"><img src="pics/flathub_badge.svg?raw=true"></a>
+<a href="https://snapcraft.io/vmlinux-to-elf"><img src="https://raw.githubusercontent.com/marin-m/vmlinux-to-elf/master/pics/snap_badge.svg?raw=true" alt="Get it from the Snap Store"></a> &nbsp; <a href="https://flathub.org/en/apps/re.fossplant.vmlinux-to-elf"><img src="https://raw.githubusercontent.com/marin-m/vmlinux-to-elf/master/pics/flathub_badge.svg?raw=true" alt="Get it on Flathub"></a>
 </p>
 
 Usage:
@@ -36,9 +36,9 @@ flatpak run re.fossplant.vmlinux-to-elf # If installed with flatpak
 ```
 
 <p align="center">
-<img src="pics/Screenshot_2_Kernel_loaded.png?raw=true" alt="Application main screen" width="850">
+<img src="https://raw.githubusercontent.com/marin-m/vmlinux-to-elf/master/pics/Screenshot_2_Kernel_loaded.png?raw=true" alt="Application main screen" width="850">
     
-<img src="pics/Screenshot_6_Offsets_view_with_hex_dump.png?raw=true" alt="Application kernel offsets view" width="850">
+<img src="https://raw.githubusercontent.com/marin-m/vmlinux-to-elf/master/pics/Screenshot_6_Offsets_view_with_hex_dump.png?raw=true" alt="Application kernel offsets view" width="850">
 </p>
 
 Installation:
@@ -185,8 +185,8 @@ options:
 
 ## How is the source code organized?
 
-<a href="pics/vmlinux-to-elf internal charting.pdf?raw=true">
-<img src="https://docs.google.com/drawings/d/e/2PACX-1vSnK-GDr74AXNPLHgwmHC9eH0e9MtMzSZ7XLqBkwynmImcT6K1QQP0WL6i5BG1zgajOnSaVxq6QQHRL/pub?w=1440&amp;h=2160&amp;">
+<a href="https://raw.githubusercontent.com/marin-m/vmlinux-to-elf/master/pics/vmlinux-to-elf internal charting.pdf?raw=true">
+<img src="https://docs.google.com/drawings/d/e/2PACX-1vSnK-GDr74AXNPLHgwmHC9eH0e9MtMzSZ7XLqBkwynmImcT6K1QQP0WL6i5BG1zgajOnSaVxq6QQHRL/pub?w=1440&amp;h=2160&amp;" alt="Source code chart">
 </a>
 
 ## Bug fixes, improvements, etc.

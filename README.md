@@ -195,5 +195,5 @@ Don't hesitate to [open an issue](https://github.com/marin-m/vmlinux-to-elf/issu
 
 Please privilege the current Github repository issues and pull requests in priority for reporting bugs, asking questions, etc.
 
-Alternatively, you can use [this matrix channel](https://matrix.to/#/!ppalJoNacGRgESlXnK:matrix.org) if needing directly contact with the author of the project, but please reserve this as a secondary channel e.g for sending kernel samples, what goes here otherwise is more likely to be lost.
+Alternatively, you can use [this matrix channel](https://matrix.to/#/#vmlinux-to-elf:matrix.org) if needing directly contact with the author of the project, but please reserve this as a secondary channel e.g for sending kernel samples, what goes here otherwise is more likely to be lost.
 

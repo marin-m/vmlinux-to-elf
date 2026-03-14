@@ -49,18 +49,16 @@ sudo snap install vmlinux-to-elf
 # Install CLI+GUI with yay (recommended on Arch, Manjaro)
 yay -S vmlinux-to-elf
 
-# Install CLI+GUI with uv (recommended on other distributions)
-sudo snap install --classic astral-uv
-sudo apt install gir1.2-adw-1 gir1.2-gtk-4.0 libgirepository-2.0-dev
+# Install CLI+GUI with uv (example with Fedora)
+sudo dnf install -y uv glib2-devel libadwaita-devel gtk4-devel
 uv tool install vmlinux-to-elf[gui]
 vmlinux-to-elf-gui --install-metadata # Install .desktop file
 
 # Install CLI with uv and GUI with Flatpak (recommended on
 # distributions with libadwaita < 1.6)
-sudo snap install --classic astral-uv
+sudo dnf install -y uv flatpak
 uv tool install vmlinux-to-elf
 
-sudo apt install flatpak
 flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 flatpak install re.fossplant.vmlinux-to-elf
 ```

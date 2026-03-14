@@ -167,7 +167,7 @@ sdist = { url = "https://files.pythonhosted.org/packages/1f/86/b87f8d9ecb01effa2
 
 [[package]]
 name = "vmlinux-to-elf"
-version = "1.2.3"
+version = "1.2.2.post2"
 source = { editable = "." }
 dependencies = [
     { name = "lz4" },

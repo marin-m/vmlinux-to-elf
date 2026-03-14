@@ -50,7 +50,8 @@ sudo snap install vmlinux-to-elf
 yay -S vmlinux-to-elf
 
 # Install CLI+GUI with uv (example with Fedora)
-sudo dnf install -y uv glib2-devel libadwaita-devel gtk4-devel
+sudo dnf install -y uv glib2-devel libadwaita-devel gtk4-devel \
+    gobject-introspection-devel python3-gobject-devel
 uv tool install vmlinux-to-elf[gui]
 vmlinux-to-elf-gui --install-metadata # Install .desktop file
 

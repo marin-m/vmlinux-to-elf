@@ -51,7 +51,8 @@ yay -S vmlinux-to-elf
 
 # Install CLI+GUI with uv (example with Fedora)
 sudo dnf install -y uv glib2-devel libadwaita-devel gtk4-devel \
-    gobject-introspection-devel python3-gobject-devel
+    gobject-introspection-devel python3-gobject-devel \
+    python3-devel cairo-devel
 uv tool install vmlinux-to-elf[gui]
 vmlinux-to-elf-gui --install-metadata # Install .desktop file
 

@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vmlinux-to-elf"
-version = "1.2.2"
+version = "1.2.3"
 dependencies = [
     "lz4",
     "zstandard>=0.25.0",
@@ -63,7 +63,12 @@ packages = [
 ]
 
 [tool.setuptools.package-data]
-"vmlinux_to_elf.ui.assets" = ["vmlinux-to-elf.gresource"]
+"vmlinux_to_elf.ui.assets" = [
+    "vmlinux-to-elf.gresource",
+    "re.fossplant.vmlinux-to-elf.metainfo.xml",
+    "re.fossplant.vmlinux-to-elf.desktop",
+    "re.fossplant.vmlinux-to-elf.svg"
+]
 "vmlinux_to_elf.utils" = ["elf_tests/*"]
 "vmlinux_to_elf.kernel_db" = ["database.sqlite3"]
 

@@ -1,19 +1,21 @@
 #!/usr/bin/env python3
 # -*- encoding: Utf-8 -*-
-from os import stat, scandir, access, W_OK
-from os.path import dirname, realpath
+from os import stat, scandir, environ, makedirs, access, remove, W_OK
+from os.path import dirname, realpath, exists, expanduser, join
 from argparse import ArgumentParser
 from io import BytesIO, StringIO
+from shutil import which, copy2
 from threading import Thread
 from sys import stderr, argv
 from typing import Optional
 from subprocess import run
-from shutil import which
 import logging
 
 SCRIPT_DIR = dirname(realpath(__file__))
 ASSETS_DIR = realpath(SCRIPT_DIR + '/assets')
 RESOURCES_PATH = realpath(ASSETS_DIR + '/vmlinux-to-elf.gresource')
+
+APP_ID = 're.fossplant.vmlinux-to-elf'
 
 # Based on https://github.com/Taiko2k/GTK4PythonTutorial?tab=readme-ov-file#ui-from-graphical-designer
 
@@ -197,10 +199,7 @@ class MyWindow(Adw.ApplicationWindow):
 
         num_recent_files = 0
         for item in Gtk.RecentManager.get_default().get_items():
-            if (
-                item.has_application('re.fossplant.vmlinux-to-elf')
-                and item.exists()
-            ):
+            if item.has_application(APP_ID) and item.exists():
                 self.recent_files_menu.append(
                     item.get_uri_display(),
                     'win.open-recent(%s)' % repr(item.get_uri()),
@@ -836,18 +835,6 @@ class MyWindow(Adw.ApplicationWindow):
 
 
 def main():
-    """
-    args = ArgumentParser()
-    args.add_argument(
-        '-v',
-        '--verbose',
-        help='Show extra debugging output',
-        action='store_true',
-    )
-
-    args = args.parse_args()
-    """
-
     logging.basicConfig(
         stream=stderr,
         # level=logging.DEBUG if args.verbose else logging.INFO,
@@ -855,10 +842,83 @@ def main():
         format='%(message)s',
     )
 
-    GLib.set_prgname('re.fossplant.vmlinux-to-elf')
+    args = ArgumentParser(description='A GUI for the vmlinux-to-elf utility')
+    args.add_argument(
+        'input_file',
+        help='An optional file to feed the tool with at startup',
+        nargs='?'
+    )
+    args.add_argument(
+        '--install-metadata',
+        help=(
+            'Install FreeDesktop metadata (.desktop + icon) to '
+            + '$XDG_DATA_HOME, or ~/.local/share, or /usr/local/share '
+            + 'if root'
+        ),
+        action='store_true',
+    )
+    args.add_argument(
+        '--remove-metadata',
+        help=('Revert the effects of --install-metadata'),
+        action='store_true',
+    )
+
+    args = args.parse_args()
+
+    if args.install_metadata or args.remove_metadata:
+        from os import geteuid  # UNIX-specific
+
+        if geteuid() == 0:
+            xdg_path = '/usr/local/share/'
+        else:
+            xdg_path = join(environ['HOME'], '.local', 'share')
+
+        xdg_path = expanduser(environ.get('XDG_DATA_HOME', xdg_path))
+
+        icon_src = join(ASSETS_DIR, APP_ID + '.svg')
+        metainfo_src = join(ASSETS_DIR, APP_ID + '.metainfo.xml')
+        desktop_src = join(ASSETS_DIR, APP_ID + '.desktop')
+
+        icon_dst = join(xdg_path, 'icons', APP_ID + '.svg')
+        metainfo_dst = join(xdg_path, 'metainfo', APP_ID + '.metainfo.xml')
+        desktop_dst = join(xdg_path, 'applications', APP_ID + '.desktop')
+
+    if args.install_metadata:
+        for src, dst in [
+            (icon_src, icon_dst),
+            (metainfo_src, metainfo_dst),
+            (desktop_src, desktop_dst),
+        ]:
+            logging.info('[+] cp %r %r' % (src, dst))
+            makedirs(dirname(dst), exist_ok=True)
+            copy2(src, dst)
+
+        logging.info(
+            '[+] FreeDesktop metadata installed successfully to "%s"'
+            % xdg_path
+        )
+        exit(0)
+
+    elif args.remove_metadata:
+        data_removed = False
+        for path in [icon_dst, metainfo_dst, desktop_dst]:
+            if exists(path):
+                logging.info('[+] rm %r' % (path))
+                remove(path)
+                data_removed = True
+        if data_removed:
+            logging.info(
+                '[+] FreeDesktop metadata removed from "%s"' % xdg_path
+            )
+            exit(0)
+        else:
+            logging.error('[!] No metadata present at "%s"' % xdg_path)
+            exit(1)
+
+    GLib.set_prgname(APP_ID)
 
     app = MyApp(
-        application_id='re.fossplant.vmlinux-to-elf',
+        application_id=APP_ID,
         flags=Gio.ApplicationFlags.NON_UNIQUE
         | Gio.ApplicationFlags.HANDLES_OPEN,
     )

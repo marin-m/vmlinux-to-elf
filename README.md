@@ -46,9 +46,14 @@ Installation:
 # Install CLI+GUI with Snap (recommended on Ubuntu)
 sudo snap install vmlinux-to-elf
 
+# Install CLI+GUI with yay (recommended on Arch, Manjaro)
+yay -S vmlinux-to-elf
+
 # Install CLI+GUI with uv (recommended on other distributions)
-sudo apt install gir1.2-adw-1 gir1.2-gtk-4.0
+sudo snap install --classic astral-uv
+sudo apt install gir1.2-adw-1 gir1.2-gtk-4.0 libgirepository-2.0-dev
 uv tool install vmlinux-to-elf[gui]
+vmlinux-to-elf-gui --install-metadata # Install .desktop file
 
 # Install CLI with uv and GUI with Flatpak (recommended on
 # distributions with libadwaita < 1.6)

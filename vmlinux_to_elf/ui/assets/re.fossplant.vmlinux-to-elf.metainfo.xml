@@ -60,6 +60,11 @@ https://hughsie.github.io/oars/index.html
 -->
   <content_rating type="oars-1.1" />
   <releases>
+    <!--release version="1.2.3" date="2026-03-14">
+      <description>
+        <p></p>
+      </description>
+    </release-->
     <release version="1.2.2" date="2026-03-12">
       <description>
         <p>Modify the "pyproject.toml" file to accept Peewee 3.x so that the AUR package can be bumped</p>

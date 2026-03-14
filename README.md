@@ -61,7 +61,7 @@ vmlinux-to-elf-gui --install-metadata # Install .desktop file
 sudo dnf install -y uv flatpak
 uv tool install vmlinux-to-elf
 
-flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 flatpak install re.fossplant.vmlinux-to-elf
 ```
 

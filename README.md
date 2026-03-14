@@ -68,6 +68,8 @@ flatpak install re.fossplant.vmlinux-to-elf
 Local development environment setup:
 
 ```bash
+sudo snap install --classic astral-uv
+sudo apt install git
 git clone git@github.com:marin-m/vmlinux-to-elf.git
 
 # Dependencies for the GTK-4 GUI

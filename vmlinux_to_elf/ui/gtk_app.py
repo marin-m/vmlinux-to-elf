@@ -2,6 +2,7 @@
 # -*- encoding: Utf-8 -*-
 from os import stat, scandir, environ, makedirs, access, remove, W_OK
 from os.path import dirname, realpath, exists, expanduser, join
+from importlib.metadata import version
 from argparse import ArgumentParser
 from io import BytesIO, StringIO
 from shutil import which, copy2
@@ -218,6 +219,7 @@ class MyWindow(Adw.ApplicationWindow):
     def connect_actions(self):
 
         def show_about(*args):
+            self.about_dialog.set_version(version('vmlinux_to_elf'))
             self.about_dialog.present(self)
 
         self.add_simple_action('show-about', show_about)

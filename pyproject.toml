@@ -1,11 +1,11 @@
 
 [build-system]
-requires = ["setuptools>=69", "wheel"]
+requires = ["setuptools>=69", "wheel", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "vmlinux-to-elf"
-version = "1.2.2.post2"
+dynamic = ["version"]
 dependencies = [
     "lz4",
     "zstandard>=0.25.0",
@@ -32,6 +32,8 @@ classifiers = [
     "Environment :: X11 Applications :: Gnome"
 ]
 license-files = ["LICENSE"]
+
+[tool.setuptools_scm]
 
 [project.optional-dependencies]
 gui = ["pygobject>=3.54.5"]

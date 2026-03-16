@@ -74,7 +74,6 @@ packages = [
     "re.fossplant.vmlinux-to-elf.desktop",
     "re.fossplant.vmlinux-to-elf.svg"
 ]
-"vmlinux_to_elf.ui.assets" = ["vmlinux-to-elf.gresource"]
 "vmlinux_to_elf.utils.elf_tests" = ["*"]
 "vmlinux_to_elf.kernel_db" = ["database.sqlite3"]
 

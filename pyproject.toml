@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vmlinux-to-elf"
-dynamic = ["version"]
+version = "1.2.2"
 dependencies = [
     "lz4",
     "zstandard>=0.25.0",

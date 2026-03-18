@@ -58,7 +58,7 @@ vmlinux-to-elf-gui --install-metadata # Install .desktop file
 
 # Install CLI with uv and GUI with Flatpak (recommended on
 # distributions with libadwaita < 1.6)
-sudo dnf install -y uv flatpak
+sudo dnf install -y uv flatpak @development-tools
 uv tool install vmlinux-to-elf
 
 flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo

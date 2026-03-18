@@ -65,6 +65,36 @@
                                 <property name="visible">False</property>
                               </object>
                             </child>
+                            <child>
+                              <object class="AdwActionRow" id="unpacking_row">
+                                <property name="activatable">True</property>
+                                <property name="activatable-widget">unpacking_row_button</property>
+                                <property name="subtitle-selectable">True</property>
+                                <property name="title">Unpacked kernel</property>
+                                <property name="visible">False</property>
+                                <child>
+                                  <object class="GtkButton" id="unpacking_row_button">
+                                    <property name="action-name">win.export-raw-kernel</property>
+                                    <property name="label">Export unpacked</property>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="AdwActionRow" id="decompression_row">
+                                <property name="activatable">True</property>
+                                <property name="activatable-widget">decompression_row_button</property>
+                                <property name="subtitle-selectable">True</property>
+                                <property name="title">Decompressed kernel</property>
+                                <property name="visible">False</property>
+                                <child>
+                                  <object class="GtkButton" id="decompression_row_button">
+                                    <property name="action-name">win.export-raw-kernel</property>
+                                    <property name="label">Export decompressed</property>
+                                  </object>
+                                </child>
+                              </object>
+                            </child>
                           </object>
                         </child>
                         <child>

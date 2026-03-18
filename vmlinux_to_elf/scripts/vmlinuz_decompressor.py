@@ -4,9 +4,7 @@ import logging
 from argparse import ArgumentParser
 from sys import stderr
 
-from vmlinux_to_elf.core.vmlinuz_decompressor import (
-    obtain_raw_kernel_from_file,
-)
+from vmlinux_to_elf.core.vmlinuz_decompressor import VmlinuzDecompressor
 
 
 def main():
@@ -33,9 +31,9 @@ def main():
 
     with open(args.input_file, 'rb') as kernel_bin:
         compressed_data = kernel_bin.read()
-        uncompressed_data = obtain_raw_kernel_from_file(
+        uncompressed_data = VmlinuzDecompressor(
             compressed_data, is_entry_point=True
-        )
+        ).decompressed
 
     if compressed_data == uncompressed_data:
         logging.error(

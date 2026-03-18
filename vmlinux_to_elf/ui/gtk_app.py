@@ -4,11 +4,11 @@ from os import stat, scandir, environ, makedirs, access, remove, W_OK
 from os.path import dirname, realpath, exists, expanduser, join
 from importlib.metadata import version
 from argparse import ArgumentParser
+from typing import Optional, List
 from io import BytesIO, StringIO
 from shutil import which, copy2
 from threading import Thread
 from sys import stderr, argv
-from typing import Optional
 from subprocess import run
 import logging
 
@@ -35,11 +35,13 @@ gi.require_version('Gdk', '4.0')
 gi.require_version('Adw', '1')
 from gi.repository import Gtk, GLib, Gdk, Adw, Gio
 
+from vmlinux_to_elf.core.vmlinuz_decompressor import (
+    VmlinuzDecompressor,
+    DecompressOperation,
+    DecompressOperationType,
+)
 from vmlinux_to_elf.ui.recovered_symbol_row import RecoveredSymbolRow
 from vmlinux_to_elf.ui.detected_token_row import DetectedTokenRow
-from vmlinux_to_elf.core.vmlinuz_decompressor import (
-    obtain_raw_kernel_from_file,
-)
 from vmlinux_to_elf.core.elf_symbolizer import ElfSymbolizer
 from vmlinux_to_elf.core.kallsyms import (
     KallsymsFinder,
@@ -144,7 +146,7 @@ Gio.resources_register(Gio.resource_load(RESOURCES_PATH))
 class MyWindow(Adw.ApplicationWindow):
     __gtype_name__ = 'MainWindow'
     kernel_path: Optional[str] = None
-    raw_kernel: Optional[bytes] = None
+    raw_kernel: Optional[VmlinuzDecompressor] = None
     kallsyms: Optional[KallsymsFinder] = None
     guessed_base_address: Optional[int] = None
     guessed_bitness: Optional[bool] = None
@@ -159,6 +161,10 @@ class MyWindow(Adw.ApplicationWindow):
     hex_buffer: Gtk.TextBuffer = Gtk.Template.Child()
     offset_selection_split_view: Adw.OverlaySplitView = Gtk.Template.Child()
     kernel_string_row: Adw.PreferencesRow = Gtk.Template.Child()
+    unpacking_row: Adw.PreferencesRow = Gtk.Template.Child()
+    unpacking_row_button: Gtk.Button = Gtk.Template.Child()
+    decompression_row: Adw.PreferencesRow = Gtk.Template.Child()
+    decompression_row_button: Gtk.Button = Gtk.Template.Child()
     analysis_options: Adw.PreferencesGroup = Gtk.Template.Child()
     bitness_switch: Adw.SwitchRow = Gtk.Template.Child()
     base_address_entry: Adw.EntryRow = Gtk.Template.Child()
@@ -296,6 +302,8 @@ class MyWindow(Adw.ApplicationWindow):
             file = Gio.File.new_for_uri(initial_uri)
 
             self.kernel_string_row.set_visible(False)
+            self.unpacking_row.set_visible(False)
+            self.decompression_row.set_visible(False)
             self.analysis_options.set_visible(False)
             self.detect_symbols_bar.set_revealed(False)
 
@@ -326,6 +334,8 @@ class MyWindow(Adw.ApplicationWindow):
                         dialog.choose(self, None, None)
                 else:
                     self.kernel_string_row.set_visible(False)
+                    self.unpacking_row.set_visible(False)
+                    self.decompression_row.set_visible(False)
                     self.analysis_options.set_visible(False)
                     self.detect_symbols_bar.set_revealed(False)
 
@@ -364,6 +374,81 @@ class MyWindow(Adw.ApplicationWindow):
             'copy-offset-information', copy_offset_information
         )
 
+        def export_raw_kernel(*args):
+
+            def confirm_callback(
+                alert_dialog: Adw.AlertDialog, result: Gio.AsyncResult
+            ):
+
+                if alert_dialog.choose_finish(result) == 'yes':
+
+                    def file_picked(
+                        file_dialog: Gtk.FileDialog, task: Gio.Task
+                    ):
+                        try:
+                            open_result: Gio.File = file_dialog.save_finish(
+                                task
+                            )
+                        except GLib.GError as err:
+                            if err.message != 'Dismissed by user':
+                                dialog = Adw.AlertDialog.new(
+                                    'Could not open file', err.message
+                                )
+                                dialog.add_response('ok', 'Ok')
+                                dialog.set_default_response('ok')
+                                dialog.set_close_response('ok')
+                                dialog.choose(self, None, None)
+                        else:
+                            data = BytesIO()
+
+                            try:
+                                open_result.replace_contents(
+                                    self.raw_kernel.decompressed,
+                                    None,
+                                    False,
+                                    Gio.FileCreateFlags.NONE,
+                                    None,
+                                )
+
+                            except GLib.GError as err:
+                                dialog = Adw.AlertDialog.new(
+                                    'Could not write file', err.message
+                                )
+
+                                dialog.add_response('ok', 'Ok')
+                                dialog.set_default_response('ok')
+                                dialog.set_close_response('ok')
+                                dialog.choose(self, None, None)
+
+                            else:
+                                toast = Adw.Toast.new(
+                                    'Correctly exported raw kernel to "%s"'
+                                    % open_result.get_path()
+                                )
+                                toast.set_timeout(10)
+                                self.main_page_toast.add_toast(toast)
+
+                    file_picker = Gtk.FileDialog()
+                    file_picker.set_initial_name(
+                        self.kernel_path.split('/').pop() + '-vmlinux.bin'
+                    )
+                    file_picker.save(self, callback=file_picked)
+
+            dialog = Adw.AlertDialog.new(
+                "This button won't export the symbolized kernel, just the "
+                + 'decompressed and unpacked kernel',
+                'In order to export a symbolized kernel, you should instead '
+                + 'first click the "Find symbol table" button below. '
+                + 'Do you want to proceed still?',
+            )
+            dialog.add_response('yes', 'Yes')
+            dialog.add_response('cancel', 'Cancel')
+            dialog.set_default_response('yes')
+            dialog.set_close_response('cancel')
+            dialog.choose(self, None, confirm_callback)
+
+        self.add_simple_action('export-raw-kernel', export_raw_kernel)
+
         def generate_elf_file(*args):
 
             def file_picked(file_dialog: Gtk.FileDialog, task: Gio.Task):
@@ -388,7 +473,7 @@ class MyWindow(Adw.ApplicationWindow):
 
                         data = BytesIO()
                         ElfSymbolizer(
-                            self.raw_kernel,
+                            self.raw_kernel.decompressed,
                             None,
                             data,
                             elf_machine=ElfMachine[
@@ -446,7 +531,7 @@ class MyWindow(Adw.ApplicationWindow):
 
             file_picker = Gtk.FileDialog()
             file_picker.set_initial_name(
-                self.kernel_path.split('/').pop() + '-vmlinux.bin'
+                self.kernel_path.split('/').pop() + '-vmlinux.elf'
             )
             file_picker.save(self, callback=file_picked)
 
@@ -547,7 +632,7 @@ class MyWindow(Adw.ApplicationWindow):
             self.offset_list_selection_model.get_selected_item()
         )
         text_buffer = '\nData for "%s" at %s:\n\n' % (item.token, item.offset)
-        fd = BytesIO(self.raw_kernel)
+        fd = BytesIO(self.raw_kernel.decompressed)
         fd.seek(int(item.offset, 16))
 
         subst_chars = ''.join(
@@ -591,6 +676,8 @@ class MyWindow(Adw.ApplicationWindow):
         self.file_picker_button.set_subtitle(path)
 
         self.kernel_string_row.set_visible(False)
+        self.unpacking_row.set_visible(False)
+        self.decompression_row.set_visible(False)
         self.analysis_options.set_visible(False)
         self.detect_symbols_bar.set_revealed(False)
 
@@ -604,11 +691,12 @@ class MyWindow(Adw.ApplicationWindow):
 
             self.handler.flush()
             try:
-                self.raw_kernel = obtain_raw_kernel_from_file(
+                self.raw_kernel = VmlinuzDecompressor(
                     self.kernel_orig_data[override_file_offset:]
                 )
+
                 self.kallsyms = KallsymsFinder(
-                    self.raw_kernel,
+                    self.raw_kernel.decompressed,
                     bit_size,
                     override_relative_base,
                     override_base_address,
@@ -653,6 +741,8 @@ class MyWindow(Adw.ApplicationWindow):
                 def update_ui_invalid_file_cb(err):
 
                     self.kernel_string_row.set_visible(False)
+                    self.unpacking_row.set_visible(False)
+                    self.decompression_row.set_visible(False)
                     self.analysis_options.set_visible(False)
                     self.detect_symbols_bar.set_revealed(False)
 
@@ -684,6 +774,43 @@ class MyWindow(Adw.ApplicationWindow):
                     # Display the "Analysis options" UI block
 
                     self.analysis_options.set_visible(True)
+
+                    # Evaluate the decompressor_output
+
+                    packing_layers: List[DecompressOperation] = []
+                    compression_layers: List[DecompressOperation] = []
+
+                    for op in self.raw_kernel.operations_done:
+                        if op.op_type == DecompressOperationType.Unpacking:
+                            packing_layers.append(op)
+                        elif (
+                            op.op_type == DecompressOperationType.Decompression
+                        ):
+                            compression_layers.append(op)
+                        else:
+                            raise NotImplementedError
+
+                    # Show guessed packing format, if any
+
+                    if packing_layers:
+                        self.unpacking_row_button.set_visible(
+                            not compression_layers
+                        )
+                        text = ' | '.join(map(str, packing_layers))
+                        self.unpacking_row.set_subtitle(text)
+                        # TODO handle "Export raw action"
+                        self.unpacking_row.set_activatable(
+                            not compression_layers
+                        )
+                        self.unpacking_row.set_visible(True)
+
+                    # Show guessed compression format, if any
+
+                    if compression_layers:
+                        text = ' | '.join(map(str, compression_layers))
+                        self.decompression_row.set_subtitle(text)
+                        # TODO handle "Export raw action"
+                        self.decompression_row.set_visible(True)
 
                     # Show guessed architecture
 
@@ -848,7 +975,7 @@ def main():
     args.add_argument(
         'input_file',
         help='An optional file to feed the tool with at startup',
-        nargs='?'
+        nargs='?',
     )
     args.add_argument(
         '--install-metadata',

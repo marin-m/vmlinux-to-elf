@@ -5,10 +5,8 @@ from argparse import ArgumentParser
 from sys import stderr
 
 from vmlinux_to_elf.core.architecture_detecter import ArchitectureGuessError
+from vmlinux_to_elf.core.vmlinuz_decompressor import VmlinuzDecompressor
 from vmlinux_to_elf.core.elf_symbolizer import ElfSymbolizer
-from vmlinux_to_elf.core.vmlinuz_decompressor import (
-    obtain_raw_kernel_from_file,
-)
 
 
 def main():
@@ -102,7 +100,7 @@ def main():
     with open(args.input_file, 'rb') as kernel_bin:
         try:
             ElfSymbolizer(
-                obtain_raw_kernel_from_file(kernel_bin.read()),
+                VmlinuzDecompressor(kernel_bin.read()).decompressed,
                 args.output_file,
                 None,
                 args.e_machine,

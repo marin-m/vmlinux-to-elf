@@ -261,7 +261,10 @@ class KallsymsFinder:
             )
         )
         arch_string = search(b'mod_unload[ -~]+', self.kernel_img)
-        if arch_string:
+        if (
+            arch_string
+            and len(arch_string.group(0).decode('utf-8').strip().split()) > 2
+        ):
             logging.info(
                 '[+]   Architecture string: %s'
                 % arch_string.group(0).decode('utf-8')
@@ -1061,7 +1064,7 @@ class KallsymsFinder:
             # Each entry in the symbol table starts with a u8 size followed by the contents.
             # The table ends with an entry of size 0, and must lie before kallsyms_markers.
             # This for loop uses a bottom-up DP approach to calculate the numbers of symbols without recalculations.
-            # dp[i] is the length of the symbol table given a starting position of "kallsyms_markers - i"
+            # dp[+] is the length of the symbol table given a starting position of "kallsyms_markers - i"
             # If the table position is invalid, i.e. it reaches out of bounds, the length is marked as -1.
             # The loop ends with the number of symbols for the current position in the last entry of dp.
 
@@ -1362,7 +1365,7 @@ class KallsymsFinder:
                     or heuristic_negative_percent < 0.5
                 ):
                     logging.info(
-                        '[i] Note: sometimes there is junk at the beginning of the kernel, and the load address is not the guessed'
+                        '[+] Note: sometimes there is junk at the beginning of the kernel, and the load address is not the guessed'
                     )
                     logging.info(
                         '          base address. You may need to play around with different load addresses to get everything'
@@ -1375,7 +1378,7 @@ class KallsymsFinder:
                     )
 
                 logging.info(
-                    '[i] Negative offsets overall: %g %%'
+                    '[+] Negative offsets overall: %g %%'
                     % (
                         number_of_negative_items
                         / len(tentative_addresses_or_offsets)
@@ -1418,7 +1421,7 @@ class KallsymsFinder:
             )
 
             logging.info(
-                '[i] Null addresses overall: %g %%'
+                '[+] Null addresses overall: %g %%'
                 % (
                     number_of_null_items
                     / len(tentative_addresses_or_offsets)
@@ -1532,7 +1535,7 @@ class KallsymsFinder:
         for symbol_name in self.symbol_names:
             symbol_types.add(symbol_name[0])
 
-        logging.info('Symbol types => %r' % sorted(symbol_types))
+        logging.info('[+] Symbol types => %r' % sorted(symbol_types))
         logging.info('')
 
         # Print symbols, in a fashion similar to /proc/kallsyms
@@ -1550,4 +1553,4 @@ class KallsymsFinder:
             if out_buffer:
                 out_buffer.write(out_string + '\n')
             else:
-                logging.info(out_string)
+                print(out_string)

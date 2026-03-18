@@ -22,10 +22,8 @@ from re import sub
 from sys import stderr
 from traceback import print_exc
 
+from vmlinux_to_elf.core.vmlinuz_decompressor import VmlinuzDecompressor
 from vmlinux_to_elf.core.elf_symbolizer import ElfSymbolizer
-from vmlinux_to_elf.core.vmlinuz_decompressor import (
-    obtain_raw_kernel_from_file,
-)
 
 SCRIPT_DIR = dirname(realpath(__file__))
 
@@ -64,7 +62,7 @@ if __name__ == '__main__':
         with open(file_name, 'rb') as fd:
             contents = fd.read()
 
-        raw_data = obtain_raw_kernel_from_file(contents)
+        raw_data = VmlinuzDecompressor(contents).decompressed
         try:
             ElfSymbolizer(
                 raw_data,

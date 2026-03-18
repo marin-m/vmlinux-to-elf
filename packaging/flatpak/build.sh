@@ -15,3 +15,6 @@ flatpak install flathub --user org.gnome.Platform//49 -y
 rm -rf target/ # Don't copy all the planet into the Flatpak build dir
 rm -rf repo/
 PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig/ flatpak-builder --install repo packaging/flatpak/re.fossplant.vmlinux-to-elf.json --user -y
+
+sleep 2
+flatpak run --user re.fossplant.vmlinux-to-elf

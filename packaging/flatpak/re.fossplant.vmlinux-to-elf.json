@@ -97,7 +97,8 @@
                 "mkdir -p /app/share/applications/",
                 "cp -r ./vmlinux_to_elf/ui/assets/re.fossplant.vmlinux-to-elf.svg /app/share/icons/hicolor/scalable/apps/",
                 "cp -r ./vmlinux_to_elf/ui/assets/re.fossplant.vmlinux-to-elf.metainfo.xml /app/share/metainfo/",
-                "cp -r ./vmlinux_to_elf/ui/assets/re.fossplant.vmlinux-to-elf.desktop /app/share/applications/"
+                "cp -r ./vmlinux_to_elf/ui/assets/re.fossplant.vmlinux-to-elf.desktop /app/share/applications/",
+                "rm -rf ./vmlinux_to_elf/ *.g* packaging pics *.lock *.md *.yaml *.toml LICENSE"
             ],
             "sources": [
                 {

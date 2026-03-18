@@ -78,6 +78,12 @@ class KallsymsLogHandler(logging.Handler):
         GLib.idle_add(cb)
 
 
+def _trim_path(path: str) -> str:
+    if path.startswith('/run/user'): # Flatpak-sandboxed path
+        path = path.split('/').pop()
+    return path
+
+
 class MyApp(Adw.Application):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -110,7 +116,7 @@ class MyApp(Adw.Application):
                     dialog.choose(self.window, None, None)
                 else:
                     self.window.update_kernel_path(
-                        files[0].get_path(),
+                        _trim_path(files[0].get_path()),
                         data,
                     )
 
@@ -292,7 +298,7 @@ class MyWindow(Adw.ApplicationWindow):
                 dialog.choose(self, None, None)
             else:
                 self.update_kernel_path(
-                    open_result.get_path(),
+                    _trim_path(open_result.get_path()),
                     data,
                 )
 
@@ -423,7 +429,7 @@ class MyWindow(Adw.ApplicationWindow):
                             else:
                                 toast = Adw.Toast.new(
                                     'Correctly exported raw kernel to "%s"'
-                                    % open_result.get_path()
+                                    % _trim_path(open_result.get_path())
                                 )
                                 toast.set_timeout(10)
                                 self.main_page_toast.add_toast(toast)

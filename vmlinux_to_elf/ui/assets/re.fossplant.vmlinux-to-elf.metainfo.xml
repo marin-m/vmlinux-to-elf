@@ -60,11 +60,13 @@ https://hughsie.github.io/oars/index.html
 -->
   <content_rating type="oars-1.1" />
   <releases>
-    <!--release version="1.2.3" date="2026-03-14">
+    <release version="1.2.3" date="2026-03-18">
       <description>
-        <p></p>
+        <p>Implement an UI information row + button to export the decompressed and unpacked kernel</p>
+        <p>Print useful information about the packing or compression method used through GUI and CLI</p>
+        <p>Correctly pipe the "kallsyms-finder" output to stdout instead of stderr</p>
       </description>
-    </release-->
+    </release>
     <release version="1.2.2" date="2026-03-12">
       <description>
         <p>Modify the "pyproject.toml" file to accept Peewee 3.x so that the AUR package can be bumped</p>

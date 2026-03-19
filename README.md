@@ -47,7 +47,7 @@ Installation:
 sudo snap install vmlinux-to-elf
 
 # Install CLI+GUI with yay (recommended on Arch, Manjaro)
-yay -S vmlinux-to-elf
+yay -S vmlinux-to-elf libadwaita python-gobject
 
 # Install CLI+GUI with uv (example with Fedora)
 sudo dnf install -y uv glib2-devel libadwaita-devel gtk4-devel \

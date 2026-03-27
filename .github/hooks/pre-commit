@@ -1,0 +1,46 @@
+#!/bin/bash
+#
+# An example hook script to verify what is about to be committed.
+# Called by "git commit" with no arguments.  The hook should
+# exit with non-zero status after issuing an appropriate message if
+# it wants to stop the commit.
+
+# Redirect output to stderr.
+exec 1>&2
+
+git rev-parse --show-toplevel >/dev/null 2>/dev/null || cd "$(dirname "$0")"
+
+REPO_DIR="$(git rev-parse --show-toplevel)"
+
+cd "${REPO_DIR}"
+
+function run {
+	echo [i] Running: "$@"
+	$@ >/dev/null 2>/dev/null
+	RETCODE="$?"
+	if [ "${RETCODE}" -ne "0" ]
+	then
+		echo [!] Command returned: "${RETCODE}"
+		echo [!] Aborting commit
+		exit 1
+	fi
+}
+
+APP_ID="re.fossplant.vmlinux-to-elf"
+METAINFO="vmlinux_to_elf/ui/assets/${APP_ID}.metainfo.xml"
+DESKTOP="vmlinux_to_elf/ui/assets/${APP_ID}.desktop"
+
+git diff --cached --quiet "${METAINFO}"
+if [ "$?" -ne "0" ]; then
+	run appstreamcli validate "${METAINFO}"
+fi
+
+git diff --cached --quiet "vmlinux_to_elf/"
+if [ "$?" -ne "0" ]; then
+	run ruff format
+fi
+
+git diff --cached --quiet "${DESKTOP}"
+if [ "$?" -ne "0" ]; then
+	run desktop-file-validate "${DESKTOP}"
+fi

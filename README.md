@@ -198,7 +198,7 @@ options:
 
 ## Bug fixes, improvements, etc.
 
-Don't hesitate to [open an issue](https://github.com/marin-m/vmlinux-to-elf/issues/new) for any suggestion of improvement.
+Don't hesitate to [open an issue](https://github.com/marin-m/vmlinux-to-elf/issues/new/choose) for any suggestion of improvement.
 
 Please privilege the current Github repository issues and pull requests in priority for reporting bugs, asking questions, etc.
 

@@ -15,32 +15,41 @@ REPO_DIR="$(git rev-parse --show-toplevel)"
 cd "${REPO_DIR}"
 
 function run {
-	echo [i] Running: "$@"
-	$@ >/dev/null 2>/dev/null
-	RETCODE="$?"
-	if [ "${RETCODE}" -ne "0" ]
-	then
-		echo [!] Command returned: "${RETCODE}"
-		echo [!] Aborting commit
-		exit 1
-	fi
+    echo [i] Running: "$@"
+    $@ >/dev/null 2>/dev/null
+    RETCODE="$?"
+    if [ "${RETCODE}" -ne "0" ]
+    then
+        echo [!] Command returned: "${RETCODE}"
+        echo [!] Aborting commit
+        exit 1
+    fi
 }
 
 APP_ID="re.fossplant.vmlinux-to-elf"
-METAINFO="vmlinux_to_elf/ui/assets/${APP_ID}.metainfo.xml"
-DESKTOP="vmlinux_to_elf/ui/assets/${APP_ID}.desktop"
+ASSETS_DIR="vmlinux_to_elf/ui/assets/"
+
+GRESOURCE="${ASSETS_DIR}vmlinux-to-elf.gresource"
+METAINFO="${ASSETS_DIR}${APP_ID}.metainfo.xml"
+DESKTOP="${ASSETS_DIR}${APP_ID}.desktop"
 
 git diff --cached --quiet "${METAINFO}"
 if [ "$?" -ne "0" ]; then
-	run appstreamcli validate "${METAINFO}"
+    run appstreamcli validate "${METAINFO}"
+fi
+
+git diff --cached --quiet "vmlinux_to_elf/ui/assets/"
+if [ "$?" -ne "0" ]; then
+    run glib-compile-resources --sourcedir "${ASSETS_DIR}" "${GRESOURCE}.xml"
+    git add "${GRESOURCE}"
 fi
 
 git diff --cached --quiet "vmlinux_to_elf/"
 if [ "$?" -ne "0" ]; then
-	run ruff format
+    run ruff format
 fi
 
 git diff --cached --quiet "${DESKTOP}"
 if [ "$?" -ne "0" ]; then
-	run desktop-file-validate "${DESKTOP}"
+    run desktop-file-validate "${DESKTOP}"
 fi

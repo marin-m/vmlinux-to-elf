@@ -48,7 +48,7 @@
   <recommends>
     <display_length compare="ge">360</display_length>
   </recommends>
-  <url type="bugtracker">https://github.com/marin-m/vmlinux-to-elf/issues</url>
+  <url type="bugtracker">https://github.com/marin-m/vmlinux-to-elf/issues/new/choose</url>
   <url type="homepage">https://github.com/marin-m/vmlinux-to-elf</url>
   <url type="contact">https://matrix.to/#/#vmlinux-to-elf:matrix.org</url>
   <url type="faq">https://github.com/marin-m/vmlinux-to-elf#readme</url>

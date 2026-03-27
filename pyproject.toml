@@ -41,7 +41,7 @@ gui = ["pygobject>=3.54.5"]
 [project.urls]
 Homepage = "https://github.com/marin-m/vmlinux-to-elf"
 Repository = "https://github.com/marin-m/vmlinux-to-elf"
-Issues = "https://github.com/marin-m/vmlinux-to-elf/issues"
+Issues = "https://github.com/marin-m/vmlinux-to-elf/issues/new/choose"
 
 [project.scripts]
 kallsyms-finder = "vmlinux_to_elf.scripts.kallsyms_finder:main"

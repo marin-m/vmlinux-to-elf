@@ -79,7 +79,7 @@ class KallsymsLogHandler(logging.Handler):
 
 
 def _trim_path(path: str) -> str:
-    if path.startswith('/run/user'): # Flatpak-sandboxed path
+    if path.startswith('/run/user'):  # Flatpak-sandboxed path
         path = path.split('/').pop()
     return path
 

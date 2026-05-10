@@ -13,7 +13,7 @@ A clear and concise description of what the bug is.
 **Input sample**
 In order to help us troubleshoot the issue, and if applicable, **please share a sample** of the Linux kernel input file that you were analyzing.
 
-You can set it as an **attachment to this issue**, or, if you do not which to share it publicly, through this Matrix Chat channel: https://matrix.to/#/#vmlinux-to-elf:matrix.org
+You can set it as an **attachment to this issue**, or, if you do not wish to share it publicly, through this Matrix Chat channel: https://matrix.to/#/#vmlinux-to-elf:matrix.org
 
 **Expected behavior**
 A clear and concise description of what you expected to happen.

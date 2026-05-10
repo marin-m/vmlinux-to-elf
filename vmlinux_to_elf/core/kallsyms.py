@@ -452,17 +452,20 @@ class KallsymsFinder:
 
             if R_AARCH64_RELATIVE != r_info:
                 # Relocations must be the same type
-                # BUG: this is not true in practice, R_AARCH64_GLOB_DAT and maybe some other are between first few R_AARCH64_RELATIVE, which results in missing ~30 relocations
+
+                # BUG: this is not true in practice, R_AARCH64_GLOB_DAT
+                # and maybe some others are between first few R_AARCH64_RELATIVE,
+                # which results in missing ~30 relocations
 
                 if len(elf64_rela) >= minimal_heuristic_count:
                     break
 
-                # reset current state
+                # Reset current state
 
                 elf64_rela = []
                 kernel_text_candidate = maximal_kernel_va
 
-                # move to the next candidate
+                # Move to the next candidate
 
                 possible_offset = self.elf64_rela_start - 1
 
@@ -1029,11 +1032,9 @@ class KallsymsFinder:
         token_table = self.get_token_table()
         possible_symbol_types = [i.value for i in KallsymsSymbolType]
 
-        dp = []
+        already_explored = []
 
         while needle == -1:
-            position = self.kallsyms_names__offset
-
             # Check whether this looks like the correct symbol
             # table, first depending on the beginning of the
             # first symbol (as this is where an uncertain gap
@@ -1043,7 +1044,9 @@ class KallsymsFinder:
             # another function) if an exotic kind of symbol is
             # found somewhere else than in the first entry.
 
-            first_token_index_of_first_name = self.kernel_img[position + 1]
+            first_token_index_of_first_name = self.kernel_img[
+                self.kallsyms_names__offset + 1
+            ]
             first_token_of_first_name = token_table[
                 first_token_index_of_first_name
             ]
@@ -1063,38 +1066,53 @@ class KallsymsFinder:
 
             # Each entry in the symbol table starts with a u8 size followed by the contents.
             # The table ends with an entry of size 0, and must lie before kallsyms_markers.
-            # This for loop uses a bottom-up DP approach to calculate the numbers of symbols without recalculations.
-            # dp[+] is the length of the symbol table given a starting position of "kallsyms_markers - i"
-            # If the table position is invalid, i.e. it reaches out of bounds, the length is marked as -1.
-            # The loop ends with the number of symbols for the current position in the last entry of dp.
+            #
+            # This for loop uses a bottom-up dynamic programming approach in order to calculate
+            # the numbers of symbols without recalculations.
+            #
+            # already_explored[+] is the length of the symbol table given a starting position
+            # of "kallsyms_markers - unexplored_off_from_end". If the table position is invalid,
+            # i.e. it reaches out of bounds, the length is marked as -1.
+            #
+            # The loop ends with the number of symbols for the current position in the last entry
+            # of already_explored.
 
-            for i in range(
-                len(dp), self.kallsyms_markers__offset - position + 1
+            for unexplored_off_from_end in range(
+                len(already_explored),
+                self.kallsyms_markers__offset
+                - self.kallsyms_names__offset
+                + 1,
             ):
-                curr = self.kernel_img[self.kallsyms_markers__offset - i]
-                if curr & 0x80:
+                next_byte = self.kernel_img[
+                    self.kallsyms_markers__offset - unexplored_off_from_end
+                ]
+                if next_byte & 0x80:
                     # "Big" symbol
                     symbol_size = (
-                        curr & 0x7F
+                        next_byte & 0x7F
                         | (
                             self.kernel_img[
-                                self.kallsyms_markers__offset - i + 1
+                                self.kallsyms_markers__offset
+                                - unexplored_off_from_end
+                                + 1
                             ]
                             << 7
                         )
                     ) + 2
                 else:
-                    symbol_size = curr + 1
-                next_i = i - symbol_size
-                if curr == 0:  # Last entry of the symbol table
-                    dp.append(0 if i <= 256 else -1)
+                    symbol_size = next_byte + 1
+                next_hop = unexplored_off_from_end - symbol_size
+                if next_byte == 0:  # Last entry of the symbol table
+                    already_explored.append(
+                        0 if unexplored_off_from_end <= 256 else -1
+                    )
                 elif (
-                    next_i < 0 or dp[next_i] == -1
+                    next_hop < 0 or already_explored[next_hop] == -1
                 ):  # If table would exceed kallsyms_markers, mark as invalid
-                    dp.append(-1)
+                    already_explored.append(-1)
                 else:
-                    dp.append(dp[next_i] + 1)
-            num_symbols = dp[-1]
+                    already_explored.append(already_explored[next_hop] + 1)
+            num_symbols = already_explored[-1]
 
             if num_symbols < 256:
                 self.kallsyms_names__offset -= 4

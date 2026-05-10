@@ -160,7 +160,7 @@ class KallsymsFinder:
     symbol_names: list = None
     symbol_addresses: list = None
 
-    has_relative_base: bool = None
+    has_base_relative: bool = None
     has_absolute_percpu: bool = None
     relative_base_address: int = None
 

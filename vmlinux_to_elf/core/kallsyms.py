@@ -426,6 +426,7 @@ class KallsymsFinder:
         )  # align to pointer size
         R_AARCH64_RELATIVE = 0x403
         elf64_rela = []
+        empty_entries = 0
         minimal_heuristic_count = 1000
         minimal_kernel_va = 0xFFFFC00080000000
         maximal_kernel_va = 0xFFFFFFFFFFFFFFFF
@@ -448,6 +449,7 @@ class KallsymsFinder:
                     self.elf64_rela_start -= (
                         rela64_size  # move to one rela64 struct backward
                     )
+                    empty_entries += 1
                     continue
 
             if R_AARCH64_RELATIVE != r_info:
@@ -458,6 +460,15 @@ class KallsymsFinder:
                 # which results in missing ~30 relocations
 
                 if len(elf64_rela) >= minimal_heuristic_count:
+                    while (
+                        self.kernel_img[
+                            self.elf64_rela_start : self.elf64_rela_start
+                            + rela64_size
+                        ]
+                        == b'\x00' * rela64_size
+                    ):
+                        self.elf64_rela_start += rela64_size
+                        empty_entries -= 1
                     break
 
                 # Reset current state
@@ -482,7 +493,7 @@ class KallsymsFinder:
                         break
 
                 if possible_offset != -1:
-                    self.elf64_rela_start = possible_offset - 8
+                    self.elf64_rela_start = possible_offset - 8 + rela64_size
 
                 continue
 
@@ -494,7 +505,7 @@ class KallsymsFinder:
                 rela64_size  # move to one rela64 struct backward
             )
 
-        count = len(elf64_rela)
+        count = len(elf64_rela) + empty_entries
 
         if count < minimal_heuristic_count:
             return False
@@ -502,8 +513,8 @@ class KallsymsFinder:
         self.elf64_rela = elf64_rela
         self.elf64_rela_end_excl = self.elf64_rela_start + count * rela64_size
         logging.info(
-            '[+] Found relocations table at file offset 0x%04x (count=%d)'
-            % (self.elf64_rela_start, count)
+            '[+] Found relocations table at file offset 0x%04x - 0x%04x (count=%d)'
+            % (self.elf64_rela_start, self.elf64_rela_end_excl, count)
         )
 
         # Infer a sane base range from relocation offsets so that every

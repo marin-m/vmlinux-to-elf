@@ -540,8 +540,8 @@ class KallsymsFinder:
                 % (self.kernel_text_candidate)
             )
         elif base_low <= base_high:
-            # HACK: kernel might not be aligned to 0x10000?
-            ALIGN = 0x10000
+            # HACK: kernel might not be aligned to 0x20000?
+            ALIGN = 0x20000
             candidate = (base_low + ALIGN - 1) & ~(ALIGN - 1)
             if candidate > base_high:
                 candidate = base_high & ~(ALIGN - 1)

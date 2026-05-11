@@ -134,7 +134,7 @@ class ElfSymbolizer:
                 )
             else:
                 progbits.section_header.sh_addr = (
-                    first_symbol_virtual_address & 0xFFFFFFFFFFFFF000
+                    first_symbol_virtual_address & 0xFFFFFFFFFFFFE000
                 )
                 logging.info(
                     f'[+] Guessed the base address using the first_symbol_virtual_address fallback heuristic ({progbits.section_header.sh_addr:x})'

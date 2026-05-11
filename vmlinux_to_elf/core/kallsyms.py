@@ -131,7 +131,6 @@ class KallsymsFinder:
     # Structure offsets to find
 
     kallsyms_addresses_or_offsets__offset: int = None
-    kallsyms_addresses_or_offsets_end__offset: int = None
     kallsyms_num_syms__offset: int = None
 
     kallsyms_names__offset: int = None
@@ -233,11 +232,12 @@ class KallsymsFinder:
             self.find_kallsyms_names()
 
         self.find_kallsyms_num_syms()
-        self.find_kallsyms_addresses_or_symbols()
 
         if self.is_64_bits:
             self.find_elf64_rela(base_address)
             self.apply_elf64_rela()
+
+        self.find_kallsyms_addresses_or_symbols()
 
         self.parse_symbol_table()
 
@@ -586,13 +586,8 @@ class KallsymsFinder:
         kernel_major = int(self.version_number.split('.')[0])
         kernel_minor = int(self.version_number.split('.')[1])
 
-        if kernel_major > 6 or (kernel_major == 6 and kernel_minor >= 4):
-            # Linux 6.4 or later place (kallsyms_addresses)/(kallsyms_offsets+kallsyms_relative_base) after kallsyms_token_index
-            kallsyms_begin = self.kallsyms_num_syms__offset
-            kallsyms_end = self.kallsyms_addresses_or_offsets_end__offset
-        else:
-            kallsyms_begin = self.kallsyms_addresses_or_offsets__offset
-            kallsyms_end = self.kallsyms_token_index__offset
+        kallsyms_begin = self.kallsyms_num_syms__offset
+        kallsyms_end = self.kallsyms_token_index_end__offset
 
         # There is no guarantee that relocation addresses are monotonous
 
@@ -1282,8 +1277,6 @@ class KallsymsFinder:
                 if previous_word != address_byte_size * b'\x00':
                     break
                 position -= address_byte_size
-
-            self.kallsyms_addresses_or_offsets_end__offset = position
 
             if has_base_relative:
                 self.has_base_relative = True

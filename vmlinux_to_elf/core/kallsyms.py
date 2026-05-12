@@ -1240,19 +1240,25 @@ class KallsymsFinder:
         # https://github.com/torvalds/linux/commit/a081b5789255d27b76cd2cbab85676b2a31dbde1
         if kernel_major >= 7:
             heuristic_search_parameters = [
-                (False, True, True), (False, False, False)
+                (False, True, True),
+                (False, False, False),
             ]
         else:
             heuristic_search_parameters = [
-                (True, False, True), (False, False, False)
+                (True, False, True),
+                (False, False, False)
                 if likely_has_base_relative
-                else [(False, False, True), (False, False, False)]
+                else [(False, False, True), (False, False, False)],
             ]
             # Only makes sense in the non-pc-relative case
             if self.override_relative_base:
                 heuristic_search_parameters = [(False, False, False)]
 
-        for has_base_relative, pc_relative, can_skip in heuristic_search_parameters:
+        for (
+            has_base_relative,
+            pc_relative,
+            can_skip,
+        ) in heuristic_search_parameters:
             address_byte_size = (
                 8 if likely_is_64_bits else self.offset_table_element_size
             )
@@ -1496,21 +1502,23 @@ class KallsymsFinder:
                 # reading the vaddr from the first segment.
                 # this should be at fixed offsets, but calculating this manually
                 # in case that ever turns out to be invalid.
-                addr_marker = {4: "I", 8: "Q"}[address_byte_size]
-                phdr_offset, = unpack_from(
+                addr_marker = {4: 'I', 8: 'Q'}[address_byte_size]
+                (phdr_offset,) = unpack_from(
                     endianness_marker + addr_marker,
                     self.kernel_img,
-                    0x18 + address_byte_size
+                    0x18 + address_byte_size,
                 )
                 phdr_offset += 0x10 if self.is_64_bits else 0x08
-                base_address, = unpack_from(
+                (base_address,) = unpack_from(
                     endianness_marker + addr_marker,
                     self.kernel_img,
-                    phdr_offset
+                    phdr_offset,
                 )
                 tentative_addresses_or_offsets = [
                     base_address + offset - _text + idx * offset_byte_size
-                    for idx, offset in enumerate(tentative_addresses_or_offsets)
+                    for idx, offset in enumerate(
+                        tentative_addresses_or_offsets
+                    )
                 ]
 
                 self.has_absolute_percpu = False

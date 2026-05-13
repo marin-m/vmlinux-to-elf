@@ -66,7 +66,7 @@ https://hughsie.github.io/oars/index.html
         <p>Add support for the Linux 7.0 kernel (PR #97 thanks to @bahorn)</p>
         <p>Fix detecting the boundaries of the elf64_rela array</p>
         <p>Use 0x20000 instead of 0x10000 as a default kernel base address alignment when inferring from ARM64 relocations (issue #95)</p>
-        <p>Use 0x2000 instead of 0x1000 as a default kernel base address alignment when inferring from symbol table (issue #87)</p>
+        <p>Use 0x2000 instead of 0x1000 as a default kernel base address alignment when inferring from symbol table (issue #67)</p>
       </description>
     </release>
     <release version="1.2.3" date="2026-03-18">

@@ -1545,7 +1545,8 @@ class KallsymsFinder:
             if (
                 number_of_null_items / len(tentative_addresses_or_offsets)
                 >= 0.2
-            ):  # If there are too much null symbols we have likely tried to parse the wrong integer size
+            ):  # If there are too much null symbols we have likely
+                # tried to parse the wrong integer size
                 if can_skip:
                     continue
 

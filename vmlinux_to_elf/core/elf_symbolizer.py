@@ -49,6 +49,7 @@ class ElfSymbolizer:
         override_relative: bool = None,
         # extra_info: bool = False,
     ):
+
         if file_contents.startswith(
             b'\x27\x05\x19\x56'
         ):  # uImage header magic (always big-endian)
@@ -84,7 +85,11 @@ class ElfSymbolizer:
                 kallsyms_finder.is_big_endian, kallsyms_finder.is_64_bits
             )
 
-            #  Previsouly the register size was based on the kernel version string: bool(kallsyms_finder.offset_table_element_size >= 8 or search('itanium|(?:amd|aarch|ia|arm|x86_|\D-)64', kallsyms_finder.version_string, flags = IGNORECASE))
+            #  Previsouly the register size was based on the kernel
+            # version string:
+            #  bool(kallsyms_finder.offset_table_element_size >= 8 or
+            #    search('itanium|(?:amd|aarch|ia|arm|x86_|\D-)64',
+            #    kallsyms_finder.version_string, flags = IGNORECASE))
 
             if elf_machine is not None:
                 kernel.file_header.e_machine = elf_machine
@@ -130,14 +135,16 @@ class ElfSymbolizer:
                     kallsyms_finder.kernel_text_candidate
                 )
                 logging.info(
-                    f'[+] Guessed the base address using the kernel_text_candidate heuristic ({progbits.section_header.sh_addr:x})'
+                    f'[+] Guessed the base address using the '
+                    + f'kernel_text_candidate heuristic ({progbits.section_header.sh_addr:x})'
                 )
             else:
                 progbits.section_header.sh_addr = (
                     first_symbol_virtual_address & 0xFFFFFFFFFFFFE000
                 )
                 logging.info(
-                    f'[+] Guessed the base address using the first_symbol_virtual_address fallback heuristic ({progbits.section_header.sh_addr:x})'
+                    f'[+] Guessed the base address using the '
+                    + f'first_symbol_virtual_address fallback heuristic ({progbits.section_header.sh_addr:x})'
                 )
 
             kernel.sections += [null, progbits]
@@ -265,14 +272,18 @@ class ElfSymbolizer:
             """
             Uses binary search to quickly find the section which the address belongs to
             """
+
             # Set baseline and roofline hypotheses, expressed in
             # section table indexes:
+
             lower_range, upper_range = 0, len(sections) - 1
+
             # Wait for the hypotheses to converge
             while lower_range < upper_range:
                 # Mean operation to pick a new tentative hypothesis
                 # (add one to ensure to ceil-round the upper
                 # hypothesis in case of a difference of 1)
+
                 middle = (lower_range + upper_range + 1) // 2
                 if (
                     sections[middle].section_header.sh_addr <= address
@@ -280,6 +291,7 @@ class ElfSymbolizer:
                     lower_range = middle  # Use the hypothesis as a baseline
                 else:
                     upper_range = middle - 1  # Disqualify the hypothesis
+
             if (
                 sections[lower_range].section_header.sh_addr
                 <= address
@@ -289,6 +301,7 @@ class ElfSymbolizer:
                 return sections[
                     lower_range
                 ]  # Select the best hypothesis if it qualifies
+
             return None
 
         elf_symbol_class = {

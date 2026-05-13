@@ -56,6 +56,12 @@ from vmlinux_to_elf.kernel_db.database import (
     
     ^ This format should be supported.
     
+    In v7.0 (2026), the format removed the relative base.
+    
+    https://github.com/torvalds/linux/commit/a081b5789255d27b76cd2cbab85676b2a31dbde1
+    
+    ^ This format should be supported.
+    
     Its 2002-2004 (versions 2.5.54-2.6.9) implementation code with basic "stem
     compression" can be found here for parsing:
     https://github.com/sarnobat/knoppix/blob/master/kernel/kallsyms.c
@@ -1206,7 +1212,7 @@ class KallsymsFinder:
         likely_has_base_relative = False
 
         if (
-            kernel_major > 4
+            (kernel_major > 4 and kernel_major < 7)
             or (kernel_major == 4 and kernel_minor >= 6)
             and 'ia64' not in self.version_string.lower()
             and 'itanium' not in self.version_string.lower()
@@ -1227,17 +1233,36 @@ class KallsymsFinder:
 
         # Try different possibilities heuristically:
 
-        heuristic_search_parameters = (
-            [(True, True), (False, False)]
-            if likely_has_base_relative
-            else [(False, True), (False, False)]
-        )
-        if self.override_relative_base:
-            heuristic_search_parameters = [(False, False)]
-        for has_base_relative, can_skip in heuristic_search_parameters:
+        heuristic_search_parameters = []
+        # In 7.0, the format was changed to be relative from the slot in
+        # kallsyms_offsets.
+        # This applies to all 64 bit kernels, and every relocatable kernel.
+        # https://github.com/torvalds/linux/commit/a081b5789255d27b76cd2cbab85676b2a31dbde1
+        if kernel_major >= 7:
+            heuristic_search_parameters = [
+                (False, True, True),
+                (False, False, False),
+            ]
+        else:
+            heuristic_search_parameters = [
+                (True, False, True),
+                (False, False, False)
+                if likely_has_base_relative
+                else [(False, False, True), (False, False, False)],
+            ]
+            # Only makes sense in the non-pc-relative case
+            if self.override_relative_base:
+                heuristic_search_parameters = [(False, False, False)]
+
+        for (
+            has_base_relative,
+            pc_relative,
+            can_skip,
+        ) in heuristic_search_parameters:
             address_byte_size = (
                 8 if likely_is_64_bits else self.offset_table_element_size
             )
+
             offset_byte_size = min(
                 4, self.offset_table_element_size
             )  # Size of an assembly ".long"
@@ -1246,7 +1271,7 @@ class KallsymsFinder:
                 # Linux 6.4 or later place (kallsyms_addresses)/(kallsyms_offsets+kallsyms_relative_base) after kallsyms_token_index.
 
                 # The align_size is defined at (https://github.com/torvalds/linux/blob/v6.4/scripts/kallsyms.c#L390).
-                align_size = 8 if likely_is_64_bits else 4
+                align_size = 8 if likely_is_64_bits and not pc_relative else 4
 
                 position = self.kallsyms_token_index_end__offset
                 position += -position % align_size
@@ -1255,7 +1280,8 @@ class KallsymsFinder:
                     position += self.num_symbols * offset_byte_size
                     position += -position % align_size
                     position += address_byte_size
-
+                elif pc_relative:
+                    position += self.num_symbols * offset_byte_size
                 else:
                     position += self.num_symbols * address_byte_size
 
@@ -1306,7 +1332,9 @@ class KallsymsFinder:
                     position -= offset_byte_size
 
                 position -= self.num_symbols * offset_byte_size
-
+            elif pc_relative:
+                position -= self.num_symbols * offset_byte_size
+                self.has_base_relative = False
             else:
                 self.has_base_relative = False
 
@@ -1322,6 +1350,9 @@ class KallsymsFinder:
                 long_size_marker = {2: 'h', 4: 'i'}[
                     offset_byte_size
                 ]  # Offsets may be negative, contrary to addresses
+            elif pc_relative:
+                # Only 32bit relative offsets.
+                long_size_marker = 'i'
             else:
                 long_size_marker = {2: 'H', 4: 'I', 8: 'Q'}[address_byte_size]
 
@@ -1449,7 +1480,48 @@ class KallsymsFinder:
                         offset + self.relative_base_address
                         for offset in tentative_addresses_or_offsets
                     ]
+            elif pc_relative:
+                # We are making the assumption that _text is the first element
+                # for the PC relative kernels.
+                # Technically, it is probably the third or so member of the
+                # list depending on architecture, with the first few being
+                # srso_alias_untrain_ret and _stext on x86-64, but they all
+                # share the same address.
+                _text = tentative_addresses_or_offsets[0]
 
+                # Checking if this kernel has an absolute addresses or not.
+                # They are relative to kallsyms_offset, so around that the
+                # offsets switch from negative to positive values, which is the
+                # heursitic we are using to detect relocatable kernels.
+                # Sadly this is the only reasonable place to check for this, as
+                # we need the addresses first.
+                last = tentative_addresses_or_offsets[-1]
+                if not (_text <= 0 and last >= 0) and can_skip:
+                    continue
+
+                # reading the vaddr from the first segment.
+                # this should be at fixed offsets, but calculating this manually
+                # in case that ever turns out to be invalid.
+                addr_marker = {4: 'I', 8: 'Q'}[address_byte_size]
+                (phdr_offset,) = unpack_from(
+                    endianness_marker + addr_marker,
+                    self.kernel_img,
+                    0x18 + address_byte_size,
+                )
+                phdr_offset += 0x10 if self.is_64_bits else 0x08
+                (base_address,) = unpack_from(
+                    endianness_marker + addr_marker,
+                    self.kernel_img,
+                    phdr_offset,
+                )
+                tentative_addresses_or_offsets = [
+                    base_address + offset - _text + idx * offset_byte_size
+                    for idx, offset in enumerate(
+                        tentative_addresses_or_offsets
+                    )
+                ]
+
+                self.has_absolute_percpu = False
             else:
                 self.has_absolute_percpu = False
 

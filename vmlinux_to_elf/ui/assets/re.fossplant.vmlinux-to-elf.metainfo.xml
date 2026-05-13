@@ -63,6 +63,8 @@ https://hughsie.github.io/oars/index.html
     <release version="1.3.0" date="2026-05-13">
       <description>
         <p>Ensure that no data is overridden in the packed kallsyms zone when applying ARM64 relocations (issue #95)</p>
+        <p>Add support for the Linux 7.0 kernel (PR #97 thanks to @bahorn)</p>
+        <p>Fix detecting the boundaries of the elf64_rela array</p>
         <p>Use 0x20000 instead of 0x10000 as a default kernel base address alignment when inferring from ARM64 relocations (issue #95)</p>
         <p>Use 0x2000 instead of 0x1000 as a default kernel base address alignment when inferring from symbol table (issue #87)</p>
       </description>

@@ -1244,12 +1244,11 @@ class KallsymsFinder:
                 (False, False, False),
             ]
         else:
-            heuristic_search_parameters = [
-                (True, False, True),
-                (False, False, False)
+            heuristic_search_parameters = (
+                [(True, False, True), (False, False, False)]
                 if likely_has_base_relative
-                else [(False, False, True), (False, False, False)],
-            ]
+                else [(False, False, True), (False, False, False)]
+            )
             # Only makes sense in the non-pc-relative case
             if self.override_relative_base:
                 heuristic_search_parameters = [(False, False, False)]

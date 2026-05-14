@@ -129,6 +129,7 @@ class ElfFile:
         self.sections: list[ElfSection] = []
 
         self.section_string_table: ElfStrtab = None
+        self.symbol_table: ElfSymtab = None
 
         self.file_header = ElfFileHeader(is_big_endian, is_64_bits)
 
@@ -169,18 +170,29 @@ class ElfFile:
 
             self.sections.append(ElfSection.from_bytes(data, self))
 
+        # Remember about the string symbol table section
+
+        self.section_string_table = self.sections[
+            self.file_header.e_shstrndx
+            if self.file_header.e_shstrndx != SPECIAL_SECTION_INDEX.SHN_XINDEX
+            else self.sections[0].sh_link
+        ]
+
         # Name sections and link relocations (now that string and symbol tables are parsed)
 
         for section in self.sections:
             section.post_unserialize()
 
-        # Remember about the string symbol table section
-
-        self.section_string_table = self.sections[self.file_header.e_shstrndx]
+            if section.section_header.sh_type == SH_TYPE.SHT_SYMTAB:
+                self.symbol_table = section
 
         # Parse the segment headers
 
-        for num_segment in range(self.file_header.e_phnum):
+        for num_segment in range(
+            self.file_header.e_phnum
+            if self.file_header.e_phnum != SPECIAL_SEGMENT_INDEX.PN_XNUM
+            else self.sections[0].sh_info
+        ):
             data.seek(
                 self.file_header.e_phoff
                 + self.file_header.e_phentsize * num_segment
@@ -209,9 +221,12 @@ class ElfFile:
 
         self.file_header.e_ehsize = memoryview(self.file_header).nbytes
 
-        self.file_header.e_shstrndx = self.sections.index(
-            self.section_string_table
-        )
+        e_shstrndx = self.sections.index(self.section_string_table)
+        if e_shstrndx < SPECIAL_SECTION_INDEX.SHN_LORESERVE:
+            self.file_header.e_shstrndx = e_shstrndx
+        else:
+            self.file_header.e_shstrndx = SPECIAL_SECTION_INDEX.SHN_XINDEX
+            self.sections[0].section_header.sh_link = e_shstrndx
 
         self.file_header.e_shoff = self.file_header.e_ehsize
 
@@ -286,7 +301,10 @@ class ElfFile:
 
         self.file_header.e_phoff = data.tell()
 
-        self.file_header.e_phnum = len(self.segments)
+        if len(self.segments) < SPECIAL_SEGMENT_INDEX.PN_XNUM:
+            self.file_header.e_phnum = len(self.segments)
+        else:
+            self.sections[0].sh_info = len(self.segments)
 
         self.file_header.e_phentsize = memoryview(self.segments[0]).nbytes
 
@@ -301,8 +319,10 @@ class ElfFile:
         # Write the program headers
 
         data.seek(0)
-
         self.file_header.serialize(data)
+
+        data.seek(self.file_header.e_shoff)
+        self.sections[0].serialize(data)
 
     def find_section(self, address) -> Optional[ElfSection]:
         """
@@ -368,7 +388,7 @@ class SH_TYPE(IntEnum):
     SHT_FINI_ARRAY = 15  # Array of destructors
     SHT_PREINIT_ARRAY = 16  # Array of pre-constructors
     SHT_GROUP = 17  # Section group
-    SHT_SYMTAB_SHNDX = 18  # Extended section indeces
+    SHT_SYMTAB_SHNDX = 18  # Extended section indices
     SHT_NUM = 19  # Number of defined types.
 
     SHT_GNU_ATTRIBUTES = 0x6FFFFFF5
@@ -478,9 +498,7 @@ class ElfSection:
     def post_unserialize(self):
         # Name sections (now that .shstrndx is parsed)
 
-        section_string_table = self.elf_file.sections[
-            self.elf_file.file_header.e_shstrndx
-        ]
+        section_string_table = self.elf_file.section_string_table
 
         self.section_name = section_string_table.return_string_from_offset(
             self.section_header.sh_name
@@ -489,9 +507,7 @@ class ElfSection:
     def pre_serialize(self):
         # Write our entry in .shstrtab
 
-        section_string_table = self.elf_file.sections[
-            self.elf_file.file_header.e_shstrndx
-        ]
+        section_string_table = self.elf_file.section_string_table
 
         self.section_header.sh_name = (
             section_string_table.add_string_and_return_offset(
@@ -595,6 +611,10 @@ class ST_INFO_BINDING(IntEnum):  # SYMBOL_BINDING
     STB_WEAK = 2  # Visible to all object files. Ignored if STB_GLOBAL with same name found. Do not force extraction of defining object from archive file. Value is 0 if undefined.
 
 
+class SPECIAL_SEGMENT_INDEX(IntEnum):
+    PN_XNUM = 0xFFFF
+
+
 class SPECIAL_SECTION_INDEX(IntEnum):
     SHN_UNDEF = 0
     SHN_LORESERVE = 0xFF00
@@ -604,6 +624,7 @@ class SPECIAL_SECTION_INDEX(IntEnum):
     SHN_ABS = 0xFFF1
     SHN_COMMON = 0xFFF2
     SHN_HIRESERVE = 0xFFFF
+    SHN_XINDEX = 0xFFFF
 
 
 class Elf32LittleEndianSymbolTableEntry(
@@ -917,6 +938,7 @@ class ElfRel(ElfSection):
 
         self.symtab_section = self.elf_file.sections[
             self.section_header.sh_link
+            or self.elf_file.sections.index(self.elf_file.symbol_table)
         ]
 
         for relocation in self.relocation_table:
@@ -937,6 +959,10 @@ class ElfRel(ElfSection):
             relocation.r_info_sym = self.symtab_section.symbol_table.index(
                 relocation.associated_symbol
             )
+
+        self.section_header.sh_link = self.elf_file.sections.index(
+            self.elf_file.symbol_table
+        )
 
         self.section_header.sh_entsize = memoryview(
             self.relocation_table[0]
@@ -983,10 +1009,15 @@ class ElfRela(ElfSection):
 
         self.symtab_section = self.elf_file.sections[
             self.section_header.sh_link
+            or self.elf_file.sections.index(self.elf_file.symbol_table)
         ]
 
     def pre_serialize(self):
         super().pre_serialize()
+
+        self.section_header.sh_link = self.elf_file.sections.index(
+            self.elf_file.symbol_table
+        )
 
         self.section_header.sh_entsize = memoryview(
             self.relocation_table[0]

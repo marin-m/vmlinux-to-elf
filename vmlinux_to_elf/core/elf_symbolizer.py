@@ -240,6 +240,7 @@ class ElfSymbolizer:
             shstrtab = ElfStrtab(kernel)
             shstrtab.section_name = '.shstrtab'
 
+            kernel.symbol_table = symtab
             kernel.section_string_table = shstrtab
             kernel.sections += [symtab, strtab, shstrtab]
 

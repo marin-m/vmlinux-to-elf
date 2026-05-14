@@ -60,6 +60,12 @@ https://hughsie.github.io/oars/index.html
 -->
   <content_rating type="oars-1.1" />
   <releases>
+    <release version="1.3.2" date="2026-05-14">
+      <description>
+        <p>Correctly show the guessed base address in the GTK UI for non-ARM64 kernels</p>
+        <p>Allow re-entrance of symbolized ARM64 kernels</p>
+      </description>
+    </release>
     <release version="1.3.1" date="2026-05-14">
       <description>
         <p>Fix minor code breakage introduced by a previous patch</p>

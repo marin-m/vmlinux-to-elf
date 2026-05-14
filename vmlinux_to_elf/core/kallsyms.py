@@ -1357,8 +1357,10 @@ class KallsymsFinder:
         likely_has_base_relative = False
 
         if (
-            (kernel_major > 4 and kernel_major < 7)
-            or (kernel_major == 4 and kernel_minor >= 6)
+            (
+                (kernel_major > 4 and kernel_major < 7)
+                or (kernel_major == 4 and kernel_minor >= 6)
+            )
             and 'ia64' not in self.version_string.lower()
             and 'itanium' not in self.version_string.lower()
         ):

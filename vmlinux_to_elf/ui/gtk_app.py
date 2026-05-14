@@ -409,7 +409,7 @@ class MyWindow(Adw.ApplicationWindow):
 
                             try:
                                 open_result.replace_contents(
-                                    self.raw_kernel.decompressed,
+                                    self.kallsyms.kernel_img,
                                     None,
                                     False,
                                     Gio.FileCreateFlags.NONE,

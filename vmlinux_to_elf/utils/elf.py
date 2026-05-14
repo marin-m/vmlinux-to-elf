@@ -11,6 +11,7 @@ from ctypes import (
     c_uint32,
     c_uint64,
 )
+from typing import Optional
 from enum import IntEnum
 from io import SEEK_END, BytesIO
 
@@ -303,6 +304,51 @@ class ElfFile:
 
         self.file_header.serialize(data)
 
+    def find_section(self, address) -> Optional[ElfSection]:
+        """
+        Uses binary search to quickly find the section which the address belongs to
+        """
+
+        sections = sorted(
+            [
+                section
+                for section in self.sections
+                if section.section_header.sh_addr > 0
+            ],
+            key=lambda x: x.section_header.sh_addr,
+        )
+
+        # Set baseline and roofline hypotheses, expressed in
+        # section table indexes:
+
+        lower_range, upper_range = 0, len(sections) - 1
+
+        # Wait for the hypotheses to converge
+        while lower_range < upper_range:
+            # Mean operation to pick a new tentative hypothesis
+            # (add one to ensure to ceil-round the upper
+            # hypothesis in case of a difference of 1)
+
+            middle = (lower_range + upper_range + 1) // 2
+            if (
+                sections[middle].section_header.sh_addr <= address
+            ):  # Test the hypothesis
+                lower_range = middle  # Use the hypothesis as a baseline
+            else:
+                upper_range = middle - 1  # Disqualify the hypothesis
+
+        if (
+            sections[lower_range].section_header.sh_addr
+            <= address
+            <= sections[lower_range].section_header.sh_addr
+            + sections[lower_range].section_header.sh_size
+        ):
+            return sections[
+                lower_range
+            ]  # Select the best hypothesis if it qualifies
+
+        return None
+
 
 class SH_TYPE(IntEnum):
     SHT_NULL = 0  # Inactive section.
@@ -375,7 +421,7 @@ class ElfSection:
     elf_file: ElfFile = None
 
     section_header: ElfSectionHeader = None
-    section_contents: bytes = None
+    section_contents: bytearray = None
 
     def __init__(self, elf_file: ElfFile):
         self.elf_file = elf_file
@@ -425,7 +471,9 @@ class ElfSection:
         self._unserialize_contents(data)
 
     def _unserialize_contents(self, data: BytesIO):
-        self.section_contents = data.read(self.section_header.sh_size)
+        self.section_contents = bytearray(
+            data.read(self.section_header.sh_size)
+        )
 
     def post_unserialize(self):
         # Name sections (now that .shstrndx is parsed)

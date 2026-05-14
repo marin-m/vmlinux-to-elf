@@ -6,7 +6,7 @@ import math
 from enum import Enum
 from re import match, search, findall
 from struct import pack, unpack_from
-from io import StringIO
+from io import StringIO, BytesIO
 from typing import Optional
 
 from vmlinux_to_elf.core.architecture_detecter import (
@@ -15,6 +15,8 @@ from vmlinux_to_elf.core.architecture_detecter import (
     ArchitectureGuessError,
     ArchitectureName,
 )
+
+from vmlinux_to_elf.utils.elf import ElfFile
 
 from vmlinux_to_elf.kernel_db.database import (
     KernelVersion,
@@ -151,6 +153,17 @@ class KallsymsFinder:
     elf64_rela_end_excl: int = None
     kernel_text_candidate: int = None
 
+    # Provided information
+
+    override_relative_base: bool = None
+    explicit_base_address: Optional[int] = None
+    is_64_bits: bool = None
+
+    # Data modification state
+
+    kernel_img: bytes = None
+    is_relocated: bool = False
+
     # Inferred information
 
     architecture: ArchitectureName = None
@@ -195,16 +208,11 @@ class KallsymsFinder:
         kernel_img: bytes,
         bit_size: int = None,
         override_relative_base: bool = False,
-        base_address: Optional[int] = None,
+        explicit_base_address: Optional[int] = None,
         # extra_info: bool = False,
     ):
-        self.override_relative_base = override_relative_base
+
         self.kernel_img = kernel_img
-
-        # -
-
-        self.find_linux_kernel_version()
-
         if bit_size:
             if bit_size not in (64, 32):
                 raise ArchitectureGuessError(
@@ -212,6 +220,18 @@ class KallsymsFinder:
                 )
             else:
                 self.is_64_bits = bit_size == 64
+        self.override_relative_base = override_relative_base
+        self.explicit_base_address = explicit_base_address
+
+        # -
+
+        self.preprocess_uimage_header()
+
+        self.preprocess_elf_rela_table()
+
+        # -
+
+        self.find_linux_kernel_version()
 
         self.guess_architecture()
 
@@ -239,8 +259,8 @@ class KallsymsFinder:
 
         self.find_kallsyms_num_syms()
 
-        if self.is_64_bits:
-            self.find_elf64_rela(base_address)
+        if self.is_64_bits and not self.is_relocated:
+            self.find_elf64_rela()
             self.apply_elf64_rela()
 
         self.find_kallsyms_addresses_or_symbols()
@@ -249,6 +269,93 @@ class KallsymsFinder:
 
         if self.kernel_text_candidate is None:
             self.infer_base_address_from_syms()
+
+    def preprocess_uimage_header(self):
+
+        # Parse uImage header magic (always big-endian)
+
+        if self.kernel_img.startswith(b'\x27\x05\x19\x56'):
+            if self.explicit_base_address is None:
+                self.explicit_base_address = int.from_bytes(
+                    self.kernel_img[4 * 4 : 4 * 5], 'big'
+                )
+
+            self.kernel_img = self.kernel_img[64:]
+
+    def preprocess_elf_rela_table(self):
+
+        # If we got an ELF file input, pre-apply ARM64
+        # relocations because otherwise we won't
+        # be able to leverage those which patch data
+        # into the kallsyms structure itself (!)
+
+        self.is_relocated = False
+
+        if self.kernel_img.startswith(b'\x7fELF'):
+            kernel = ElfFile.from_bytes(BytesIO(self.kernel_img))
+
+            rel_table = next(
+                (i for i in kernel.sections if i.section_name == '.rela.dyn'),
+                None,
+            )
+
+            if rel_table:
+                for relocation in rel_table.relocation_table:
+                    R_AARCH64_RELATIVE = 0x403
+
+                    if relocation.r_info_type == R_AARCH64_RELATIVE:
+                        # Find the section to patch
+                        associated_section = kernel.find_section(
+                            relocation.r_offset
+                        )
+                        if not associated_section:
+                            logging.warning(
+                                'WARNING! bad rela offset: %08x'
+                                % relocation.r_offset
+                            )
+                            break  # Don't try to apply more relocations
+                        section_address = (
+                            associated_section.section_header.sh_addr
+                        )
+                        section_size = (
+                            associated_section.section_header.sh_size
+                        )
+
+                        patch_offset = relocation.r_offset - section_address
+                        patch_size = 8
+
+                        if not (
+                            section_address
+                            <= relocation.r_offset
+                            <= relocation.r_offset + patch_size
+                            <= section_address + section_size
+                        ):
+                            logging.warning(
+                                'WARNING! bad rela offset: %08x'
+                                % relocation.r_offset
+                            )
+                            break  # Don't try to apply more relocations
+
+                        # Patch the section
+                        (value,) = unpack_from(
+                            '<Q',
+                            associated_section.section_contents,
+                            patch_offset,
+                        )
+
+                        value += relocation.r_addend
+                        value &= (1 << 64) - 1
+
+                        associated_section.section_contents[
+                            patch_offset : patch_offset + patch_size
+                        ] = pack('<Q', value)
+
+                # Output back "relocated_file_contents"
+                self.kernel_img = BytesIO()
+                kernel.serialize(self.kernel_img)
+                self.kernel_img = self.kernel_img.getvalue()
+
+                self.is_relocated = True
 
     def infer_base_address_from_syms(self):
 
@@ -439,19 +546,20 @@ class KallsymsFinder:
                         )
                     )
 
-    def find_elf64_rela(self, base_address: int = None) -> bool:
+    def find_elf64_rela(self):
         """
         Find relocations table, return True if success, False
         otherwise
         """
 
-        # FIX: architecture is not set when guess_architecture() wasn't called
+        # Architecture is not set when the architecture
+        # guess didn't succeed
         if (
             not hasattr(self, 'architecture')
             or ArchitectureName.aarch64 != self.architecture
         ):
-            # I've tested this only for ARM64
-            return False
+            # This was tested only for ARM64
+            return
 
         rela64_size = 24
         self.elf64_rela_start = len(self.kernel_img)
@@ -463,7 +571,6 @@ class KallsymsFinder:
         empty_entries = 0
         minimal_heuristic_count = 1000
         minimal_kernel_va = 0xFFFFC00080000000
-        maximal_kernel_va = 0xFFFFFFFFFFFFFFFF
         addend_candidate = None
 
         # Relocations table located at 'init' part of kernel image
@@ -508,7 +615,6 @@ class KallsymsFinder:
                 # Reset current state
 
                 elf64_rela = []
-                kernel_text_candidate = maximal_kernel_va
 
                 # Move to the next candidate
 
@@ -562,8 +668,8 @@ class KallsymsFinder:
         def fits(base: int) -> bool:
             return base is not None and base_low <= base <= base_high
 
-        if base_address is not None:
-            self.kernel_text_candidate = base_address
+        if self.explicit_base_address is not None:
+            self.kernel_text_candidate = self.explicit_base_address
             logging.info(
                 '[+] Using supplied base address as kernel text candidate: 0x%08x'
                 % (self.kernel_text_candidate)
@@ -585,18 +691,16 @@ class KallsymsFinder:
                 '[+] Guessed kernel base from relocation offsets range 0x%08x-0x%08x -> 0x%08x'
                 % (base_low, base_high, self.kernel_text_candidate)
             )
-        else:
-            self.kernel_text_candidate = (
-                addend_candidate
-                if addend_candidate is not None
-                else base_address
-            )
+        elif addend_candidate is not None:
+            self.kernel_text_candidate = addend_candidate
             logging.info(
                 '[!] Could not derive a consistent base from relocations, keeping candidate 0x%08x'
                 % (self.kernel_text_candidate)
             )
-
-        return True
+        else:
+            logging.warning(
+                '[!] Could not derive a consistent base from relocations'
+            )
 
     def apply_elf64_rela(self) -> bool:
         """
@@ -608,6 +712,7 @@ class KallsymsFinder:
 
         TODO: Move to a dedicated file?
         """
+
         if self.elf64_rela is None or self.kernel_text_candidate is None:
             return False
 
@@ -617,9 +722,6 @@ class KallsymsFinder:
 
         # Detect the boundaries of the kallsyms table in
         # order to avoid to write over it
-
-        kernel_major = int(self.version_number.split('.')[0])
-        kernel_minor = int(self.version_number.split('.')[1])
 
         kallsyms_begin = self.kallsyms_num_syms__offset
         kallsyms_end = self.kallsyms_token_index_end__offset
@@ -640,13 +742,16 @@ class KallsymsFinder:
 
                 self.kernel_text_candidate = None
                 self.elf64_rela = None
-                return False  # Don't try more to apply relocations
+                return False  # Don't try to apply more relocations
 
             (value,) = unpack_from('<Q', self.kernel_img, offset)
             if value == r_addend:
                 # don't know why, but some relocations already initialized
 
                 continue
+
+            # Do the add operation when applying relocation,
+            # most of times it's an add to 0
 
             # BUG: Sometimes 'r_addend' has pretty small value, and applied to 0.
             # BUG: Result much smaller that valid kernel address.
@@ -655,11 +760,16 @@ class KallsymsFinder:
             value += r_addend
             value &= (1 << 64) - 1
 
+            # Do the patch operation
+
             img[offset : offset + 8] = pack('<Q', value)
             count += 1
 
         self.kernel_img = bytes(img)
+        self.is_relocated = True
+
         logging.info('[+] Successfully applied %d relocations.' % count)
+
         return True
 
     def find_kallsyms_token_table(self):

@@ -35,7 +35,7 @@ gi.require_version('Gdk', '4.0')
 gi.require_version('Adw', '1')
 from gi.repository import Gtk, GLib, Gdk, Adw, Gio
 
-from vmlinux_to_elf.core.vmlinuz_decompressor import (
+from vmlinux_to_elf.core.auto_unpack import (
     VmlinuzDecompressor,
     DecompressOperation,
     DecompressOperationType,

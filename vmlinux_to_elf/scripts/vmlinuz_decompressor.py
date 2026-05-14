@@ -4,7 +4,7 @@ import logging
 from argparse import ArgumentParser
 from sys import stderr
 
-from vmlinux_to_elf.core.vmlinuz_decompressor import VmlinuzDecompressor
+from vmlinux_to_elf.core.auto_unpack import VmlinuzDecompressor
 
 
 def main():

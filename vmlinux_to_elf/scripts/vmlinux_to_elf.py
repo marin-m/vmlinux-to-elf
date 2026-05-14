@@ -5,7 +5,7 @@ from argparse import ArgumentParser
 from sys import stderr
 
 from vmlinux_to_elf.core.architecture_detecter import ArchitectureGuessError
-from vmlinux_to_elf.core.vmlinuz_decompressor import VmlinuzDecompressor
+from vmlinux_to_elf.core.auto_unpack import VmlinuzDecompressor
 from vmlinux_to_elf.core.elf_symbolizer import ElfSymbolizer
 
 

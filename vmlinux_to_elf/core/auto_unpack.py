@@ -188,66 +188,97 @@ class VmlinuzDecompressor:
         )
 
     def _obtain_raw_kernel_from_file(
-        self, input_file: bytes, is_entry_point: bool = False
+        self, buf: bytes, is_entry_point: bool = False
     ) -> bytes:
 
-        if is_entry_point:
-            log_msg = '[+] Kernel successfully decompressed or unpacked'
-        else:
-            log_msg = (
-                '[+] Kernel successfully decompressed in-memory (the offsets that '
-                + 'follow will be given relative to the decompressed binary)'
-            )
+        while True:
+            # Check for known unpacking + decompression signatures at
+            # fixed offsets.
+            #
+            # Note that mangled semi-correct kernel version strings may
+            # be present in the compressed output at this point, so
+            # don't check for a kernel version string for now.
 
-        # Check for known signatures at fixed offsets.
-        #
-        # Note that mangled semi-correct kernel version strings may be present
-        # in the compressed output at this point, so don't check for a kernel
-        # version string for now.
+            file_size = len(buf)
 
-        file_size = len(input_file)
+            # Try offsets that may be stored in the
+            # last words of the file, as well for
+            # the start of the file
 
-        # Try offsets that may be stored in the
-        # last words of the file, as well for
-        # the start of the file
+            possible_offsets: set[int] = set([0])
 
-        possible_offsets: set[int] = set([0])
-
-        for possible_endianness in '<>':
-            possible_offsets |= set(
-                unpack(
-                    possible_endianness + '20I',
-                    input_file[file_size - 4 * 20 :],
+            for possible_endianness in '<>':
+                possible_offsets |= set(
+                    unpack(
+                        possible_endianness + '20I',
+                        buf[file_size - 4 * 20 :],
+                    )
                 )
+
+            # Perform the given possible unpack or decompress
+            # operations
+
+            found_anything = False
+
+            for possible_offset in sorted(possible_offsets):
+                decompressed_data = self._try_decompress_at(
+                    buf, possible_offset
+                )
+                if decompressed_data:
+                    buf = decompressed_data
+                    found_anything = True
+                    break
+
+            if found_anything:
+                # In the case where it worked, check for the
+                # possibility of nested unpack or decompression
+                continue
+
+            # It didn't work. But did we get something usable yet?
+
+            kernel_is_usable = search(
+                rb'Linux version (\d+\.[\d.]*\d)[ -~]+', buf
             )
 
-        for possible_offset in sorted(possible_offsets):
-            decompressed_data = self._try_decompress_at(
-                input_file, possible_offset
-            )
-            if decompressed_data:
-                logging.info(log_msg)
-                return decompressed_data
+            if kernel_is_usable:
+                # If yes, don't try more
+                break
 
-        if not search(
-            rb'Linux version (\d+\.[\d.]*\d)[ -~]+', input_file
-        ):  # No kernel version string found
-            # If not successful, scan for compression signatures in the whole document
-            for possible_signature in KNOWN_COMPRESSION_SIGS:
-                possible_offset = input_file.find(possible_signature.value)
+            else:
+                # If not successful, scan for compression signatures in
+                # the whole document
 
-                while possible_offset > -1:
-                    decompressed_data = self._try_decompress_at(
-                        input_file, possible_offset
-                    )
-                    if decompressed_data:
-                        logging.info(log_msg)
-                        return decompressed_data
-                    possible_offset = input_file.find(
-                        possible_signature.value, possible_offset + 1
-                    )
+                for possible_signature in KNOWN_COMPRESSION_SIGS:
+                    possible_offset = buf.find(possible_signature.value)
 
-        return input_file
+                    while possible_offset > -1:
+                        decompressed_data = self._try_decompress_at(
+                            buf, possible_offset
+                        )
+                        if decompressed_data:
+                            buf = decompressed_data
+                            found_anything = True
+                            break
+                        possible_offset = buf.find(
+                            possible_signature.value, possible_offset + 1
+                        )
+                    if found_anything:
+                        break
+
+            if not found_anything:
+                break
+
+        if self.operations_done:
+            if is_entry_point:
+                log_msg = '[+] Kernel successfully decompressed or unpacked'
+            else:
+                log_msg = (
+                    '[+] Kernel successfully decompressed in-memory (the offsets that '
+                    + 'follow will be given relative to the decompressed binary)'
+                )
+            logging.info(log_msg)
+
+        return buf
 
     """
         Try to decompress a file at a given offset, without

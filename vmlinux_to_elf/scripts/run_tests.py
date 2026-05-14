@@ -22,7 +22,7 @@ from re import sub
 from sys import stderr
 from traceback import print_exc
 
-from vmlinux_to_elf.core.vmlinuz_decompressor import VmlinuzDecompressor
+from vmlinux_to_elf.core.auto_unpack import VmlinuzDecompressor
 from vmlinux_to_elf.core.elf_symbolizer import ElfSymbolizer
 
 SCRIPT_DIR = dirname(realpath(__file__))

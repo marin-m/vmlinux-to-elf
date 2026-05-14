@@ -110,41 +110,17 @@ class ElfSymbolizer:
                 | SH_FLAGS.SHF_WRITE
             )
 
-            first_symbol_virtual_address = next(
-                (
-                    symbol.virtual_address
-                    for symbol in kallsyms_finder.symbols
-                    if symbol.symbol_type == KallsymsSymbolType.TEXT
-                ),
-                None,
-            )
-
-            if kallsyms_finder.has_base_relative:
-                first_symbol_virtual_address = min(
-                    first_symbol_virtual_address,
-                    kallsyms_finder.relative_base_address,
-                )
-
             if base_address is not None:
                 progbits.section_header.sh_addr = base_address
                 logging.info(
-                    f'[+] An explicit base address was given ({progbits.section_header.sh_addr:x})'
+                    f'[+] Reconstructing ELF with provided base address ({progbits.section_header.sh_addr:x})'
                 )
-            elif kallsyms_finder.kernel_text_candidate:
+            else:
                 progbits.section_header.sh_addr = (
                     kallsyms_finder.kernel_text_candidate
                 )
                 logging.info(
-                    f'[+] Guessed the base address using the '
-                    + f'kernel_text_candidate heuristic ({progbits.section_header.sh_addr:x})'
-                )
-            else:
-                progbits.section_header.sh_addr = (
-                    first_symbol_virtual_address & 0xFFFFFFFFFFFFE000
-                )
-                logging.info(
-                    f'[+] Guessed the base address using the '
-                    + f'first_symbol_virtual_address fallback heuristic ({progbits.section_header.sh_addr:x})'
+                    f'[+] Reconstructing ELF with guessed base address ({progbits.section_header.sh_addr:x})'
                 )
 
             kernel.sections += [null, progbits]

@@ -247,6 +247,35 @@ class KallsymsFinder:
 
         self.parse_symbol_table()
 
+        if self.kernel_text_candidate is None:
+            self.infer_base_address_from_syms()
+
+    def infer_base_address_from_syms(self):
+
+        first_symbol_virtual_address = next(
+            (
+                symbol.virtual_address
+                for symbol in self.symbols
+                if symbol.symbol_type == KallsymsSymbolType.TEXT
+            ),
+            None,
+        )
+
+        if self.has_base_relative:
+            first_symbol_virtual_address = min(
+                first_symbol_virtual_address,
+                self.relative_base_address,
+            )
+
+        self.kernel_text_candidate = (
+            first_symbol_virtual_address & 0xFFFFFFFFFFFFE000
+        )
+
+        logging.info(
+            f'[+] Guessed the base address using the '
+            + f'first_symbol_virtual_address fallback heuristic ({self.kernel_text_candidate:x})'
+        )
+
     def find_linux_kernel_version(self):
         regex_match = search(
             rb'Linux version (\d+\.[\d.]*\d)[ -~]+', self.kernel_img

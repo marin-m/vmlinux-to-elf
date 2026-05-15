@@ -22,7 +22,6 @@ from vmlinux_to_elf.kernel_db.database import (
     KernelVersion,
     KernelRelevantFile,
     DebianRelease,
-    KernelVersionDependency,
     EMachineValue,
     KnownArchitecture,
 )
@@ -375,7 +374,7 @@ class KallsymsFinder:
             self.kernel_text_candidate = self.relative_base_address
 
             logging.info(
-                f'[+] Guessed the base address using the '
+                '[+] Guessed the base address using the '
                 + f'kallsyms_relative_base value ({self.kernel_text_candidate:x})'
             )
 
@@ -385,7 +384,7 @@ class KallsymsFinder:
             )
 
             logging.info(
-                f'[+] Guessed the base address using the '
+                '[+] Guessed the base address using the '
                 + f'first_symbol_virtual_address fallback heuristic ({self.kernel_text_candidate:x})'
             )
 
@@ -467,23 +466,18 @@ class KallsymsFinder:
                 + kernel.release_date.strftime('%Y-%m-%d')
             )
             if self.elf_machine:
-                # if not extra_info:
-                #     logging.info(
-                #         '[+]   Use --extra-info or -e to print more interesting details'
-                #     )
-                if extra_info:
-                    logging.info('[+]   Interesting files:')
-                    for file in kernel.relevant_files.select().where(
-                        KernelRelevantFile.architecture_code == None
-                    ):
-                        if file.vcs_browser_url:
-                            logging.info(
-                                '[~]     - %s: %s'
-                                % (file.file_name, file.vcs_browser_url)
-                            )
-                        else:
-                            file.file_name
-                            logging.info('[~]     - ' + file.file_name)
+                logging.info('[+]   Interesting files:')
+                for file in kernel.relevant_files.select().where(
+                    KernelRelevantFile.architecture_code.is_null()
+                ):
+                    if file.vcs_browser_url:
+                        logging.info(
+                            '[~]     - %s: %s'
+                            % (file.file_name, file.vcs_browser_url)
+                        )
+                    else:
+                        file.file_name
+                        logging.info('[~]     - ' + file.file_name)
 
                 e_machine = next(
                     iter(
@@ -527,30 +521,29 @@ class KallsymsFinder:
                                 else:
                                     file.file_name
                                     logging.info('[~]     - ' + file.file_name)
-            if extra_info:
-                debian_version = next(
-                    iter(
-                        DebianRelease.select()
-                        .where(
-                            DebianRelease.debian_release_date
-                            <= kernel.release_date
-                        )
-                        .order_by(DebianRelease.debian_release_date.desc())
-                    ),
-                    None,
-                )
-                if debian_version:
-                    logging.info(
-                        '[+]   Suggested build environment: docker run -it %s (Debian %s "%s" released %s)'
-                        % (
-                            debian_version.docker_archive_name,
-                            debian_version.debian_version_number,
-                            debian_version.debian_version_name,
-                            debian_version.debian_release_date.strftime(
-                                '%Y-%m-%d'
-                            ),
-                        )
+            debian_version = next(
+                iter(
+                    DebianRelease.select()
+                    .where(
+                        DebianRelease.debian_release_date
+                        <= kernel.release_date
                     )
+                    .order_by(DebianRelease.debian_release_date.desc())
+                ),
+                None,
+            )
+            if debian_version:
+                logging.info(
+                    '[+]   Suggested build environment: docker run -it %s (Debian %s "%s" released %s)'
+                    % (
+                        debian_version.docker_archive_name,
+                        debian_version.debian_version_number,
+                        debian_version.debian_version_name,
+                        debian_version.debian_release_date.strftime(
+                            '%Y-%m-%d'
+                        ),
+                    )
+                )
 
     def find_elf64_rela(self):
         """

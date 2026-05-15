@@ -12,27 +12,7 @@ from sys import stderr, argv
 from subprocess import run
 import logging
 
-SCRIPT_DIR = dirname(realpath(__file__))
-ASSETS_DIR = realpath(SCRIPT_DIR + '/assets')
-RESOURCES_PATH = realpath(ASSETS_DIR + '/vmlinux-to-elf.gresource')
 
-APP_ID = 're.fossplant.vmlinux-to-elf'
-
-# Based on https://github.com/Taiko2k/GTK4PythonTutorial?tab=readme-ov-file#ui-from-graphical-designer
-
-import sys
-
-try:
-    import gi
-except ImportError:
-    exit(
-        '[!] Please set up the package including the "gui" '
-        + 'UV extra (see README)'
-    )
-
-gi.require_version('Gtk', '4.0')
-gi.require_version('Gdk', '4.0')
-gi.require_version('Adw', '1')
 from gi.repository import Gtk, GLib, Gdk, Adw, Gio
 
 from vmlinux_to_elf.core.auto_unpack import (
@@ -49,10 +29,28 @@ from vmlinux_to_elf.core.kallsyms import (
 )
 from vmlinux_to_elf.core.architecture_detecter import (
     ArchitectureGuessError,
-    ArchitectureName,
     ElfMachine,
-    architecture_to_readable_name,
 )
+
+SCRIPT_DIR = dirname(realpath(__file__))
+ASSETS_DIR = realpath(SCRIPT_DIR + '/assets')
+RESOURCES_PATH = realpath(ASSETS_DIR + '/vmlinux-to-elf.gresource')
+
+APP_ID = 're.fossplant.vmlinux-to-elf'
+
+# Based on https://github.com/Taiko2k/GTK4PythonTutorial?tab=readme-ov-file#ui-from-graphical-designer
+
+try:
+    import gi
+except ImportError:
+    exit(
+        '[!] Please set up the package including the "gui" '
+        + 'UV extra (see README)'
+    )
+
+gi.require_version('Gtk', '4.0')
+gi.require_version('Gdk', '4.0')
+gi.require_version('Adw', '1')
 
 
 class KallsymsLogHandler(logging.Handler):
@@ -405,8 +403,6 @@ class MyWindow(Adw.ApplicationWindow):
                                 dialog.set_close_response('ok')
                                 dialog.choose(self, None, None)
                         else:
-                            data = BytesIO()
-
                             try:
                                 open_result.replace_contents(
                                     self.kallsyms.kernel_img,

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- encoding: Utf-8 -*-
 import logging
-from struct import pack, unpack_from
 from io import BytesIO
 
 from vmlinux_to_elf.core.architecture_detecter import ArchitectureGuessError

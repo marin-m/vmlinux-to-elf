@@ -126,7 +126,7 @@ class ElfFile:
 
         # Exposed to the user
 
-        self.sections: list[ElfSection] = []
+        self.sections: list['ElfSection'] = []
 
         self.section_string_table: ElfStrtab = None
         self.symbol_table: ElfSymtab = None
@@ -324,7 +324,7 @@ class ElfFile:
         data.seek(self.file_header.e_shoff)
         self.sections[0].serialize(data)
 
-    def find_section(self, address) -> Optional[ElfSection]:
+    def find_section(self, address) -> Optional['ElfSection']:
         """
         Uses binary search to quickly find the section which the address belongs to
         """
@@ -772,9 +772,8 @@ class ElfSymtab(ElfSection):
         ).nbytes
 
     def _serialize_contents(self, data: BytesIO):
-        local_symbols_first = lambda symbol: (
-            symbol.st_info_binding != ST_INFO_BINDING.STB_LOCAL
-        )
+        def local_symbols_first(symbol):
+            return symbol.st_info_binding != ST_INFO_BINDING.STB_LOCAL
 
         found_a_non_local_symbol = False
 

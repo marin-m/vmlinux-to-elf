@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 # -*- encoding: Utf-8 -*-
 
-from os.path import dirname, realpath, exists
-from enum import Enum
+from os.path import dirname, realpath
 
 from peewee import (
     SqliteDatabase,

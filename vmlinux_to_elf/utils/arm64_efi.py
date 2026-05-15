@@ -1,19 +1,14 @@
 #!/usr/bin/env python3
 # -*- encoding: Utf-8 -*-
 from ctypes import (
-    BigEndianStructure,
     LittleEndianStructure,
     c_char,
-    c_int32,
-    c_int64,
     c_uint8,
     c_uint16,
     c_uint32,
     c_uint64,
 )
 from argparse import ArgumentParser
-from enum import IntEnum
-from io import BytesIO
 
 import vmlinux_to_elf.utils.pretty_print
 

@@ -1085,7 +1085,7 @@ class KallsymsFinder:
         if position % self.offset_table_element_size == 0:
             position += self.offset_table_element_size
         else:
-            position += -position + self.offset_table_element_size
+            position += -position % self.offset_table_element_size
 
         position -= self.offset_table_element_size
         position -= self.offset_table_element_size

@@ -30,6 +30,7 @@ from vmlinux_to_elf.core.architecture_detecter import (
 )
 
 import gi
+
 gi.require_version('Gtk', '4.0')
 gi.require_version('Adw', '1')
 

@@ -170,27 +170,6 @@ class ElfFile:
 
             self.sections.append(ElfSection.from_bytes(data, self))
 
-        # Remember about the string symbol table section
-
-        self.section_string_table = (
-            self.sections[
-                self.file_header.e_shstrndx
-                if self.file_header.e_shstrndx
-                != SPECIAL_SECTION_INDEX.SHN_XINDEX
-                else self.sections[0].sh_link
-            ]
-            if self.sections
-            else None
-        )
-
-        # Name sections and link relocations (now that string and symbol tables are parsed)
-
-        for section in self.sections:
-            section.post_unserialize()
-
-            if section.section_header.sh_type == SH_TYPE.SHT_SYMTAB:
-                self.symbol_table = section
-
         # Parse the segment headers
 
         for num_segment in range(
@@ -214,6 +193,112 @@ class ElfFile:
             segment.unserialize(data)
 
             self.segments.append(segment)
+
+        # If no sections were present in the
+        # binary, create these from segments
+
+        if not self.sections:
+            null = ElfNullSection(self)
+            null.section_name = ''
+
+            self.sections.append(null)
+
+            num_kernel_segments = 0
+            num_bss_segments = 0
+
+            for segment in self.segments:
+                if segment.p_type == P_TYPE.PT_LOAD:
+                    if segment.p_filesz:
+                        section = ElfProgbits(self)
+                        if num_kernel_segments:
+                            section.section_name = '.kernel' + str(
+                                num_kernel_segments + 1
+                            )
+                        else:
+                            section.section_name = '.kernel'
+                        num_kernel_segments += 1
+
+                        section.section_header.sh_addr = segment.p_vaddr
+                        section.section_header.sh_size = segment.p_filesz
+
+                        data.seek(segment.p_offset)
+                        section.section_contents = bytearray(
+                            data.read(segment.p_filesz)
+                        )
+
+                        section.section_header.sh_flags = SH_FLAGS.SHF_ALLOC
+
+                        if segment.p_flags & P_FLAGS.PF_X:
+                            section.section_header.sh_flags |= (
+                                SH_FLAGS.SHF_EXECINSTR
+                            )
+                        if segment.p_flags & P_FLAGS.PF_W:
+                            section.section_header.sh_flags |= (
+                                SH_FLAGS.SHF_WRITE
+                            )
+
+                        self.sections.append(section)
+
+                    if segment.p_memsz > segment.p_filesz:
+                        section = ElfNoBits(self)
+                        if num_bss_segments:
+                            section.section_name = '.bss' + str(
+                                num_bss_segments + 1
+                            )
+                        else:
+                            section.section_name = '.bss'
+                        num_bss_segments += 1
+                        section.section_header.sh_size = (
+                            segment.p_memsz - segment.p_filesz
+                        )
+                        section.section_header.sh_addr = (
+                            segment.p_vaddr + segment.p_filesz
+                        )
+
+                        section.section_header.sh_flags = SH_FLAGS.SHF_ALLOC
+
+                        if segment.p_flags & P_FLAGS.PF_X:
+                            section.section_header.sh_flags |= (
+                                SH_FLAGS.SHF_EXECINSTR
+                            )
+                        if segment.p_flags & P_FLAGS.PF_W:
+                            section.section_header.sh_flags |= (
+                                SH_FLAGS.SHF_WRITE
+                            )
+
+                        self.sections.append(section)
+
+            symtab = ElfSymtab(self)
+            symtab.section_name = '.symtab'
+
+            strtab = ElfStrtab(self)
+            strtab.section_name = '.strtab'
+            symtab.string_table = strtab
+
+            shstrtab = ElfStrtab(self)
+            shstrtab.section_name = '.shstrtab'
+
+            self.symbol_table = symtab
+            self.section_string_table = shstrtab
+            self.sections += [symtab, strtab, shstrtab]
+
+        else:
+            # Remember about the string symbol table section
+
+            self.section_string_table = self.sections[
+                self.file_header.e_shstrndx
+                if self.file_header.e_shstrndx
+                != SPECIAL_SECTION_INDEX.SHN_XINDEX
+                else self.sections[0].sh_link
+            ]
+
+            # Name sections and link relocations (now that string and symbol tables are parsed)
+
+            for section in self.sections:
+                section.post_unserialize()
+
+                if section.section_header.sh_type == SH_TYPE.SHT_SYMTAB:
+                    self.symbol_table = section
 
     def serialize(self, data: BytesIO):
         # Filter out .gnu.version not to confuse readelf for now TODO

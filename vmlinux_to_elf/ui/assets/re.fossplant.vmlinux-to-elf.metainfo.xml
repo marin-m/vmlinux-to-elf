@@ -64,7 +64,7 @@ https://hughsie.github.io/oars/index.html
       <description>
         <ul>
           <li>Correctly support back parsing uImage files with the UI (issue #3)</li>
-          <li>Correctly handle the presence of sh_type in SHT_REL and SHL_RELA, and lack thereof (issue #37)</li>
+          <li>Correctly handle the presence of sh_type in SHT_REL and SHT_RELA, and lack thereof (issue #37)</li>
           <li>Fix an issue in "find_kallsyms_markers_uncompressed" providing wrong offsets on OpenWRT images (issue #99)</li>
         </ul>
       </description>

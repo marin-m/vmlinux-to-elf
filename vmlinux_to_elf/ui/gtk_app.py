@@ -789,6 +789,8 @@ class MyWindow(Adw.ApplicationWindow):
                     for op in self.raw_kernel.operations_done:
                         if op.op_type == DecompressOperationType.Unpacking:
                             packing_layers.append(op)
+                        elif op.op_type == DecompressOperationType.Restoring:
+                            packing_layers.insert(0, op)
                         elif (
                             op.op_type == DecompressOperationType.Decompression
                         ):

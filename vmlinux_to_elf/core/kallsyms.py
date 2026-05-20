@@ -15,9 +15,8 @@ from vmlinux_to_elf.core.architecture_detecter import (
     ArchitectureGuessError,
     ArchitectureName,
 )
-
+from vmlinux_to_elf.core.auto_unpack import Signature
 from vmlinux_to_elf.utils.elf import ElfFile
-
 from vmlinux_to_elf.kernel_db.database import (
     KernelVersion,
     KernelRelevantFile,
@@ -273,7 +272,7 @@ class KallsymsFinder:
 
         # Parse uImage header magic (always big-endian)
 
-        if self.kernel_img.startswith(b'\x27\x05\x19\x56'):
+        if self.kernel_img.startswith(Signature.uImage.value):
             self.kernel_text_candidate = int.from_bytes(
                 self.kernel_img[4 * 4 : 4 * 5], 'big'
             )

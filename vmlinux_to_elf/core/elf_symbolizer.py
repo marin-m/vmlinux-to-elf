@@ -5,6 +5,7 @@ from io import BytesIO
 
 from vmlinux_to_elf.core.architecture_detecter import ArchitectureGuessError
 from vmlinux_to_elf.core.kallsyms import KallsymsFinder, KallsymsSymbolType
+from vmlinux_to_elf.core.auto_unpack import Signature
 from vmlinux_to_elf.utils.elf import (
     SH_FLAGS,
     SPECIAL_SECTION_INDEX,
@@ -51,7 +52,7 @@ class ElfSymbolizer:
     ):
 
         if file_contents.startswith(
-            b'\x27\x05\x19\x56'
+            Signature.uImage.value
         ):  # uImage header magic (always big-endian)
             if not file_offset:
                 file_offset = 64  # uImage header size (image_header_t from u-boot/image.h)

@@ -3,6 +3,7 @@
 from typing import Optional, List
 from io import SEEK_END, BytesIO
 from gzip import _GzipReader
+from binascii import crc32
 from struct import unpack
 from enum import Enum
 from time import time
@@ -56,6 +57,7 @@ class Signature(Enum):
     Compressed_GZIP = b'\x1f\x8b\x08'
     Compressed_XZ = b'\xfd7zXZ\x00'
     Compressed_LZMA = b']\x00\x00'
+    Compressed_LZMA_6D = b'\x6d\x00\x00'
     Compressed_BZ2 = b'BZh'
     Compressed_LZ4 = b'\x04"M\x18'  # https://github.com/lz4/lz4/blob/dev/doc/lz4_Frame_format.md
     Compressed_LZ4_Legacy = b'\x02!L\x18'
@@ -63,6 +65,7 @@ class Signature(Enum):
     Compressed_LZO = b'\x89LZ'
     DTB_Appended_Qualcomm = b'UNCOMPRESSED_IMG'  # https://www.google.com/search?q="PATCHED_KERNEL_MAGIC"
     Android_Bootimg = b'ANDROID!'  # https://source.android.com/devices/bootloader/boot-image-header
+    uImage = b'\x27\x05\x19\x56'
 
     @staticmethod
     def check(data, offset, sign):
@@ -73,6 +76,7 @@ KNOWN_COMPRESSION_SIGS = [
     Signature.Compressed_GZIP,
     Signature.Compressed_XZ,
     Signature.Compressed_LZMA,
+    Signature.Compressed_LZMA_6D,
     Signature.Compressed_BZ2,
     Signature.Compressed_LZ4,
     Signature.Compressed_LZ4_Legacy,
@@ -115,7 +119,8 @@ class SingleGzipReader(_GzipReader):
 
 class DecompressOperationType(Enum):
     Unpacking = 1
-    Decompression = 2
+    Restoring = 2
+    Decompression = 3
 
 
 class DecompressOperation:
@@ -159,6 +164,11 @@ class DecompressOperation:
                     self.format_src_size(),
                     self.format_dst_size(),
                 )
+            )
+        elif self.op_type == DecompressOperationType.Restoring:
+            return 'Restored %s header at offset %08x' % (
+                self.format_name(),
+                self.src_offset,
             )
         elif self.op_type == DecompressOperationType.Decompression:
             return (
@@ -385,6 +395,31 @@ class VmlinuzDecompressor:
 
                 decoded = self._try_decompress_at(decoded, 0) or decoded
 
+            elif (
+                Signature.check(input_file, offset, Signature.uImage)
+                and len(input_file) - offset > 64
+                and input_file[offset + 31] != 0
+            ):  # legacy_img_hdr->ih_comp != IH_COMP_NONE
+                decompressed = self._try_decompress_at(
+                    input_file, offset + 0x40
+                )
+
+                if decompressed:
+                    op.op_type = DecompressOperationType.Restoring
+                    op.format_sig = Signature.uImage
+
+                    header = bytearray(input_file[offset : offset + 0x40])
+                    header[31] = 0  # legacy_img_hdr->ih_comp = IH_COMP_NONE
+                    header[12:16] = len(decompressed).to_bytes(
+                        4, 'big'
+                    )  # legacy_img_hdr->ih_size
+                    header[24:28] = crc32(decompressed).to_bytes(
+                        4, 'big'
+                    )  # legacy_img_hdr->ih_dcrc
+                    header[4:8] = b'\x00' * 4  # legacy_img_hdr->ih_hcrc
+                    header[4:8] = crc32(header).to_bytes(4, 'big')
+                    decoded = bytes(header) + decompressed
+
             elif Signature.check(
                 input_file, offset, Signature.Compressed_GZIP
             ):
@@ -397,10 +432,14 @@ class VmlinuzDecompressor:
                     -1
                 )  # GZIP - Will stop reading after the GZip footer thanks to our modification above.
 
-            elif Signature.check(
-                input_file, offset, Signature.Compressed_XZ
-            ) or Signature.check(
-                input_file, offset, Signature.Compressed_LZMA
+            elif (
+                Signature.check(input_file, offset, Signature.Compressed_XZ)
+                or Signature.check(
+                    input_file, offset, Signature.Compressed_LZMA
+                )
+                or Signature.check(
+                    input_file, offset, Signature.Compressed_LZMA_6D
+                )
             ):
                 from lzma import LZMADecompressor
 

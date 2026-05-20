@@ -376,10 +376,17 @@ class KallsymsFinder:
                 self.relative_base_address & 0xFFFFFFFFFFFFE000
             )
 
-            logging.info(
-                '[+] Guessed the base address using the '
-                + f'kallsyms_relative_base value ({self.kernel_text_candidate:x})'
-            )
+            if self.kernel_text_candidate != self.relative_base_address:
+                logging.info(
+                    '[+] Guessed the base address using the '
+                    + f'kallsyms_relative_base value ({self.relative_base_address:x} '
+                    + f'aligned to {self.kernel_text_candidate:x})'
+                )
+            else:
+                logging.info(
+                    '[+] Guessed the base address using the '
+                    + f'kallsyms_relative_base value ({self.kernel_text_candidate:x})'
+                )
 
         else:
             self.kernel_text_candidate = (

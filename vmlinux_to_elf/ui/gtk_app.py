@@ -409,7 +409,7 @@ class MyWindow(Adw.ApplicationWindow):
                         else:
                             try:
                                 open_result.replace_contents(
-                                    self.kallsyms.kernel_img,
+                                    self.raw_kernel.decompressed,
                                     None,
                                     False,
                                     Gio.FileCreateFlags.NONE,
@@ -638,7 +638,7 @@ class MyWindow(Adw.ApplicationWindow):
             self.offset_list_selection_model.get_selected_item()
         )
         text_buffer = '\nData for "%s" at %s:\n\n' % (item.token, item.offset)
-        fd = BytesIO(self.raw_kernel.decompressed)
+        fd = BytesIO(self.kallsyms.kernel_img)
         fd.seek(int(item.offset, 16))
 
         subst_chars = ''.join(

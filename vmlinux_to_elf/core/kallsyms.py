@@ -274,12 +274,14 @@ class KallsymsFinder:
         # Parse uImage header magic (always big-endian)
 
         if self.kernel_img.startswith(b'\x27\x05\x19\x56'):
-            if self.explicit_base_address is None:
-                self.explicit_base_address = int.from_bytes(
-                    self.kernel_img[4 * 4 : 4 * 5], 'big'
-                )
+            self.kernel_text_candidate = int.from_bytes(
+                self.kernel_img[4 * 4 : 4 * 5], 'big'
+            )
 
-            self.kernel_img = self.kernel_img[64:]
+            logging.info(
+                '[+] Guessed the base address using the uImage header '
+                + f'data load address ({self.kernel_text_candidate:x})'
+            )
 
     def preprocess_elf_rela_table(self):
 
@@ -371,7 +373,9 @@ class KallsymsFinder:
             self.has_base_relative
             and self.relative_base_address < first_symbol_virtual_address
         ):
-            self.kernel_text_candidate = self.relative_base_address
+            self.kernel_text_candidate = (
+                self.relative_base_address & 0xFFFFFFFFFFFFE000
+            )
 
             logging.info(
                 '[+] Guessed the base address using the '

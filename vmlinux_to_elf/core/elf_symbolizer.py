@@ -53,10 +53,10 @@ class ElfSymbolizer:
         if file_contents.startswith(
             b'\x27\x05\x19\x56'
         ):  # uImage header magic (always big-endian)
-            if file_offset is None:
+            if not file_offset:
                 file_offset = 64  # uImage header size (image_header_t from u-boot/image.h)
 
-            if base_address is None:
+            if not base_address:
                 base_address = int.from_bytes(
                     file_contents[4 * 4 : 4 * 5], 'big'
                 )

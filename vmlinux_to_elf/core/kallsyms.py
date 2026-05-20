@@ -1511,6 +1511,18 @@ class KallsymsFinder:
                 )
             )
 
+            if (
+                can_skip
+                and self.has_base_relative
+                and len(tentative_addresses_or_offsets) >= 3
+                and not (
+                    tentative_addresses_or_offsets[0]
+                    <= tentative_addresses_or_offsets[1]
+                    <= tentative_addresses_or_offsets[2]
+                )
+            ):
+                continue
+
             if self.has_base_relative:
                 number_of_negative_items = len(
                     [

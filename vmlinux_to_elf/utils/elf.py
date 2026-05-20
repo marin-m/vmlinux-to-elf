@@ -176,7 +176,7 @@ class ElfFile:
             self.file_header.e_shstrndx
             if self.file_header.e_shstrndx != SPECIAL_SECTION_INDEX.SHN_XINDEX
             else self.sections[0].sh_link
-        ]
+        ] if self.sections else None
 
         # Name sections and link relocations (now that string and symbol tables are parsed)
 

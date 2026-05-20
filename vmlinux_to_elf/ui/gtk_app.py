@@ -12,9 +12,6 @@ from sys import stderr, argv
 from subprocess import run
 import logging
 
-
-from gi.repository import Gtk, GLib, Gdk, Adw, Gio
-
 from vmlinux_to_elf.core.auto_unpack import (
     VmlinuzDecompressor,
     DecompressOperation,
@@ -31,6 +28,12 @@ from vmlinux_to_elf.core.architecture_detecter import (
     ArchitectureGuessError,
     ElfMachine,
 )
+
+import gi
+gi.require_version('Gtk', '4.0')
+gi.require_version('Adw', '1')
+
+from gi.repository import Gtk, GLib, Gdk, Adw, Gio
 
 SCRIPT_DIR = dirname(realpath(__file__))
 ASSETS_DIR = realpath(SCRIPT_DIR + '/assets')

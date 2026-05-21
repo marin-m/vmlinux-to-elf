@@ -1,0 +1,482 @@
+using Gtk 4.0;
+using Adw 1;
+using Gio 2.0;
+
+template $MainWindow: Adw.ApplicationWindow {
+  content: Adw.NavigationView navigation {
+    Adw.NavigationPage main_page {
+      child: Adw.ToolbarView {
+        content: Adw.ToastOverlay main_page_toast {
+          child: Adw.PreferencesPage {
+            Adw.PreferencesGroup welcome_text {
+              Label {
+                label: "Welcome to vmlinux-to-elf. This tool serves the purpose of facilitating reverse engineering of Linux kernels found in embedded devices, generating symbol and/or ELF files suitable for tools such as IDA Pro.";
+                wrap: true;
+              }
+            }
+
+            Adw.PreferencesGroup kernel_selection {
+              description: "Please select a kernel to analyse (*.vmlinux, *.vmlinuz, *.bzImage, *.zImage)";
+              title: "Kernel selection";
+
+              Adw.ActionRow file_picker_button {
+                activatable: true;
+                activatable-widget: file_picker_icon;
+                title: "Select a file...";
+
+                Button file_picker_icon {
+                  action-name: "win.pick-file";
+                  icon-name: "document-open";
+
+                  styles [
+                    "flat",
+                  ]
+                }
+              }
+
+              Adw.PreferencesRow selection_spinner_row {
+                visible: false;
+
+                Adw.Spinner {
+                  margin-bottom: 7;
+                  margin-top: 7;
+                }
+              }
+
+              Adw.ActionRow kernel_string_row {
+                subtitle-selectable: true;
+                title: "Detected kernel string";
+                visible: false;
+              }
+
+              Adw.ActionRow unpacking_row {
+                activatable: true;
+                activatable-widget: unpacking_row_button;
+                subtitle-selectable: true;
+                title: "Unpacked kernel";
+                visible: false;
+
+                Button unpacking_row_button {
+                  action-name: "win.export-raw-kernel";
+                  label: "Export unpacked";
+                }
+              }
+
+              Adw.ActionRow decompression_row {
+                activatable: true;
+                activatable-widget: decompression_row_button;
+                subtitle-selectable: true;
+                title: "Decompressed kernel";
+                visible: false;
+
+                Button decompression_row_button {
+                  action-name: "win.export-raw-kernel";
+                  label: "Export decompressed";
+                }
+              }
+            }
+
+            Adw.PreferencesGroup analysis_options {
+              description: "vmlinux-to-elf will attempt to detect automatically the following parameters if not specified explictly.";
+              title: "Analysis options";
+              visible: false;
+
+              Adw.ComboRow e_machine_combo {
+                title: "ELF machine (auto-detect: %s)";
+              }
+
+              Adw.SwitchRow bitness_switch {
+                title: "64-bit (auto-detect: %s)";
+              }
+
+              Adw.EntryRow file_offset_entry {
+                text: "0";
+                title: "File offset, hexadecimal";
+              }
+
+              Adw.EntryRow base_address_entry {
+                name: "Test 2";
+                text: "0";
+                title: "Base address, hexadecimal (auto-detect: %s)";
+              }
+
+              Adw.SpinRow bss_size_entry {
+                adjustment: Adjustment {
+                  page-increment: 1.0;
+                  step-increment: 1.0;
+                  upper: 128.0;
+                };
+
+                numeric: true;
+                title: "BSS size in megabytes (default: 16)";
+                value: 16.0;
+              }
+
+              Adw.SwitchRow force_absolute_base_switch {
+                subtitle: "ℹ️ Remind to toggle this if the previewed addresses do not look good";
+                title: "Force using absolute base address";
+              }
+            }
+          };
+        };
+
+        [top]
+        Adw.HeaderBar {
+          [end]
+          MenuButton {
+            icon-name: "open-menu-symbolic";
+
+            popover: PopoverMenu {
+              menu-model: application_menu;
+            };
+          }
+        }
+
+        [bottom]
+        ActionBar detect_symbols_bar {
+          [end]
+          Button find_symbol_table {
+            action-name: "win.validate-manual-options";
+            label: "Find symbol table";
+
+            styles [
+              "pill",
+              "suggested-action",
+            ]
+          }
+
+          Button {
+            action-name: "navigation.push";
+            action-target: "'offsets_page'";
+            label: "(Debug: go to view 2)";
+            visible: false;
+          }
+
+          Button {
+            action-name: "navigation.push";
+            action-target: "'preview_page'";
+            label: "(Debug: go to view 3)";
+            visible: false;
+          }
+        }
+      };
+
+      tag: "main_page";
+      title: "vmlinux-to-elf";
+    }
+
+    Adw.NavigationPage offsets_page {
+      child: Adw.MultiLayoutView offsets_page_multi_layout {
+        Adw.Layout offsets_page_layout {
+          content: Adw.ToolbarView {
+            content: Adw.ToastOverlay offset_page_toast {
+              child: Adw.OverlaySplitView offset_selection_split_view {
+                content: Adw.PreferencesPage {
+                  Adw.PreferencesGroup analysis_notes {
+                    header-suffix: Button {
+                      action-name: "win.copy-debug-information";
+                      icon-name: "edit-copy-symbolic";
+                      tooltip-text: "Copy debug information";
+                      valign: start;
+                    };
+
+                    title: "Analysis notes";
+
+                    ScrolledWindow {
+                      child: TextView kallsyms_debug_viewport {
+                        bottom-margin: 4;
+
+                        buffer: TextBuffer kallsyms_debug_buffer {
+                          enable-undo: false;
+                        };
+
+                        cursor-visible: false;
+                        editable: false;
+                        height-request: 190;
+                        left-margin: 4;
+                        monospace: true;
+                        right-margin: 4;
+                        top-margin: 4;
+                        wrap-mode: word_char;
+
+                        styles [
+                          "small_tty",
+                        ]
+                      };
+
+                      height-request: 190;
+                    }
+                  }
+
+                  Adw.PreferencesGroup offset_detection {
+                    description: "Information auto-detected by vmlinux-to-elf - click an address to display in the lateral hex view pane ";
+
+                    header-suffix: Button {
+                      action-name: "win.copy-offset-information";
+                      icon-name: "edit-copy-symbolic";
+                      tooltip-text: "Copy offset information";
+                      valign: start;
+                    };
+
+                    title: "Symbol table offset detection";
+
+                    ScrolledWindow {
+                      height-request: 200;
+
+                      ColumnView {
+                        model: SingleSelection offset_list_selection_model {
+                          autoselect: false;
+                          can-unselect: true;
+
+                          model: Gio.ListStore offset_list_model {};
+
+                          selection-changed => $token_row_activated();
+                        };
+
+                        ColumnViewColumn token_column {
+                          factory: BuilderListItemFactory {
+                            template ColumnViewCell {
+                              child: Label {
+                                xalign: 0;
+                                name: "small_tty";
+                                label: bind template.item as <$DetectedTokenRow>.token;
+                              };
+                            }
+                          };
+
+                          resizable: true;
+                          title: "Token";
+                        }
+
+                        ColumnViewColumn offset_column {
+                          expand: true;
+
+                          factory: BuilderListItemFactory {
+                            template ColumnViewCell {
+                              child: Label {
+                                xalign: 0;
+                                name: "small_tty";
+                                label: bind template.item as <$DetectedTokenRow>.offset;
+                              };
+                            }
+                          };
+
+                          resizable: true;
+                          title: "Offset";
+                        }
+                      }
+                    }
+                  }
+                };
+
+                sidebar: Box {
+                  orientation: vertical;
+                  width-request: 300;
+
+                  ScrolledWindow {
+                    vexpand: true;
+                    vexpand-set: true;
+
+                    TextView hex_viewport {
+                      bottom-margin: 4;
+
+                      buffer: TextBuffer hex_buffer {
+                        enable-undo: false;
+                        text: "\nHex dump at address %s\n\n%s";
+                      };
+
+                      cursor-visible: false;
+                      editable: false;
+                      left-margin: 4;
+                      monospace: true;
+                      right-margin: 4;
+                      top-margin: 4;
+                      wrap-mode: word_char;
+                    }
+                  }
+                };
+              };
+            };
+
+            [top]
+            Adw.HeaderBar {}
+
+            [bottom]
+            ActionBar {
+              [end]
+              Button detect_symbols {
+                action-name: "navigation.push";
+                action-target: "'preview_page'";
+                label: "Detect symbols";
+
+                styles [
+                  "pill",
+                  "suggested-action",
+                ]
+              }
+            }
+          };
+
+          name: "offsets_page_layout";
+        }
+
+        Adw.Layout offsets_page_wait_layout {
+          name: "offsets_page_wait_layout";
+
+          Adw.StatusPage offsets_page_wait_spinner {}
+        }
+      };
+
+      tag: "offsets_page";
+      title: "Detected file offsets";
+    }
+
+    Adw.NavigationPage preview_page {
+      child: Adw.ToolbarView {
+        content: Adw.PreferencesPage {
+          Adw.PreferencesGroup table_preview {
+            title: "Symbol table preview";
+
+            ScrolledWindow {
+              vexpand: true;
+              vexpand-set: true;
+
+              ColumnView symbol_table {
+                height-request: 200;
+
+                model: SingleSelection symbol_table_selection_model {
+                  autoselect: false;
+                  can-unselect: true;
+
+                  model: Gio.ListStore symbol_table_model {};
+                };
+
+                ColumnViewColumn name_column {
+                  factory: BuilderListItemFactory {
+                    template ColumnViewCell {
+                      child: Label {
+                        xalign: 0;
+                        name: "small_tty";
+                        label: bind template.item as <$RecoveredSymbolRow>.name;
+                      };
+                    }
+                  };
+
+                  resizable: true;
+                  title: "Name";
+                }
+
+                ColumnViewColumn type_column {
+                  factory: BuilderListItemFactory {
+                    template ColumnViewCell {
+                      child: Label {
+                        xalign: 0;
+                        name: "small";
+                        label: bind template.item as <$RecoveredSymbolRow>.type;
+                      };
+                    }
+                  };
+
+                  resizable: true;
+                  title: "Type";
+                }
+
+                ColumnViewColumn address_column {
+                  expand: true;
+
+                  factory: BuilderListItemFactory {
+                    template ColumnViewCell {
+                      child: Label {
+                        xalign: 0;
+                        name: "small_tty";
+                        label: bind template.item as <$RecoveredSymbolRow>.address;
+                      };
+                    }
+                  };
+
+                  resizable: true;
+                  title: "Address";
+                }
+              }
+            }
+          }
+        };
+
+        [top]
+        Adw.HeaderBar {}
+
+        [bottom]
+        ActionBar {
+          [end]
+          Button generate_elf {
+            action-name: "win.generate-elf-file";
+            label: "Generate ELF file";
+
+            styles [
+              "pill",
+              "suggested-action",
+            ]
+          }
+
+          [end]
+          Button export_symbols {
+            action-name: "win.export-symbols";
+            label: "Export symbols";
+
+            styles [
+              "pill",
+            ]
+          }
+        }
+      };
+
+      tag: "preview_page";
+      title: "Values preview";
+    }
+
+    Adw.NavigationPage loading_page {
+      can-pop: false;
+
+      child: Adw.ToolbarView {
+        content: Adw.StatusPage wait_spinner {};
+
+        [top]
+        Adw.HeaderBar {}
+      };
+
+      tag: "loading_page";
+      title: "Exporting symbols...";
+    }
+  };
+
+  default-height: 600;
+  default-width: 800;
+  icon-name: "re.fossplant.vmlinux-to-elf";
+  startup-id: "re.fossplant.vmlinux-to-elf";
+}
+
+menu application_menu {
+  submenu recent_files_menu {
+    label: "_Recent files..";
+  }
+
+  item {
+    action: "win.show-about";
+    icon: "preferences-system-linux";
+    label: "_About...";
+  }
+}
+
+Adw.AboutDialog about_dialog {
+  application-icon: "re.fossplant.vmlinux-to-elf";
+  application-name: "vmlinux-to-elf";
+
+  developers: [
+    "Marin Moulinier https://fossplant.re/",
+  ];
+
+  issue-url: "https://github.com/marin-m/vmlinux-to-elf/issues/new/choose";
+  license-type: gpl_3_0;
+  support-url: "https://matrix.to/#/#vmlinux-to-elf:matrix.org";
+  website: "https://github.com/marin-m/vmlinux-to-elf";
+}

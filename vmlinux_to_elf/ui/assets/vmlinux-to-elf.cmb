@@ -1,10 +1,10 @@
 <?xml version='1.0' encoding='UTF-8' standalone='no'?>
 <!DOCTYPE cambalache-project SYSTEM "cambalache-project.dtd">
-<!-- Created with Cambalache 0.96.3 -->
-<cambalache-project version="0.96.0" target_tk="gtk-4.0">
-  <gresources filename="vmlinux-to-elf.gresource.xml" sha256="71d04f8816faf77b2b915a2c555343e38b68b5d310d0de579e9258b13dad9c05"/>
-  <css filename="style.css"/>
-  <ui template-class="MainWindow" filename="gui.ui" sha256="d0d0ba616d3f1ee1c49fe7d99709422258ee4dcb6078dd9a8ec6e41f5fbb3c44">
+<!-- Created with Cambalache 1.0.1 -->
+<cambalache-project version="1.0.0" target_tk="gtk-4.0" depends="casilda-1.0,libadwaita-1,webkitgtk-6.0">
+  <gresources filename="vmlinux-to-elf.gresource.xml" sha256="8052225eefabc049d5c3187ac8a725a0329b10ae619ae0bb1169b08151180438"/>
+  <css filename="style.css" sha256="8a6f25df2e5090038742c2e973c3e3cea5f715f6f14849b43c27b8ed8f823477"/>
+  <ui template-class="MainWindow" filename="gui.blp" sha256="e6c3e0af625bcf4f0bb05efaf9ae5acb8273edbe3fec839dc4110e2bc0741840">
     <css-provider>style.css</css-provider>
   </ui>
 </cambalache-project>

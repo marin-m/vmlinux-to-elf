@@ -73,9 +73,8 @@ sudo apt install git
 git clone git@github.com:marin-m/vmlinux-to-elf.git
 
 # Dependencies for the GTK-4 GUI
-sudo apt install libgirepository-2.0-dev libgtk-4-dev libadwaita-1-dev \
-    gir1.2-adw-1 gir1.2-gtk-4.0 python3-dev glib-compile-resources \
-    blueprint-compiler
+sudo apt install libgirepository-2.0-dev libadwaita-1-dev \
+    gir1.2-adw-1 gir1.2-gtk-4.0 python3-dev blueprint-compiler
 
 cd vmlinux-to-elf
 cp -a .github/hooks/* .git/hooks/

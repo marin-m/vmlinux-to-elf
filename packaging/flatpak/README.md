@@ -10,9 +10,9 @@ Build dependencies:
 
 ```
 sudo apt install flatpak-builder flatpak build-essential \
-    libgirepository-2.0-dev libgtk-4-dev libadwaita-1-dev \
-    gir1.2-adw-1 gir1.2-gtk-4.0 python3-dev python3-pip \
-    glib-compile-resources intltool appstream git
+    libgirepository-2.0-dev libadwaita-1-dev gir1.2-adw-1 \
+    gir1.2-gtk-4.0 python3-dev python3-pip intltool \
+    appstream git
 sudo snap install --classic astral-uv
 ```
 

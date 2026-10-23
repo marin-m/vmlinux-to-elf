@@ -1,0 +1,24 @@
+app-id: re.fossplant.vmlinux-to-elf
+runtime: org.gnome.Platform
+runtime-version: "51"
+sdk: org.gnome.Sdk
+command: vmlinux-to-elf-gui
+finish-args:
+  - --share=ipc
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --device=dri
+modules:
+  - python3-modules.json
+  - name: vmlinux-to-elf
+    buildsystem: simple
+    build-commands:
+      - mkdir -p /app/bin/
+      - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}" --prefix=${FLATPAK_DEST} "." --no-build-isolation
+      - install -Dm644 ./vmlinux_to_elf/ui/assets/re.fossplant.vmlinux-to-elf.svg -t /app/share/icons/hicolor/scalable/apps/
+      - install -Dm644 ./vmlinux_to_elf/ui/assets/re.fossplant.vmlinux-to-elf.metainfo.xml -t /app/share/metainfo/
+      - install -Dm644 ./vmlinux_to_elf/ui/assets/re.fossplant.vmlinux-to-elf.desktop -t /app/share/applications/
+      - rm -rf ./vmlinux_to_elf/ *.g* packaging pics *.lock *.md *.yaml *.toml LICENSE
+    sources:
+      - type: dir
+        path: ../../

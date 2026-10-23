@@ -33,14 +33,22 @@ apps:
       - home
 
 parts:
+  python-runtime:
+    plugin: nil
+    stage-packages:
+      - libpython3.14-minimal
+      - libpython3.14-stdlib
+      - python3-minimal # for the "python3" symlink
+      - python3.14-minimal
+      - python3.14-venv
+
   vmlinux-to-elf:
+    after: [python-runtime]
     plugin: python
     source: .
 
     stage-packages:
       - libdrm-common
-      - python3
-      - python3-dev
 
   share:
     plugin: dump

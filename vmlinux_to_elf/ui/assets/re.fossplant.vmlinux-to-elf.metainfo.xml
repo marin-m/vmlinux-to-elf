@@ -2,7 +2,7 @@
 <component type="desktop-application">
   <id>re.fossplant.vmlinux-to-elf</id>
   <metadata_license>CC0-1.0</metadata_license>
-  <project_license>GPL-3.0+</project_license>
+  <project_license>GPL-3.0-or-later</project_license>
   <name>vmlinux-to-elf</name>
   <branding>
     <color type="primary" scheme_preference="light">#F5EEFF</color>
@@ -50,7 +50,7 @@
   </recommends>
   <url type="bugtracker">https://github.com/marin-m/vmlinux-to-elf/issues/new/choose</url>
   <url type="homepage">https://github.com/marin-m/vmlinux-to-elf</url>
-  <url type="contact">https://matrix.to/#/#vmlinux-to-elf:matrix.org</url>
+  <url type="help">https://matrix.to/#/#vmlinux-to-elf:matrix.org</url>
   <url type="faq">https://github.com/marin-m/vmlinux-to-elf#readme</url>
   <!--url type="translate">https://github.com/marin-m/SongRec/tree/main/translations#readme</url-->
   <url type="vcs-browser">https://github.com/marin-m/vmlinux-to-elf</url>

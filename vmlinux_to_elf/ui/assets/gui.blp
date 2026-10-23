@@ -102,14 +102,14 @@ template $MainWindow: Adw.ApplicationWindow {
 
               Adw.SpinRow bss_size_entry {
                 adjustment: Adjustment {
-                  page-increment: 1.0;
-                  step-increment: 1.0;
-                  upper: 128.0;
+                  page-increment: 1;
+                  step-increment: 1;
+                  upper: 128;
                 };
 
                 numeric: true;
                 title: "BSS size in megabytes (default: 16)";
-                value: 16.0;
+                value: 16;
               }
 
               Adw.SwitchRow force_absolute_base_switch {
@@ -465,18 +465,4 @@ menu application_menu {
     icon: "preferences-system-linux";
     label: "_About...";
   }
-}
-
-Adw.AboutDialog about_dialog {
-  application-icon: "re.fossplant.vmlinux-to-elf";
-  application-name: "vmlinux-to-elf";
-
-  developers: [
-    "Marin Moulinier https://fossplant.re/",
-  ];
-
-  issue-url: "https://github.com/marin-m/vmlinux-to-elf/issues/new/choose";
-  license-type: gpl_3_0;
-  support-url: "https://matrix.to/#/#vmlinux-to-elf:matrix.org";
-  website: "https://github.com/marin-m/vmlinux-to-elf";
 }

@@ -173,8 +173,9 @@ class MyWindow(Adw.ApplicationWindow):
     guessed_bitness: Optional[bool] = None
     did_user_mod_trigger: bool = False
 
+    about_dialog: Adw.AboutDialog
+
     detect_symbols_bar: Gtk.ActionBar = Gtk.Template.Child()
-    about_dialog: Adw.AboutDialog = Gtk.Template.Child()
     e_machine_combo: Adw.ComboRow = Gtk.Template.Child()
     file_picker_button: Adw.ActionRow = Gtk.Template.Child()
     selection_spinner_row: Adw.PreferencesRow = Gtk.Template.Child()
@@ -208,6 +209,15 @@ class MyWindow(Adw.ApplicationWindow):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+
+        self.about_dialog = Adw.AboutDialog.new_from_appdata(
+            '/re/fossplant/vmlinux-to-elf/re.fossplant.vmlinux-to-elf.metainfo.xml',
+            version('vmlinux-to-elf'),
+        )
+        self.about_dialog.set_developer_name('')
+        self.about_dialog.set_developers(
+            ['Marin Moulinier https://fossplant.re/']
+        )
 
         # Log info to display in the Gtk.TextBuffer present in UI flow
         # screen #2
@@ -246,7 +256,6 @@ class MyWindow(Adw.ApplicationWindow):
     def connect_actions(self):
 
         def show_about(*args):
-            self.about_dialog.set_version(version('vmlinux_to_elf'))
             self.about_dialog.present(self)
 
         self.add_simple_action('show-about', show_about)

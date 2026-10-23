@@ -3,6 +3,7 @@
 
 import logging
 import math
+from datetime import datetime
 from enum import Enum
 from re import match, search, findall
 from struct import pack, unpack_from
@@ -24,6 +25,12 @@ from vmlinux_to_elf.kernel_db.database import (
     EMachineValue,
     KnownArchitecture,
 )
+
+
+def normalize_release_date(release_date):
+    if isinstance(release_date, str):
+        return datetime.fromisoformat(release_date)
+    return release_date
 
 """
     This class will take a raw kernel image (.IMG), and return the file
@@ -468,6 +475,7 @@ class KallsymsFinder:
             None,
         )
         if kernel:
+            kernel.release_date = normalize_release_date(kernel.release_date)
             logging.info('[+] Kernel found in database')
             logging.info('[+]   Read kernel source: ' + kernel.browse_url)
             logging.info('[+]   Download kernel: ' + kernel.download_url)

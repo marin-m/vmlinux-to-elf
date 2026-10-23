@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 # -*- encoding: Utf-8 -*-
 import logging
+from importlib.metadata import version
 from argparse import ArgumentParser
-from sys import stderr
+from sys import stderr, argv
 
 from vmlinux_to_elf.core.architecture_detecter import ArchitectureGuessError
 from vmlinux_to_elf.core.auto_unpack import VmlinuzDecompressor
@@ -14,10 +15,21 @@ def main():
         stream=stderr, level=logging.INFO, format='%(message)s'
     )
 
+    if '-V' in argv or '--version' in argv:
+        print('vmlinux-to-elf version ' + version('vmlinux-to-elf'))
+        exit(0)
+
     args = ArgumentParser(
         description='Turn a raw or compressed kernel binary, '
         + 'or a kernel ELF without symbols, into a fully analyzable ELF whose '
         + 'symbols were extracted from the kernel symbol table'
+    )
+
+    args.add_argument(
+        '-V',
+        '--version',
+        action='store_true',
+        help='Print package version to the standard output',
     )
 
     args.add_argument(

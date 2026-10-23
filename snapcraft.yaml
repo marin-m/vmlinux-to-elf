@@ -14,6 +14,7 @@ environment:
 apps:
   vmlinux-to-elf:
     command: bin/vmlinux-to-elf
+    extensions: [gnome]
     plugs:
       - home
 
@@ -27,11 +28,13 @@ apps:
 
   kallsyms-finder:
     command: bin/kallsyms-finder
+    extensions: [gnome]
     plugs:
       - home
 
   vmlinuz-decompressor:
     command: bin/vmlinuz-decompressor
+    extensions: [gnome]
     plugs:
       - home
 

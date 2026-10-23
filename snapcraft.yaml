@@ -39,6 +39,8 @@ parts:
 
     stage-packages:
       - libdrm-common
+      - python3
+      - python3-dev
 
   share:
     plugin: dump

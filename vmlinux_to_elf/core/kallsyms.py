@@ -32,6 +32,7 @@ def normalize_release_date(release_date):
         return datetime.fromisoformat(release_date)
     return release_date
 
+
 """
     This class will take a raw kernel image (.IMG), and return the file
     offsets for all kernel symbols, as well as the kallsyms_* structs and

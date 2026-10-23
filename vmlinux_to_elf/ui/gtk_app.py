@@ -12,6 +12,14 @@ from sys import stderr, argv
 from subprocess import run
 import logging
 
+try:
+    import gi
+except ImportError:
+    exit(
+        '[!] Please set up the package including the "gui" '
+        + 'UV extra (see README)'
+    )
+
 from vmlinux_to_elf.core.auto_unpack import (
     VmlinuzDecompressor,
     DecompressOperation,
@@ -43,14 +51,6 @@ RESOURCES_PATH = realpath(join(ASSETS_DIR, 'vmlinux-to-elf.gresource'))
 APP_ID = 're.fossplant.vmlinux-to-elf'
 
 # Based on https://github.com/Taiko2k/GTK4PythonTutorial?tab=readme-ov-file#ui-from-graphical-designer
-
-try:
-    import gi
-except ImportError:
-    exit(
-        '[!] Please set up the package including the "gui" '
-        + 'UV extra (see README)'
-    )
 
 gi.require_version('Gtk', '4.0')
 gi.require_version('Gdk', '4.0')

@@ -1,4 +1,4 @@
-﻿import unittest
+import unittest
 from datetime import datetime
 from unittest.mock import MagicMock, patch
 
@@ -23,8 +23,10 @@ class ReleaseDateTest(unittest.TestCase):
         finder.version_number = '6.1.162'
         finder.elf_machine = 0
 
-        with patch.object(KernelVersion, 'select', return_value=kernel_query), \
-                patch.object(DebianRelease, 'select', return_value=debian_query):
+        with (
+            patch.object(KernelVersion, 'select', return_value=kernel_query),
+            patch.object(DebianRelease, 'select', return_value=debian_query),
+        ):
             finder.extract_db_information()
 
         self.assertIsInstance(kernel.release_date, datetime)

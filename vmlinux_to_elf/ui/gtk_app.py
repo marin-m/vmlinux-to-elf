@@ -6,6 +6,7 @@ from importlib.metadata import version
 from argparse import ArgumentParser
 from typing import Optional, List
 from io import BytesIO, StringIO
+from traceback import format_exc
 from shutil import which, copy2
 from threading import Thread
 from sys import stderr, argv
@@ -766,6 +767,11 @@ class MyWindow(Adw.ApplicationWindow):
             ) as err:
                 # TODO Do actual error handling for all Python exceptions too?
 
+                try:
+                    plain_error = format_exc()
+                except Exception:
+                    plain_error = str(err)
+
                 def update_ui_invalid_file_cb(err):
 
                     self.kernel_string_row.set_visible(False)
@@ -777,7 +783,7 @@ class MyWindow(Adw.ApplicationWindow):
                     self.navigation.pop_to_tag('main_page')
 
                     dialog = Adw.AlertDialog.new(
-                        'Could not open kernel', str(err)
+                        'Could not open kernel', plain_error
                     )
                     dialog.add_response('ok', 'Ok')
                     dialog.set_default_response('ok')

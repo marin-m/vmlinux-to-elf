@@ -591,11 +591,9 @@ class KallsymsFinder:
 
         def is_supported_rela(rela):
             r_offset, r_info, r_addend = rela
-            return (
-                (r_info & 0xFFFFFFFF) in supported_types
-                and r_offset >= minimal_kernel_va
-                and (r_offset & 0xFFFF000000000000) == 0xFFFF000000000000
-            )
+            return (r_info & 0xFFFFFFFF) in supported_types and (
+                r_offset & 0xFFFF000000000000
+            ) == 0xFFFF000000000000
 
         # Vendor ARM64 kernels commonly interleave R_AARCH64_ABS64 and
         # R_AARCH64_RELATIVE entries.  Searching backwards until the first
@@ -622,7 +620,14 @@ class KallsymsFinder:
                     cursor += rela64_size
                     continue
                 if not is_supported_rela(rela):
+                    # print('⚠️ DEBUG breaking at %08x after %d relas: offset=%08x info=%08x addend=%08x' % (
+                    #     max_rela_offset,
+                    #     (cursor - run_start) // rela64_size,
+                    #     *rela
+                    # ))
                     break
+                # else:
+                #     print('ℹ️ FOUND:', 'offset=%08x info=%08x addend=%08x' % rela)
 
                 cursor += rela64_size
                 last_nonempty_end = cursor

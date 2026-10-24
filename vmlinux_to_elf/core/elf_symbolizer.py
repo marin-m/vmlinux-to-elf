@@ -306,10 +306,8 @@ class ElfSymbolizer:
                     kernel.is_big_endian, kernel.is_64_bits
                 )
 
-                R_AARCH64_RELATIVE = 0x403
-
                 relocation.r_offset = rela[0]
-                relocation.r_info_type = R_AARCH64_RELATIVE
+                relocation.r_info_type = rela[1] & 0xFFFFFFFF
                 relocation.r_addend = rela[2]
 
                 srela.relocation_table.append(relocation)

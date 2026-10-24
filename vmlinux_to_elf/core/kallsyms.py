@@ -580,99 +580,108 @@ class KallsymsFinder:
             return
 
         rela64_size = 24
-        self.elf64_rela_start = len(self.kernel_img)
-        self.elf64_rela_start -= (
-            self.elf64_rela_start & 3
-        )  # align to pointer size
+        R_AARCH64_ABS64 = 0x101
         R_AARCH64_RELATIVE = 0x403
-        elf64_rela = []
-        empty_entries = 0
+        supported_types = (R_AARCH64_ABS64, R_AARCH64_RELATIVE)
         minimal_heuristic_count = 1000
         minimal_kernel_va = 0xFFFFC00080000000
-        addend_candidate = None
+        endianness = '>' if self.is_big_endian else '<'
+        rela_format = endianness + 'QQQ'
+        max_rela_offset = len(self.kernel_img) - rela64_size
 
-        # Relocations table located at 'init' part of kernel image
-        # Thus reverse-search is more efficient
-
-        while self.elf64_rela_start >= rela64_size:
-            rela = unpack_from(
-                '<QQQ', self.kernel_img, self.elf64_rela_start - rela64_size
-            )
+        def is_supported_rela(rela):
             r_offset, r_info, r_addend = rela
-            if (0 == r_offset) and (0 == r_info) and (0 == r_addend):
-                # possible empty entry ?
+            return (
+                (r_info & 0xFFFFFFFF) in supported_types
+                and r_offset >= minimal_kernel_va
+                and (r_offset & 0xFFFF000000000000)
+                == 0xFFFF000000000000
+            )
 
-                if elf64_rela:
-                    # just skip empty entries inside relocation table
+        # Vendor ARM64 kernels commonly interleave R_AARCH64_ABS64 and
+        # R_AARCH64_RELATIVE entries.  Searching backwards until the first
+        # different type finds only the final RELATIVE run, so scan aligned
+        # records and retain the longest contiguous relocation table instead.
+        best_start = None
+        best_end = None
+        best_count = 0
+        position = 0
 
-                    self.elf64_rela_start -= (
-                        rela64_size  # move to one rela64 struct backward
-                    )
-                    empty_entries += 1
+        while position <= max_rela_offset:
+            rela = unpack_from(rela_format, self.kernel_img, position)
+            if not is_supported_rela(rela):
+                position += 8
+                continue
+
+            run_start = position
+            cursor = position
+            last_nonempty_end = position
+
+            while cursor <= max_rela_offset:
+                rela = unpack_from(rela_format, self.kernel_img, cursor)
+                if rela == (0, 0, 0):
+                    cursor += rela64_size
                     continue
-
-            if R_AARCH64_RELATIVE != r_info:
-                # Relocations must be the same type
-
-                # BUG: this is not true in practice, R_AARCH64_GLOB_DAT
-                # and maybe some others are between first few R_AARCH64_RELATIVE,
-                # which results in missing ~30 relocations
-
-                if len(elf64_rela) >= minimal_heuristic_count:
-                    while (
-                        self.kernel_img[
-                            self.elf64_rela_start : self.elf64_rela_start
-                            + rela64_size
-                        ]
-                        == b'\x00' * rela64_size
-                    ):
-                        self.elf64_rela_start += rela64_size
-                        empty_entries -= 1
+                if not is_supported_rela(rela):
                     break
 
-                # Reset current state
+                cursor += rela64_size
+                last_nonempty_end = cursor
 
-                elf64_rela = []
+            run_end = last_nonempty_end
+            run_count = (run_end - run_start) // rela64_size
+            if run_count > best_count:
+                best_start = run_start
+                best_end = run_end
+                best_count = run_count
 
-                # Move to the next candidate
+            # A false positive may start shortly before the real aligned
+            # table. Advance by one alignment step in that case so the scan
+            # can still find the actual table.
+            if run_count < minimal_heuristic_count:
+                position = run_start + 8
+            else:
+                position = cursor
 
-                possible_offset = self.elf64_rela_start - 1
+        if best_count < minimal_heuristic_count:
+            return False
 
-                while (
-                    possible_offset % 8 != 0
-                ):  # Find a pointer-aligned r_info entry
-                    possible_offset = self.kernel_img.rfind(
-                        R_AARCH64_RELATIVE.to_bytes(8, 'little'),
-                        8,
-                        possible_offset - rela64_size + 1,
-                    )
-                    if possible_offset == -1:
-                        self.elf64_rela_start = 0
-                        break
+        self.elf64_rela_start = best_start
+        self.elf64_rela_end_excl = best_end
+        elf64_rela = []
+        addend_candidate = None
+        has_abs64 = False
 
-                if possible_offset != -1:
-                    self.elf64_rela_start = possible_offset - 8 + rela64_size
-
+        for position in range(
+            self.elf64_rela_start,
+            self.elf64_rela_end_excl,
+            rela64_size,
+        ):
+            rela = unpack_from(rela_format, self.kernel_img, position)
+            r_offset, r_info, r_addend = rela
+            if rela == (0, 0, 0):
                 continue
 
             elf64_rela.append(rela)
-            if (0 == (r_addend & 0xFFF)) and (minimal_kernel_va <= r_addend):
+            r_type = r_info & 0xFFFFFFFF
+            if r_type == R_AARCH64_ABS64:
+                has_abs64 = True
+            elif (
+                r_type == R_AARCH64_RELATIVE
+                and (r_addend & 0xFFF) == 0
+                and minimal_kernel_va <= r_addend
+            ):
                 if addend_candidate is None or r_addend < addend_candidate:
                     addend_candidate = r_addend
-            self.elf64_rela_start -= (
-                rela64_size  # move to one rela64 struct backward
-            )
-
-        count = len(elf64_rela) + empty_entries
-
-        if count < minimal_heuristic_count:
-            return False
 
         self.elf64_rela = elf64_rela
-        self.elf64_rela_end_excl = self.elf64_rela_start + count * rela64_size
         logging.info(
             '[+] Found relocations table at file offset 0x%04x - 0x%04x (count=%d)'
-            % (self.elf64_rela_start, self.elf64_rela_end_excl, count)
+            % (
+                self.elf64_rela_start,
+                self.elf64_rela_end_excl,
+                best_count,
+            )
         )
 
         # Infer a sane base range from relocation offsets so that every
@@ -692,14 +701,13 @@ class KallsymsFinder:
                 '[+] Using supplied base address as kernel text candidate: 0x%08x'
                 % (self.kernel_text_candidate)
             )
-        elif addend_candidate is not None and fits(addend_candidate):
-            self.kernel_text_candidate = addend_candidate
-            logging.info(
-                '[+] Found kernel text candidate from relocation addends: 0x%08x'
-                % (self.kernel_text_candidate)
-            )
-        elif base_low <= base_high:
-            # HACK: kernel might not be aligned to 0x80000?
+        elif base_low <= base_high and (
+            has_abs64
+            or addend_candidate is None
+            or not fits(addend_candidate)
+        ):
+            # ABS64 relocation addends are image-relative addresses, not the
+            # kernel base. Derive the base from relocation targets instead.
             ALIGN = 0x80000
             candidate = (base_low + ALIGN - 1) & ~(ALIGN - 1)
             if candidate > base_high:
@@ -708,6 +716,13 @@ class KallsymsFinder:
             logging.info(
                 '[+] Guessed kernel base from relocation offsets range 0x%08x-0x%08x -> 0x%08x'
                 % (base_low, base_high, self.kernel_text_candidate)
+            )
+        elif addend_candidate is not None and fits(addend_candidate):
+            self.kernel_text_candidate = addend_candidate
+            logging.info(
+                '[+] Found kernel text candidate from relocation '
+                + 'addends: 0x%08x'
+                % (self.kernel_text_candidate)
             )
         elif addend_candidate is not None:
             self.kernel_text_candidate = addend_candidate
@@ -737,6 +752,7 @@ class KallsymsFinder:
         img = bytearray(self.kernel_img)
         offset_max = len(img) - 8  # size of ptr
         kernel_base = self.kernel_text_candidate
+        R_AARCH64_ABS64 = 0x101
 
         # Detect the boundaries of the kallsyms table in
         # order to avoid to write over it
@@ -749,6 +765,7 @@ class KallsymsFinder:
         count = 0
         for rela in self.elf64_rela:
             r_offset, r_info, r_addend = rela
+            r_type = r_info & 0xFFFFFFFF
             offset = r_offset - kernel_base
 
             if (
@@ -767,6 +784,12 @@ class KallsymsFinder:
                 # don't know why, but some relocations already initialized
 
                 continue
+
+            if r_type == R_AARCH64_ABS64:
+                # In these vendor images the ABS64 addend is an image-relative
+                # address. The final value is S + A, with S being the kernel
+                # load address.
+                r_addend += kernel_base
 
             # Do the add operation when applying relocation,
             # most of times it's an add to 0

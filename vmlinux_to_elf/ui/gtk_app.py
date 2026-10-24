@@ -3,6 +3,7 @@
 from os import stat, scandir, environ, makedirs, access, remove, W_OK
 from os.path import dirname, realpath, exists, expanduser, join
 from importlib.metadata import version
+from traceback import format_exception
 from argparse import ArgumentParser
 from typing import Optional, List
 from io import BytesIO, StringIO
@@ -11,7 +12,9 @@ from shutil import which, copy2
 from threading import Thread
 from sys import stderr, argv
 from subprocess import run
+from logging import error
 import logging
+import sys
 
 try:
     import gi
@@ -91,6 +94,8 @@ class MyApp(Adw.Application):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
+        self.setup_error_handling()
+
         theme = Gtk.IconTheme.get_for_display(Gdk.Display.get_default())
         theme.add_resource_path('/re/fossplant/vmlinux-to-elf/')
 
@@ -100,6 +105,27 @@ class MyApp(Adw.Application):
         self.connect('open', self.on_open)
         self.connect('startup', self.on_startup)
         self.connect('activate', self.on_activate)
+
+    def setup_error_handling(self):
+        # Generic error handler for non-bubbled exceptions raised in GLib callbacks
+        # "This works because exception hooks are called in PyErr_Print."
+        # Cf. https://gitlab.gnome.org/GNOME/pygobject/-/blob/3.48.2/tests/test_generictreemodel.py#L335
+
+        def error_handler(exctype, value, traceback):
+            tb_string = ''.join(
+                format_exception(exctype, value, traceback)
+            ).rstrip()
+
+            error('Caught Python exception: \n' + tb_string)
+
+            if self.window:
+                dialog = Adw.AlertDialog.new(
+                    '⚠️ Caught Python exception', tb_string
+                )
+                dialog.add_response('ok', 'Ok')
+                dialog.choose(None, None, None)
+
+        sys.excepthook = error_handler
 
     def on_open(self, app, files, *args):
         if len(files) >= 1:
@@ -765,8 +791,6 @@ class MyWindow(Adw.ApplicationWindow):
                 KallsymsNotFoundException,
                 Exception,
             ) as err:
-                # TODO Do actual error handling for all Python exceptions too?
-
                 try:
                     plain_error = format_exc()
                 except Exception:

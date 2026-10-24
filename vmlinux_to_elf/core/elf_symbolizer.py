@@ -57,10 +57,14 @@ class ElfSymbolizer:
             if not file_offset:
                 file_offset = 64  # uImage header size (image_header_t from u-boot/image.h)
 
-            if not base_address:
-                base_address = int.from_bytes(
-                    file_contents[4 * 4 : 4 * 5], 'big'
-                )
+            possible_address = int.from_bytes(
+                file_contents[4 * 4 : 4 * 5], 'big'
+            )
+
+            logging.info(
+                '[+] Possible base address from the uImage header '
+                + f'data load address: {possible_address:x}'
+            )
 
         if file_offset:
             file_contents = file_contents[file_offset:]

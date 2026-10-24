@@ -281,13 +281,13 @@ class KallsymsFinder:
         # Parse uImage header magic (always big-endian)
 
         if self.kernel_img.startswith(Signature.uImage.value):
-            self.kernel_text_candidate = int.from_bytes(
+            possible_address = int.from_bytes(
                 self.kernel_img[4 * 4 : 4 * 5], 'big'
             )
 
             logging.info(
-                '[+] Guessed the base address using the uImage header '
-                + f'data load address ({self.kernel_text_candidate:x})'
+                '[+] Possible base address from the uImage header '
+                + f'data load address: {possible_address:x}'
             )
 
     def preprocess_elf_rela_table(self):
@@ -594,8 +594,7 @@ class KallsymsFinder:
             return (
                 (r_info & 0xFFFFFFFF) in supported_types
                 and r_offset >= minimal_kernel_va
-                and (r_offset & 0xFFFF000000000000)
-                == 0xFFFF000000000000
+                and (r_offset & 0xFFFF000000000000) == 0xFFFF000000000000
             )
 
         # Vendor ARM64 kernels commonly interleave R_AARCH64_ABS64 and
@@ -702,9 +701,7 @@ class KallsymsFinder:
                 % (self.kernel_text_candidate)
             )
         elif base_low <= base_high and (
-            has_abs64
-            or addend_candidate is None
-            or not fits(addend_candidate)
+            has_abs64 or addend_candidate is None or not fits(addend_candidate)
         ):
             # ABS64 relocation addends are image-relative addresses, not the
             # kernel base. Derive the base from relocation targets instead.
@@ -721,8 +718,7 @@ class KallsymsFinder:
             self.kernel_text_candidate = addend_candidate
             logging.info(
                 '[+] Found kernel text candidate from relocation '
-                + 'addends: 0x%08x'
-                % (self.kernel_text_candidate)
+                + 'addends: 0x%08x' % (self.kernel_text_candidate)
             )
         elif addend_candidate is not None:
             self.kernel_text_candidate = addend_candidate

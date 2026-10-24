@@ -343,9 +343,7 @@ class VmlinuzDecompressor:
                 header_version_le = int.from_bytes(
                     header_version_raw, 'little'
                 )
-                header_version_be = int.from_bytes(
-                    header_version_raw, 'big'
-                )
+                header_version_be = int.from_bytes(header_version_raw, 'big')
                 header_version = 0
                 header_endianness = None
 

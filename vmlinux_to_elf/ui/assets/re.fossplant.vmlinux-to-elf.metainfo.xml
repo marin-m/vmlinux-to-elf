@@ -60,6 +60,15 @@ https://hughsie.github.io/oars/index.html
 -->
   <content_rating type="oars-1.1" />
   <releases>
+    <release version="1.4.0" date="2026-10-24">
+      <description>
+        <ul>
+          <li>Fixes two vendor-specific issues that prevent correct kallsyms extraction from some Android boot images (PR #106 thanks to @zzzxxxxxxxxxx)</li>
+          <li>Use the uImage load address as an user-facing hint rather than a base address guess, as it may be sometimes wrong</li>
+          <li>Add a global error handler in the Python GUI</li>
+        </ul>
+      </description>
+    </release>
     <release version="1.3.7" date="2026-10-23">
       <description>
         <ul>

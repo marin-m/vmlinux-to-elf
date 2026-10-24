@@ -5,7 +5,7 @@
   <project_license>GPL-3.0-or-later</project_license>
   <name>vmlinux-to-elf</name>
   <branding>
-    <color type="primary" scheme_preference="light">#F5EEFF</color>
+    <color type="primary" scheme_preference="light">#FFFFFF</color>
     <color type="primary" scheme_preference="dark">#270064</color>
   </branding>
   <summary>Convert raw Linux kernel blobs to ELF files</summary>
@@ -63,7 +63,7 @@ https://hughsie.github.io/oars/index.html
     <release version="1.4.0" date="2026-10-24">
       <description>
         <ul>
-          <li>Fixes two vendor-specific issues that prevent correct kallsyms extraction from some Android boot images (PR #106 thanks to @zzzxxxxxxxxxx)</li>
+          <li>Fixes two vendor-specific issues that prevented correct kallsyms extraction from some Android boot images (PR #106 thanks to @zzzxxxxxxxxxx)</li>
           <li>Use the uImage load address as an user-facing hint rather than a base address guess, as it may be sometimes wrong</li>
           <li>Add a global error handler in the Python GUI</li>
         </ul>

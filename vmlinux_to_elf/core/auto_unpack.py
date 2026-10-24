@@ -340,30 +340,27 @@ class VmlinuzDecompressor:
                 header_version_raw = input_file[
                     offset + 10 * 4 : offset + 11 * 4
                 ]
-                assert header_version_raw in (
-                    b'\0\0\0\0',
-                    b'\0\0\0\1',
-                    b'\1\0\0\0',
-                    b'\0\0\0\2',
-                    b'\2\0\0\0',
-                    b'\0\0\0\3',
-                    b'\3\0\0\0',
-                    b'\0\0\0\4',
-                    b'\4\0\0\0',
-                ), f'Unsupported Android bootimg version {header_version_raw}'
+                header_version_le = int.from_bytes(
+                    header_version_raw, 'little'
+                )
+                header_version_be = int.from_bytes(
+                    header_version_raw, 'big'
+                )
+                header_version = 0
+                header_endianness = None
 
-                endianness = 'little'
+                if header_version_le == header_version_be:
+                    header_version = header_version_le
+                elif header_version_le in range(5):
+                    header_version = header_version_le
+                    header_endianness = 'little'
+                elif header_version_be in range(5):
+                    header_version = header_version_be
+                    header_endianness = 'big'
 
-                if header_version_raw in (
-                    b'\0\0\0\3',
-                    b'\3\0\0\0',
-                    b'\0\0\0\4',
-                    b'\4\0\0\0',
-                ):
+                if header_version in (3, 4):
                     page_size = 4096
-
-                    if header_version_raw in (b'\0\0\0\3', b'\0\0\0\4'):
-                        endianness = 'big'
+                    endianness = header_endianness
 
                 else:
                     page_size_raw = input_file[
@@ -373,11 +370,18 @@ class VmlinuzDecompressor:
                     page_size_le = int.from_bytes(page_size_raw, 'little')
                     page_size_be = int.from_bytes(page_size_raw, 'big')
 
-                    if page_size_le < page_size_be:
+                    if header_endianness == 'little':
                         page_size = page_size_le
-                    else:
-                        endianness = 'big'
+                        endianness = 'little'
+                    elif header_endianness == 'big':
                         page_size = page_size_be
+                        endianness = 'big'
+                    elif page_size_le < page_size_be:
+                        page_size = page_size_le
+                        endianness = 'little'
+                    else:
+                        page_size = page_size_be
+                        endianness = 'big'
 
                 kernel_size = int.from_bytes(
                     input_file[offset + 2 * 4 : offset + 3 * 4], endianness
@@ -385,6 +389,7 @@ class VmlinuzDecompressor:
 
                 assert len(input_file) > kernel_size > 0x1000
                 assert len(input_file) > page_size > 0x200
+                assert offset + page_size + kernel_size <= len(input_file)
 
                 decoded = input_file[
                     offset + page_size : offset + page_size + kernel_size

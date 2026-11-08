@@ -381,9 +381,8 @@ class MyWindow(Adw.ApplicationWindow):
                     )
 
                 except GLib.GError as err:
-                    if not (
-                        err.domain == 'gtk-dialog-error-quark'
-                        and err.code == Gtk.DialogError.DISMISSED
+                    if not err.matches(
+                        Gtk.DialogError.quark(), Gtk.DialogError.DISMISSED
                     ):
                         dialog = Adw.AlertDialog.new(
                             'Could not open file', err.message
@@ -450,9 +449,9 @@ class MyWindow(Adw.ApplicationWindow):
                                 task
                             )
                         except GLib.GError as err:
-                            if not (
-                                err.domain == 'gtk-dialog-error-quark'
-                                and err.code == Gtk.DialogError.DISMISSED
+                            if not err.matches(
+                                Gtk.DialogError.quark(),
+                                Gtk.DialogError.DISMISSED,
                             ):
                                 dialog = Adw.AlertDialog.new(
                                     'Could not open file', err.message
@@ -516,9 +515,8 @@ class MyWindow(Adw.ApplicationWindow):
                 try:
                     open_result: Gio.File = file_dialog.save_finish(task)
                 except GLib.GError as err:
-                    if not (
-                        err.domain == 'gtk-dialog-error-quark'
-                        and err.code == Gtk.DialogError.DISMISSED
+                    if not err.matches(
+                        Gtk.DialogError.quark(), Gtk.DialogError.DISMISSED
                     ):
                         dialog = Adw.AlertDialog.new(
                             'Could not open file', err.message
@@ -607,9 +605,8 @@ class MyWindow(Adw.ApplicationWindow):
                 try:
                     open_result: Gio.File = file_dialog.save_finish(task)
                 except GLib.GError as err:
-                    if not (
-                        err.domain == 'gtk-dialog-error-quark'
-                        and err.code == Gtk.DialogError.DISMISSED
+                    if not err.matches(
+                        Gtk.DialogError.quark(), Gtk.DialogError.DISMISSED
                     ):
                         dialog = Adw.AlertDialog.new(
                             'Could not open file', err.message

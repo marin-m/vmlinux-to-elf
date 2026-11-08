@@ -8,8 +8,8 @@ cd "$(dirname "$0")/../.."
 
 # Install the required Flatpak runtime and SDK
 flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-flatpak install flathub --user org.gnome.Sdk//50 -y
-flatpak install flathub --user org.gnome.Platform//50 -y
+flatpak install flathub --user org.gnome.Sdk//51 -y
+flatpak install flathub --user org.gnome.Platform//51 -y
 
 # Build the Flathub package
 rm -rf target/ # Don't copy all the planet into the Flatpak build dir

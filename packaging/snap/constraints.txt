@@ -1,0 +1,2 @@
+# See https://github.com/canonical/snapcraft/issues/6549#issuecomment-6803710446
+pip<26.3

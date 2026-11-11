@@ -50,6 +50,7 @@ parts:
 
   vmlinux-to-elf:
     after: [python-runtime]
+    python-constraints: [packaging/snap/constraints.txt]
     plugin: python
     source: .
 
